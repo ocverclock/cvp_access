@@ -6,6 +6,7 @@
 > CVP Access est un projet d’interface d’accessibilité destiné principalement aux musiciens non-voyants ou malvoyants utilisant un Yamaha Clavinova CVP.
 > Le Raspberry Pi permet de contrôler certaines fonctions du piano depuis un simple clavier USB et fournit un retour vocal directement dans les haut-parleurs du CVP.
 > Le projet est actuellement développé et testé sur un **Yamaha CVP-909**.
+> David Roussel Melody Music Caen
 
 ---
 
