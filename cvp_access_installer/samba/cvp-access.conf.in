@@ -1,0 +1,10 @@
+[CVP_access]
+    comment = CVP Access project
+    path = @PROJECT_DIR@
+    browseable = yes
+    read only = no
+    guest ok = no
+    valid users = @CVP_USER@
+    force user = @CVP_USER@
+    create mask = 0664
+    directory mask = 0775
