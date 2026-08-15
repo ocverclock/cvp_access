@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.wav
+*.onnx
+*.onnx.json
+*.log
+.venv/
+piper-env/
+piper-voices/
+cvp_voice/
+.cache/
