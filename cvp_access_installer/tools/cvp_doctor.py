@@ -255,6 +255,7 @@ def main():
         "numbers": (voices / "numbers", "number_*.wav", 101),
         "words": (voices / "words", "*.wav", 2),
         "transport": (voices / "transport", "*.wav", 3),
+        "status": (voices / "status", "*.wav", 2),
     }
     total = 0
     total_expected = 0
