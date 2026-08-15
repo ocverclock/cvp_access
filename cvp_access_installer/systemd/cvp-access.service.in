@@ -1,6 +1,6 @@
 [Unit]
 Description=CVP Access - Yamaha CVP accessibility controller
-After=multi-user.target sound.target
+After=local-fs.target sound.target
 Wants=sound.target
 StartLimitIntervalSec=0
 
@@ -15,8 +15,8 @@ Environment=PYTHONUNBUFFERED=1
 Environment=CVP_VOICE_DIR=@VOICE_DIR@
 ExecStart=/usr/bin/python3 @PROJECT_DIR@/cvp_access.py
 Restart=always
-RestartSec=1
-TimeoutStopSec=3
+RestartSec=2
+TimeoutStopSec=5
 
 [Install]
 WantedBy=multi-user.target
