@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-INSTALLER_VERSION="0.2.0"
+INSTALLER_VERSION="0.2.1"
 REQUIRED_CODENAME="${CVP_REQUIRED_CODENAME:-trixie}"
 REQUIRED_ARCH="${CVP_REQUIRED_ARCH:-arm64}"
 MIN_FREE_KB="${CVP_MIN_FREE_KB:-2097152}"   # 2 GiB
@@ -15,11 +15,13 @@ die()  { printf '\n[CVP Access] ERROR: %s\n' "$*" >&2; exit 1; }
 
 INSTALLER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# Locate the repository root even though this installer lives in a subdirectory.
-if REPO_DIR="$(git -C "$INSTALLER_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
-    :
-elif [[ -f "$INSTALLER_DIR/../README.md" ]]; then
+# Locate the repository root without invoking Git as root.
+# A repository cloned by the normal user can trigger Git's safe.directory
+# protection when inspected by root.
+if [[ -d "$INSTALLER_DIR/../.git" || -f "$INSTALLER_DIR/../README.md" ]]; then
     REPO_DIR="$(cd "$INSTALLER_DIR/.." && pwd -P)"
+elif [[ -d "$INSTALLER_DIR/.git" ]]; then
+    REPO_DIR="$INSTALLER_DIR"
 else
     REPO_DIR="$INSTALLER_DIR"
 fi

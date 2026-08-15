@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-UPDATE_VERSION="0.2.0"
+UPDATE_VERSION="0.2.1"
 REQUIRED_CODENAME="${CVP_REQUIRED_CODENAME:-trixie}"
 REQUIRED_ARCH="${CVP_REQUIRED_ARCH:-arm64}"
 PIPER_VOICE="${CVP_PIPER_VOICE:-fr_FR-siwis-medium}"
@@ -27,10 +27,11 @@ fi
 
 INSTALLER_DIR="${CVP_INSTALLER_DIR:?Missing installer directory}"
 
-if REPO_DIR="$(git -C "$INSTALLER_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
-    :
-elif [[ -f "$INSTALLER_DIR/../README.md" ]]; then
+# Locate the repository without invoking Git as root.
+if [[ -d "$INSTALLER_DIR/../.git" || -f "$INSTALLER_DIR/../README.md" ]]; then
     REPO_DIR="$(cd "$INSTALLER_DIR/.." && pwd -P)"
+elif [[ -d "$INSTALLER_DIR/.git" ]]; then
+    REPO_DIR="$INSTALLER_DIR"
 else
     REPO_DIR="$INSTALLER_DIR"
 fi
@@ -60,17 +61,22 @@ log "CVP Access updater $UPDATE_VERSION"
 printf 'Repository : %s\n' "$REPO_DIR"
 printf 'Installer  : %s\n' "$INSTALLER_DIR"
 
+git_user() {
+    runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" git "$@"
+}
+
 # -----------------------------------------------------------------------------
 # Git first: future dependency/configuration changes become available this run.
+# Every Git operation runs as the repository owner to avoid safe.directory /
+# dubious ownership failures caused by sudo/root.
 # -----------------------------------------------------------------------------
-if git -C "$REPO_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    if [[ -n "$(git -C "$REPO_DIR" status --porcelain)" ]]; then
+if git_user -C "$REPO_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if [[ -n "$(git_user -C "$REPO_DIR" status --porcelain)" ]]; then
         warn "Local repository changes detected. GitHub pull skipped to avoid overwriting work."
-        git -C "$REPO_DIR" status --short
+        git_user -C "$REPO_DIR" status --short
     else
         log "Updating CVP Access from GitHub"
-        runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" \
-            git -C "$REPO_DIR" pull --ff-only
+        git_user -C "$REPO_DIR" pull --ff-only
     fi
 else
     warn "No Git repository detected. Source update skipped."
