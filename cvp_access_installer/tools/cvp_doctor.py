@@ -13,6 +13,7 @@ from pathlib import Path
 
 MIDI_NAME = "ProdipeMIDIlilo MIDI 1"
 AUDIO_NAME = "Clavinova"
+AUDIO_DEVICE = "plughw:CARD=Clavinova,DEV=0"
 TEMPO_GET = "F0 43 73 01 52 25 26 01 00 08 00 00 01 00 01 00 F7"
 TEMPO_PROP = [0x08, 0x00, 0x00, 0x01]
 HEADER = [0xF0, 0x43, 0x73, 0x01, 0x52, 0x25, 0x26]
@@ -31,15 +32,36 @@ def run(cmd, timeout=10):
         return 127, "", str(exc)
 
 
+def find_command(command):
+    path = shutil.which(command)
+    if path:
+        return path
+    for directory in ("/usr/local/sbin", "/usr/sbin", "/sbin", "/usr/local/bin", "/usr/bin", "/bin"):
+        candidate = Path(directory) / command
+        if candidate.exists() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return None
+
+
 def service_state(name):
     rc, out, _ = run(["systemctl", "is-active", name])
     return out.strip() if out.strip() else ("active" if rc == 0 else "inactive")
 
 
+def repo_default():
+    here = Path(__file__).resolve()
+    installer = here.parent.parent
+    rc, out, _ = run(["git", "-C", str(installer), "rev-parse", "--show-toplevel"])
+    if rc == 0 and out.strip():
+        return Path(out.strip())
+    parent = installer.parent
+    return parent if (parent / "README.md").exists() else installer
+
+
 def find_midi_port():
-    rc, out, _ = run(["amidi", "-l"])
+    rc, out, err = run(["amidi", "-l"])
     if rc != 0:
-        return None, out
+        return None, out + err
     for line in out.splitlines():
         if MIDI_NAME in line:
             match = re.search(r"(hw:\d+,\d+,\d+)", line)
@@ -73,13 +95,12 @@ def active_tempo_test(port):
         if rc != 0:
             return FAIL, f"GET Tempo send failed: {err.strip()}"
 
+        import select
         deadline = time.monotonic() + 2.0
         collected = ""
         while time.monotonic() < deadline:
             if receiver.poll() is not None:
                 break
-            # amidi output is character based; select is safer than readline.
-            import select
             ready, _, _ = select.select([receiver.stdout], [], [], 0.1)
             if ready:
                 ch = receiver.stdout.read(1)
@@ -107,6 +128,7 @@ def active_tempo_test(port):
             if len(data) == 2:
                 tempo = (data[0] << 7) | data[1]
                 return OK, f"CVP replied to GET Tempo: {tempo} BPM"
+
         return WARN, "no valid GET Tempo response detected"
     finally:
         if receiver.poll() is None:
@@ -117,27 +139,48 @@ def active_tempo_test(port):
                 receiver.kill()
 
 
+def active_audio_test(voices):
+    candidates = [
+        voices / "piste_01_on.wav",
+        voices / "transport" / "lecture.wav",
+    ]
+    source = next((p for p in candidates if p.is_file()), None)
+    if source is None:
+        return SKIP, "no generated test WAV available"
+
+    rc, _, err = run(["aplay", "-q", "-D", AUDIO_DEVICE, str(source)], timeout=10)
+    if rc == 0:
+        return OK, f"played {source.name} through {AUDIO_DEVICE}"
+    return FAIL, err.strip() or "aplay failed"
+
+
 def count_glob(path, pattern):
     return len(list(path.glob(pattern))) if path.exists() else 0
 
 
 def main():
     parser = argparse.ArgumentParser(description="CVP Access installation/hardware diagnostic")
-    parser.add_argument("--active-midi", action="store_true", help="send a GET Tempo SysEx when cvp-access.service is stopped")
+    parser.add_argument("--active-midi", action="store_true",
+                        help="send a GET Tempo SysEx when cvp-access.service is stopped")
+    parser.add_argument("--active-audio", action="store_true",
+                        help="play a short generated voice through Clavinova USB Audio")
     args = parser.parse_args()
 
     home = Path.home()
-    project = Path(os.environ.get("CVP_PROJECT_DIR", home / "CVP_access"))
+    project = Path(os.environ.get("CVP_PROJECT_DIR", repo_default()))
     runtime = Path(os.environ.get("CVP_RUNTIME_DIR", "/opt/cvp-access"))
     voices = Path(os.environ.get("CVP_VOICE_DIR", home / "cvp_voice"))
-    model = Path(os.environ.get("CVP_PIPER_MODEL", home / "piper-voices" / "fr_FR-siwis-medium.onnx"))
+    model = Path(os.environ.get(
+        "CVP_PIPER_MODEL",
+        home / "piper-voices" / "fr_FR-siwis-medium.onnx"
+    ))
+    piper_python = home / ".local/share/cvp-access/piper-env/bin/python"
 
     results = []
 
     def check(name, status, detail=""):
         results.append((name, status, detail))
 
-    # OS
     os_release = {}
     try:
         for line in Path("/etc/os-release").read_text().splitlines():
@@ -146,16 +189,18 @@ def main():
                 os_release[k] = v.strip().strip('"')
     except OSError:
         pass
+
     codename = os_release.get("VERSION_CODENAME", "unknown")
-    check("OS", OK if codename == "trixie" else WARN, os_release.get("PRETTY_NAME", codename))
+    check("OS", OK if codename == "trixie" else WARN,
+          os_release.get("PRETTY_NAME", codename))
 
     rc, arch, _ = run(["dpkg", "--print-architecture"])
     arch = arch.strip()
-    check("Architecture", OK if rc == 0 and arch == "arm64" else WARN, arch or "unknown")
+    check("Architecture", OK if rc == 0 and arch == "arm64" else WARN,
+          arch or "unknown")
 
-    # Software
     for command in ["python3", "amidi", "aplay", "git", "smbd", "avahi-daemon", "ssh"]:
-        path = shutil.which(command)
+        path = find_command(command)
         check(command, OK if path else FAIL, path or "not found")
 
     try:
@@ -164,7 +209,8 @@ def main():
     except Exception as exc:
         check("Python evdev", FAIL, str(exc))
 
-    # User groups
+    check("Piper venv", OK if piper_python.is_file() else FAIL, str(piper_python))
+
     username = pwd.getpwuid(os.getuid()).pw_name
     memberships = {g.gr_name for g in grp.getgrall() if username in g.gr_mem}
     try:
@@ -172,26 +218,31 @@ def main():
     except KeyError:
         pass
     missing_groups = [g for g in ("audio", "input") if g not in memberships]
-    check("audio/input groups", OK if not missing_groups else WARN, "missing: " + ", ".join(missing_groups) if missing_groups else "member of audio,input")
+    check("audio/input groups",
+          OK if not missing_groups else WARN,
+          "missing: " + ", ".join(missing_groups)
+          if missing_groups else "member of audio,input")
 
-    # Project/runtime
     check("Project directory", OK if project.exists() else WARN, str(project))
-    check("Runtime", OK if (runtime / "cvp_access.py").is_file() else FAIL, str(runtime / "cvp_access.py"))
+    check("Runtime", OK if (runtime / "cvp_access.py").is_file() else FAIL,
+          str(runtime / "cvp_access.py"))
 
-    # Keyboard
     keyboards = glob.glob("/dev/input/by-id/*-event-kbd")
-    check("USB keyboard", OK if keyboards else WARN, keyboards[0] if keyboards else "not detected")
+    check("USB keyboard", OK if keyboards else WARN,
+          keyboards[0] if keyboards else "not detected")
 
-    # MIDI / audio
-    midi_port, midi_listing = find_midi_port()
+    midi_port, _ = find_midi_port()
     check("Prodipe MIDI", OK if midi_port else WARN, midi_port or "not detected")
 
     rc, aplay_out, aplay_err = run(["aplay", "-l"])
     audio_found = rc == 0 and AUDIO_NAME.lower() in aplay_out.lower()
-    check("Clavinova USB Audio", OK if audio_found else WARN, "detected" if audio_found else (aplay_err.strip() or "not detected"))
+    check("Clavinova USB Audio",
+          OK if audio_found else WARN,
+          "detected" if audio_found else (aplay_err.strip() or "not detected"))
 
-    # Piper/voices
-    check("Piper model", OK if model.is_file() and Path(str(model) + ".json").is_file() else FAIL, str(model))
+    check("Piper model",
+          OK if model.is_file() and Path(str(model) + ".json").is_file() else FAIL,
+          str(model))
 
     expected = {
         "tracks": (voices, "piste_*.wav", 32),
@@ -214,21 +265,23 @@ def main():
         total_expected += wanted
         if got < wanted:
             incomplete.append(f"{label} {got}/{wanted}")
-    check("Voice bank", OK if not incomplete else WARN, f"{total}/{total_expected} core WAV" + ("; " + ", ".join(incomplete) if incomplete else ""))
+    check("Voice bank",
+          OK if not incomplete else WARN,
+          f"{total}/{total_expected} core WAV" +
+          ("; " + ", ".join(incomplete) if incomplete else ""))
 
-    # Services
-    for service in ["cvp-access.service", "smbd.service", "avahi-daemon.service", "ssh.service"]:
+    for service in ["cvp-access.service", "smbd.service",
+                    "avahi-daemon.service", "ssh.service"]:
         state = service_state(service)
-        expected_active = service != "cvp-access.service" or (runtime / "cvp_access.py").exists()
-        status = OK if state == "active" else (WARN if expected_active else SKIP)
+        status = OK if state == "active" else WARN
         check(service, status, state)
 
-    # Samba config
     rc, out, err = run(["testparm", "-s"], timeout=10)
     samba_ok = rc == 0 and "[CVP_access]" in out
-    check("Samba CVP_access", OK if samba_ok else WARN, "share defined" if samba_ok else (err.strip() or "share not found"))
+    check("Samba CVP_access",
+          OK if samba_ok else WARN,
+          "share defined" if samba_ok else (err.strip() or "share not found"))
 
-    # Optional active MIDI test
     if args.active_midi:
         if midi_port:
             status, detail = active_tempo_test(midi_port)
@@ -236,17 +289,26 @@ def main():
         else:
             check("Active SysEx GET Tempo", SKIP, "Prodipe MIDI not detected")
 
+    if args.active_audio:
+        if audio_found:
+            status, detail = active_audio_test(voices)
+            check("Active USB Audio", status, detail)
+        else:
+            check("Active USB Audio", SKIP, "Clavinova USB Audio not detected")
+
     print("\nCVP Access Doctor")
-    print("=" * 72)
+    print("=" * 78)
     for name, status, detail in results:
         print(f"{status:4s}  {name:24s}  {detail}")
 
     fails = sum(1 for _, status, _ in results if status == FAIL)
     warns = sum(1 for _, status, _ in results if status == WARN)
-    print("=" * 72)
+    print("=" * 78)
     print(f"Result: {fails} failure(s), {warns} warning(s)")
     if not args.active_midi:
-        print("Tip: stop cvp-access.service and run with --active-midi for a real GET Tempo test.")
+        print("MIDI test: stop cvp-access.service, then add --active-midi.")
+    if not args.active_audio:
+        print("Audio test: add --active-audio to play a short generated prompt.")
 
     return 1 if fails else 0
 
