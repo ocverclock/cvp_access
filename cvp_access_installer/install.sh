@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-INSTALLER_VERSION="0.2.1"
+INSTALLER_VERSION="0.3.1"
 REQUIRED_CODENAME="${CVP_REQUIRED_CODENAME:-trixie}"
 REQUIRED_ARCH="${CVP_REQUIRED_ARCH:-arm64}"
 MIN_FREE_KB="${CVP_MIN_FREE_KB:-2097152}"   # 2 GiB
@@ -47,6 +47,8 @@ PIPER_VOICE_DIR="$CVP_HOME/piper-voices"
 PIPER_MODEL="$PIPER_VOICE_DIR/${PIPER_VOICE}.onnx"
 SERVICE_FILE="/etc/systemd/system/cvp-access.service"
 SAMBA_FRAGMENT="/etc/samba/cvp-access.conf"
+CONFIG_DIR="/etc/cvp-access"
+CONFIG_FILE="$CONFIG_DIR/keyboard.toml"
 
 log "CVP Access installer $INSTALLER_VERSION"
 printf 'User        : %s\n' "$CVP_USER"
@@ -140,6 +142,48 @@ log "Installing runtime files"
 install -d -m 0755 "$RUNTIME_DIR"
 install -m 0755 "$SOURCE_MAIN" "$RUNTIME_DIR/cvp_access.py"
 
+# v1.5 configurable keyboard frontend.
+# The MIDI/SysEx engine remains the validated v1.4.1 implementation.
+if [[ "$(basename "$SOURCE_MAIN")" == "cvp_access_v1.5.py" ]]; then
+    [[ -f "$REPO_DIR/cvp_access_v1.4.1.py" ]] || die "v1.5 requires cvp_access_v1.4.1.py."
+    [[ -f "$REPO_DIR/cvp_keyboard.py" ]] || die "v1.5 requires cvp_keyboard.py."
+    [[ -f "$REPO_DIR/cvp_speech.py" ]] || die "v1.5 requires cvp_speech.py."
+    [[ -f "$REPO_DIR/cvp_piper_worker.py" ]] || die "v1.5 requires cvp_piper_worker.py."
+    [[ -f "$REPO_DIR/config/default.toml" ]] || die "v1.5 requires config/default.toml."
+
+    install -m 0644 "$REPO_DIR/cvp_access_v1.4.1.py" "$RUNTIME_DIR/cvp_access_v1.4.1.py"
+    install -m 0644 "$REPO_DIR/cvp_keyboard.py" "$RUNTIME_DIR/cvp_keyboard.py"
+    install -m 0644 "$REPO_DIR/cvp_speech.py" "$RUNTIME_DIR/cvp_speech.py"
+    install -m 0644 "$REPO_DIR/cvp_piper_worker.py" "$RUNTIME_DIR/cvp_piper_worker.py"
+    install -m 0644 "$REPO_DIR/config/default.toml" "$RUNTIME_DIR/default-keyboard.toml"
+    if [[ -f "$INSTALLER_DIR/tools/generate_configured_voices.py" ]]; then
+        install -m 0755 "$INSTALLER_DIR/tools/generate_configured_voices.py" "$RUNTIME_DIR/generate_configured_voices.py"
+    fi
+
+    log "Installing configurable keyboard profile"
+    install -d -o "$CVP_USER" -g "$CVP_USER" -m 0770 "$CONFIG_DIR"
+
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        install -o "$CVP_USER" -g "$CVP_USER" -m 0660 \
+            "$REPO_DIR/config/default.toml" "$CONFIG_FILE"
+        log "Created default keyboard configuration: $CONFIG_FILE"
+    else
+        log "Preserving customer keyboard configuration: $CONFIG_FILE"
+    fi
+fi
+
+# Read the Piper voice selected in keyboard.toml.
+# This keeps the speech model choice in the same self-documented client file.
+if [[ -f "$CONFIG_FILE" ]]; then
+    CONFIG_PIPER_VOICE="$(runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" \
+        python3 -c 'import re,sys,tomllib; d=tomllib.load(open(sys.argv[1],"rb")); v=d.get("speech",{}).get("voice",""); print(v if isinstance(v,str) and re.fullmatch(r"[A-Za-z0-9_.-]+",v) else "")' \
+        "$CONFIG_FILE" 2>/dev/null || true)"
+    if [[ -n "$CONFIG_PIPER_VOICE" ]]; then
+        PIPER_VOICE="$CONFIG_PIPER_VOICE"
+        PIPER_MODEL="$PIPER_VOICE_DIR/${PIPER_VOICE}.onnx"
+    fi
+fi
+
 # Transitional compatibility with releases that hard-coded /home/pi.
 # Only the runtime copy is changed; source files in Git are never rewritten.
 if grep -Fq '/home/pi/cvp_voice' "$RUNTIME_DIR/cvp_access.py"; then
@@ -178,16 +222,25 @@ fi
 # Voice bank
 # -----------------------------------------------------------------------------
 log "Generating missing voice prompts"
-for generator in \
-    "$INSTALLER_DIR/tools/generate_track_voices.py" \
-    "$INSTALLER_DIR/tools/generate_value_voices.py"; do
-    [[ -f "$generator" ]] || die "Missing voice generator: $generator"
+CONFIGURED_GENERATOR="$INSTALLER_DIR/tools/generate_configured_voices.py"
+if [[ -f "$CONFIG_FILE" && -f "$CONFIGURED_GENERATOR" && "$(basename "$SOURCE_MAIN")" == "cvp_access_v1.5.py" ]]; then
     runuser -u "$CVP_USER" -- env \
         HOME="$CVP_HOME" \
         CVP_VOICE_DIR="$VOICE_DIR" \
         CVP_PIPER_MODEL="$PIPER_MODEL" \
-        "$PIPER_DIR/bin/python" "$generator"
-done
+        "$PIPER_DIR/bin/python" "$CONFIGURED_GENERATOR" --config "$CONFIG_FILE"
+else
+    for generator in \
+        "$INSTALLER_DIR/tools/generate_track_voices.py" \
+        "$INSTALLER_DIR/tools/generate_value_voices.py"; do
+        [[ -f "$generator" ]] || die "Missing voice generator: $generator"
+        runuser -u "$CVP_USER" -- env \
+            HOME="$CVP_HOME" \
+            CVP_VOICE_DIR="$VOICE_DIR" \
+            CVP_PIPER_MODEL="$PIPER_MODEL" \
+            "$PIPER_DIR/bin/python" "$generator"
+    done
+fi
 
 # -----------------------------------------------------------------------------
 # systemd
@@ -213,6 +266,7 @@ SAMBA_TEMPLATE="$INSTALLER_DIR/samba/cvp-access.conf.in"
 sed \
     -e "s#@CVP_USER@#$CVP_USER#g" \
     -e "s#@PROJECT_DIR@#$REPO_DIR#g" \
+    -e "s#@CONFIG_DIR@#$CONFIG_DIR#g" \
     "$SAMBA_TEMPLATE" > "$SAMBA_FRAGMENT"
 chmod 0644 "$SAMBA_FRAGMENT"
 
@@ -269,6 +323,7 @@ if [[ -f "$DOCTOR" ]]; then
         CVP_RUNTIME_DIR="$RUNTIME_DIR" \
         CVP_VOICE_DIR="$VOICE_DIR" \
         CVP_PIPER_MODEL="$PIPER_MODEL" \
+        CVP_CONFIG_FILE="$CONFIG_FILE" \
         python3 "$DOCTOR" || true
 fi
 
@@ -279,6 +334,9 @@ HOST_NOW="$(hostnamectl --static 2>/dev/null || hostname)"
 log "Installation complete"
 printf 'SSH   : ssh %s@%s.local\n' "$CVP_USER" "$HOST_NOW"
 printf 'Samba : \\\\%s.local\\CVP_access\n' "$HOST_NOW"
+if [[ -f "$CONFIG_FILE" ]]; then
+    printf 'Config: \\\\%s.local\\CVP_config\\keyboard.toml\n' "$HOST_NOW"
+fi
 printf 'Status: systemctl status cvp-access\n'
 printf 'Doctor: python3 %s/tools/cvp_doctor.py\n' "$INSTALLER_DIR"
 
