@@ -6,56 +6,102 @@
 - Debian 13 / Trixie generation
 - Network configured in Raspberry Pi Imager if desired
 
+The installer deliberately refuses an untested major OS release instead of attempting a risky Debian major-version migration. Raspberry Pi recommends re-imaging for major Raspberry Pi OS upgrades.
+
 ## Install
 
-Clone the repository as the normal user, then run the installer with sudo:
+Clone the repository as the normal user:
 
 ```bash
 git clone https://github.com/ocverclock/cvp_access.git CVP_access
 cd CVP_access
-sudo ./install.sh
 ```
+
+Then launch the installer:
+
+```bash
+sudo bash cvp_access_installer/install.sh
+```
+
+`bash` is intentional: files uploaded through the GitHub web interface may not carry the executable bit.
 
 The installer:
 
-1. validates Trixie and ARM64;
-2. checks free disk space;
-3. runs `apt update` and `apt full-upgrade`;
-4. installs Python, ALSA/MIDI, Samba, SSH, Avahi and diagnostic packages;
-5. adds the normal user to `audio` and `input`;
-6. installs Piper in an isolated venv;
-7. downloads `fr_FR-siwis-medium`;
-8. generates the complete voice bank;
-9. installs a runtime copy under `/opt/cvp-access`;
-10. configures the `cvp-access.service` systemd service;
-11. shares the Git checkout through Samba as `CVP_access`;
-12. enables SSH, Avahi and Samba;
-13. runs CVP Doctor;
-14. offers one final reboot.
+1. finds the Git repository root even though the installer lives in `cvp_access_installer/`;
+2. validates Trixie and ARM64;
+3. checks free disk space;
+4. runs `apt update` and `apt full-upgrade`;
+5. installs all packages declared in `apt-packages.txt`;
+6. adds the normal user to `audio` and `input`;
+7. installs Piper in an isolated venv;
+8. downloads `fr_FR-siwis-medium`;
+9. generates the complete voice bank;
+10. copies the current CVP Access application to `/opt/cvp-access`;
+11. configures `cvp-access.service`;
+12. shares the full Git repository through Samba as `CVP_access`;
+13. enables SSH, Avahi and Samba;
+14. runs CVP Doctor;
+15. offers one final reboot.
 
-The installer is designed to be idempotent: running it again should repair/complete the installation without duplicating Samba configuration or regenerating existing WAV files.
+The installer is intended to be idempotent: it may be run again to repair or complete an installation.
+
+## Which CVP Access version is installed?
+
+The installer prefers:
+
+```text
+cvp_access.py
+```
+
+at the repository root.
+
+Until that canonical file exists, it automatically chooses the newest versioned file matching:
+
+```text
+cvp_access_v*.py
+```
+
+using version sorting.
 
 ## Samba
 
-On the first install, a Samba password is requested for the normal Linux user. The project is then reachable at approximately:
+On the first installation, a Samba password is requested for the normal Linux user.
+
+Typical access:
 
 ```text
 \\cvp-access.local\CVP_access
 ```
 
-If a custom hostname was already configured in Raspberry Pi Imager, that hostname is preserved.
+If a custom hostname was configured in Raspberry Pi Imager, it is preserved.
 
 ## Diagnostic
 
+Normal diagnostic:
+
 ```bash
-python3 tools/cvp_doctor.py
+python3 cvp_access_installer/tools/cvp_doctor.py
 ```
 
-For an actual Yamaha GET Tempo SysEx test, first stop the running service:
+Real Yamaha SysEx GET Tempo test:
 
 ```bash
 sudo systemctl stop cvp-access
-python3 tools/cvp_doctor.py --active-midi
+python3 cvp_access_installer/tools/cvp_doctor.py --active-midi
+sudo systemctl start cvp-access
+```
+
+Optional real USB Audio playback test:
+
+```bash
+python3 cvp_access_installer/tools/cvp_doctor.py --active-audio
+```
+
+Both:
+
+```bash
+sudo systemctl stop cvp-access
+python3 cvp_access_installer/tools/cvp_doctor.py --active-midi --active-audio
 sudo systemctl start cvp-access
 ```
 
@@ -63,17 +109,21 @@ sudo systemctl start cvp-access
 
 ```bash
 cd ~/CVP_access
-sudo ./update.sh
+sudo bash cvp_access_installer/update.sh
 ```
+
+The updater refuses to overwrite local Git modifications. If files have been edited through Samba, it reports the dirty working tree and skips `git pull`.
 
 ## Uninstall runtime
 
 ```bash
-sudo ./uninstall.sh
+sudo bash cvp_access_installer/uninstall.sh
 ```
 
-Generated Piper/voice data is preserved by default. To remove it too:
+Generated Piper/voice data is preserved by default.
+
+To remove it too:
 
 ```bash
-sudo ./uninstall.sh --purge
+sudo bash cvp_access_installer/uninstall.sh --purge
 ```

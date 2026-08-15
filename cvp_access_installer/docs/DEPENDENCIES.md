@@ -1,48 +1,55 @@
 # CVP Access dependencies
 
-Target platform: Raspberry Pi OS Lite 64-bit based on Debian 13 (Trixie).
+The authoritative APT package list is `cvp_access_installer/apt-packages.txt`.
 
-## Runtime and MIDI/audio
+## Core runtime
 
-- `python3` — runs CVP Access and diagnostic tools.
-- `python3-evdev` — reads the USB keyboard directly through Linux input events.
-- `alsa-utils` — provides `amidi` for RawMIDI/SysEx and `aplay` for spoken WAV playback; also useful for ALSA diagnostics.
-- `python3-rtmidi` — optional/future direct Python MIDI backend, useful if CVP Access later replaces `amidi` subprocesses.
-- `python3-mido` — optional/future MIDI message abstraction and protocol tooling.
-- `sox` — WAV inspection/conversion utility for voice-bank maintenance and debugging.
+- `python3`: CVP Access runtime.
+- `python3-evdev`: direct USB keyboard events.
+- `alsa-utils`: `amidi`, `aplay` and ALSA diagnostics.
 
-## Piper voice generation
+## MIDI development / future migration
 
-- `python3-venv` — isolates Piper from the system Python environment.
-- `python3-pip` — installs Piper inside that venv.
-- `piper-tts` — local neural TTS used to generate the French voice bank. Installed in the private venv, not system-wide.
+- `python3-rtmidi`: direct Python MIDI I/O option for future versions.
+- `python3-mido`: higher-level MIDI message handling.
 
-## Installation and maintenance
+The current application still uses ALSA `amidi` for the validated Yamaha SysEx path.
 
-- `git` — clone and update CVP Access from GitHub.
-- `curl`, `wget` — downloads and troubleshooting.
-- `ca-certificates` — HTTPS certificate trust.
-- `rsync` — safe file synchronization/backups.
-- `unzip` — archive extraction.
-- `jq` — JSON processing for maintenance/diagnostics.
+## Piper / voice generation
 
-## Network access
+- `python3-venv`: isolated Piper environment.
+- `python3-pip`: installs Piper into that venv.
+- `libgomp1`: OpenMP runtime commonly required by ONNX Runtime.
+- `sox`: useful WAV inspection/conversion utility.
 
-- `samba` — SMB server for editing/browsing the project from another computer.
-- `samba-common-bin` — Samba administration tools such as `smbpasswd` and `testparm`.
-- `smbclient` — Samba client/testing tools.
-- `avahi-daemon` — mDNS discovery (`hostname.local`).
-- `openssh-server` — remote maintenance over SSH.
+`piper-tts` itself is installed from `requirements-piper.txt` in the isolated venv.
+
+## Repository / installation
+
+- `git`: clone and update CVP Access.
+- `curl`, `wget`: downloads and diagnostics.
+- `ca-certificates`: HTTPS certificate verification.
+- `rsync`: robust file synchronization.
+- `unzip`: archive extraction.
+- `jq`: JSON processing for future tooling.
+
+## Network administration
+
+- `samba`: SMB server.
+- `samba-common-bin`: Samba administration tools.
+- `smbclient`: SMB diagnostics.
+- `avahi-daemon`: `.local` discovery.
+- `openssh-server`: remote maintenance.
 
 ## Diagnostics
 
-- `usbutils` — `lsusb` for the CVP, Prodipe and USB keyboard.
-- `lsof` — find processes holding files/devices open.
-- `psmisc` — `fuser`/`killall`, particularly useful for locked MIDI devices.
-- `nano` — emergency terminal editing.
-- `tree` — project/file layout inspection.
-- `htop` — CPU/RAM process diagnosis.
+- `usbutils`: `lsusb`.
+- `lsof`: open-file/device diagnostics.
+- `psmisc`: `fuser`, `killall`.
+- `nano`, `tree`, `htop`: local maintenance.
 
 ## Deliberately not installed
 
-CVP Access does not need a desktop environment, PulseAudio, PipeWire, JACK, Docker, Node.js, CMake or a compiler toolchain for the current design. ALSA is used directly.
+CVP Access does not require a desktop environment, PulseAudio, PipeWire, a JACK server, Docker or a compiler toolchain.
+
+Note: Debian's `python3-rtmidi` package may pull a JACK client library dependency. This is only a runtime library and does not install or run a JACK audio server.
