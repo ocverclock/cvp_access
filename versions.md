@@ -29,18 +29,42 @@ V1.2.1
 * correction du fichier de verrouillage déplacé vers `~/.cache`
 
 v1.4.1
-Ajout du contrôle du lecteur Song et de l’annonce de position sur Yamaha CVP-905.
+Ajout du contrôle du lecteur Song et de l’annonce de position.
 * `Espace` → Play / Pause
 * `Entrée` → Stop
 * `P` → annonce de la position actuelle
 * lecture de la mesure et du temps directement depuis le CVP
 * validation des commandes Song par `GET → SET → GET`
 * nouvelle synthèse vocale modulaire :
-
   * `mesure.wav`
   * nombres de `0 à 100`
   * `temps.wav`
 * évite de générer toutes les combinaisons mesure/temps
 * correction du décodage Yamaha des valeurs multi-octets en 7 bits
-* identification du clavier de développement corrigée en Yamaha CVP-905
 
+v1.5 - clavier configurable (à valider sur matériel)
+* ajout d’un fichier TOML de configuration clavier
+* catalogue fermé d’actions : aucune exécution Python depuis le TOML
+* suppression du principe « une fonction = une touche codée en dur »
+* noms de touches orientés clavier AZERTY
+* combinaisons `SHIFT`, `CTRL`, `ALT`, `ALTGR`, `META`
+* `Caps Lock` devient une deuxième couche complète de commandes
+* support de tout le clavier principal, F1–F12, navigation et pavé numérique
+* pressions longues / doubles volontairement laissées de côté
+* erreur de configuration isolée : les autres touches continuent de fonctionner
+* fallback intégré reproduisant exactement la configuration v1.4.1
+* configuration client conservée lors des mises à jour
+* validation de la configuration par CVP Doctor
+
+
+v1.5 RC2 - configuration et voix pilotées par TOML
+* `keyboard.toml` devient le mode d'emploi intégré
+* section `[speech]` active : pregenerated / hybrid / runtime
+* `generation = configured` génère uniquement les WAV utilisés par le profil client
+* déduplication des actions avant génération
+* Piper runtime chargé une seule fois par worker persistant
+* cache des phrases générées à la demande
+* choix `voice` et `length_scale` pris en compte
+* régénération automatique des WAV nécessaires si le profil Piper change
+* catalogue maître ConPianist dans `docs/FUNCTION_CATALOG.md`
+* CVP Doctor adapté aux banques vocales partielles/configurées
