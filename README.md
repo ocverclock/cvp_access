@@ -1,210 +1,234 @@
 # CVP Access
 
-**Accessibility controller for Yamaha CVP digital pianos using Raspberry Pi, MIDI SysEx and spoken feedback.**
+**Interface d’accessibilité pour pianos Yamaha Clavinova CVP, basée sur Raspberry Pi, MIDI SysEx et retour vocal.**
 
-> 🇫🇷 **Présentation française**
-> CVP Access est un projet d’interface d’accessibilité destiné principalement aux musiciens non-voyants ou malvoyants utilisant un Yamaha Clavinova CVP.
-> Le Raspberry Pi permet de contrôler certaines fonctions du piano depuis un simple clavier USB et fournit un retour vocal directement dans les haut-parleurs du CVP.
-> Le projet est actuellement développé et testé sur un **Yamaha CVP-909**.
-> David Roussel Melody Music Caen
+CVP Access permet à un musicien non-voyant ou malvoyant d’accéder à des fonctions du Yamaha CVP depuis un simple clavier USB, sans dépendre de l’écran tactile.
 
----
+Le Raspberry Pi communique avec le piano par MIDI DIN pour le contrôle et utilise l’USB Audio du CVP pour diffuser les annonces vocales directement dans les haut-parleurs du piano.
 
-## Project goal
-
-Modern Yamaha CVP instruments provide many functions through a touchscreen.
-
-For visually impaired musicians, some of these functions can be difficult or impossible to access efficiently.
-
-CVP Access provides a simple tactile interface using:
-
-* a Raspberry Pi;
-* a standard USB computer keyboard;
-* MIDI SysEx commands;
-* MIDI DIN communication;
-* Yamaha CVP USB Audio;
-* offline neural text-to-speech using Piper.
-
-The goal is not to replace the Yamaha interface, but to make the most useful functions accessible without relying on the touchscreen.
+> Projet non officiel. CVP Access n’est ni affilié à Yamaha Corporation, ni approuvé par Yamaha.
 
 ---
 
-# Current status
+## État du projet
 
-The project is currently a **working prototype tested on a Yamaha CVP-909**.
+Le projet est fonctionnel et toujours en développement.
 
-Validated functions:
+### Version application actuellement publiée
 
-* MIDI Song channels 1–16 mute/unmute;
-* reading the real mute state of all 16 Song channels;
-* automatic channel-state synchronization at application startup;
-* reading the current Song tempo;
-* reading the current transpose value;
-* spoken feedback through the CVP's own speakers;
-* independent spoken-feedback volume;
-* USB keyboard control;
-* offline speech generation;
-* automatic MIDI interface detection by device name.
+```text
+cvp_access_v1.4.1.py
+```
 
-Current hardware tested:
+### Version installateur
 
-* Yamaha CVP-909;
-* Raspberry Pi;
-* Prodipe MIDI USB interface;
-* Apple Extended USB Keyboard;
-* Yamaha CVP USB Audio connection.
+```text
+0.2.1
+```
 
-Other Yamaha models are **not yet confirmed compatible**.
+L’installateur choisit automatiquement :
+
+1. `cvp_access.py` s’il existe à la racine du dépôt ;
+2. sinon le fichier `cvp_access_v*.py` ayant le numéro de version le plus élevé.
+
+Cela permet de conserver l’historique des versions tout en installant automatiquement la plus récente.
 
 ---
 
-# Architecture
+# Fonctions actuellement disponibles
 
-```text
-                 USB keyboard
-                      │
-                      ▼
-                Raspberry Pi
-                 /          \
-                /            \
-        MIDI SysEx           USB Audio
-             │                   │
-             ▼                   │
-     USB MIDI interface          │
-       Prodipe MIDI              │
-             │                   │
-          MIDI DIN               │
-             │                   │
-             ▼                   ▼
-        Yamaha CVP-909 ─────► CVP speakers
-```
+## Song MIDI
 
-The Raspberry Pi therefore uses two independent communication paths.
+- mute/unmute des 16 pistes Song ;
+- lecture de l’état réel de chaque piste avant modification ;
+- vérification de l’état après modification ;
+- synchronisation des 16 pistes au démarrage ;
+- lecture du tempo courant ;
+- lecture du transpose courant ;
+- Play / Pause ;
+- Stop ;
+- lecture de la position du Song ;
+- annonce vocale de la mesure et du temps.
 
-### MIDI control
+## Style / accompagnement
 
-```text
-Raspberry Pi
-    ↓
-Prodipe USB MIDI
-    ↓
-CVP MIDI IN / OUT
-```
+- volume global Style de 0 à 127 ;
+- lecture du volume réel avant modification ;
+- vérification après modification ;
+- mute/unmute individuel des 8 parties Style :
+  - Rhythm 1 ;
+  - Rhythm 2 ;
+  - Bass ;
+  - Chord 1 ;
+  - Chord 2 ;
+  - Pad ;
+  - Phrase 1 ;
+  - Phrase 2 ;
+- détection d’un changement de Style par observation des Program Change ;
+- remise à ON du cache des 8 parties lors d’un changement de Style.
 
-### Spoken feedback
+## Parties clavier
 
-```text
-Raspberry Pi
-    ↓
-USB Audio
-    ↓
-CVP-909
-    ↓
-CVP speakers
-```
+- Layer / Dual ON/OFF ;
+- Left ON/OFF.
+
+## Accessibilité
+
+- contrôle complet depuis un clavier USB AZERTY ;
+- retour vocal en français ;
+- volume de la voix indépendant ;
+- annonces vocales pré-générées pour une réponse rapide ;
+- protection contre plusieurs instances simultanées ;
+- fermeture propre du processus MIDI `amidi` ;
+- redémarrage automatique possible via `systemd`.
 
 ---
 
-# Important USB MIDI note
-
-During development, the CVP-909 USB MIDI ports were detected correctly by Linux.
-
-Example:
+# Architecture matérielle
 
 ```text
-Clavinova MIDI 1
-Clavinova MIDI 2
+                    Clavier USB
+                        │
+                        ▼
+                  Raspberry Pi
+                  /            \
+                 /              \
+            MIDI SysEx        USB Audio
+                │                │
+                ▼                │
+       Interface USB MIDI        │
+          Prodipe MIDI           │
+                │                │
+             MIDI DIN            │
+                │                │
+                ▼                ▼
+             Yamaha Clavinova CVP
+                       │
+                       ▼
+                 Haut-parleurs CVP
 ```
 
-However, the Yamaha SysEx control commands used by this project did **not** operate correctly through the CVP USB MIDI connection in our tests.
+## Pourquoi deux connexions ?
 
-The same commands work through an external USB MIDI interface connected to the physical MIDI DIN ports.
-
-Current working configuration:
+### Commandes
 
 ```text
 Raspberry Pi
     ↓ USB
-Prodipe MIDI interface
-    ↓ MIDI DIN
-CVP-909
+Interface Prodipe USB MIDI
+    ↓ MIDI DIN IN/OUT
+Yamaha CVP
 ```
 
-The CVP USB connection is still used successfully for audio playback.
+Les commandes SysEx Yamaha utilisées par CVP Access ont été validées via une interface MIDI DIN externe.
+
+Lors des essais, la liaison USB MIDI directe du CVP était visible sous Linux, mais les commandes SysEx utilisées par le projet ne fonctionnaient pas correctement par cette voie.
+
+### Retour vocal
+
+```text
+Raspberry Pi
+    ↓ USB Audio
+Yamaha CVP
+    ↓
+Haut-parleurs du piano
+```
+
+L’USB Audio du CVP permet donc d’utiliser directement le système audio du piano pour les annonces.
 
 ---
 
-# Keyboard mapping
+# Commandes clavier
 
-The keyboard layout is currently designed for an **AZERTY keyboard**.
+Le clavier est actuellement prévu pour une disposition **AZERTY**.
 
-The two rows follow the Yamaha Song-channel logic:
+## Pistes Song 1 à 16
 
 ```text
 A Z E R T Y U I
 1 2 3 4 5 6 7 8
-```
 
-```text
 Q S D F G H J K
 9 10 11 12 13 14 15 16
 ```
 
-Therefore:
-
-| Key | Song channel |
-| --- | -----------: |
-| A   |            1 |
-| Z   |            2 |
-| E   |            3 |
-| R   |            4 |
-| T   |            5 |
-| Y   |            6 |
-| U   |            7 |
-| I   |            8 |
-| Q   |            9 |
-| S   |           10 |
-| D   |           11 |
-| F   |           12 |
-| G   |           13 |
-| H   |           14 |
-| J   |           15 |
-| K   |           16 |
-
-Each key toggles the corresponding Song channel:
+Chaque touche bascule la piste correspondante :
 
 ```text
-active → muted
-muted  → active
+ON → OFF
+OFF → ON
+```
+
+L’état réel du CVP est relu avant le changement.
+
+## Parties Style
+
+```text
+&   Rhythm 1
+é   Rhythm 2
+"   Bass
+'   Chord 1
+(   Chord 2
+-   Pad
+è   Phrase 1
+_   Phrase 2
+```
+
+## Parties clavier
+
+```text
+ç   Layer / Dual
+à   Left
+```
+
+## Informations et transport
+
+```text
+F1          annoncer le tempo
+F2          annoncer le transpose
+
+Espace      Play / Pause Song
+Entrée      Stop Song
+P           annoncer mesure / temps
+
+↑           volume de la voix +
+↓           volume de la voix -
+
+Page Up     volume Style +5
+Page Down   volume Style -5
+
+ESC         quitter l’application
+            → systemd la redémarre automatiquement
 ```
 
 ---
 
-# Additional controls
+# Retour vocal
 
-Current controls:
+CVP Access utilise **Piper**, un moteur de synthèse vocale local.
+
+Version Piper actuellement figée :
 
 ```text
-F1          Read and announce current tempo
-
-F2          Read and announce current transpose
-
-Arrow Up    Increase spoken-feedback volume
-
-Arrow Down  Decrease spoken-feedback volume
-
-ESC         Request application restart
+piper-tts 1.6.0
 ```
 
-Automatic restart with `ESC` requires the application to be installed as a `systemd` service.
+Voix utilisée :
 
----
+```text
+fr_FR-siwis-medium
+```
 
-# Spoken feedback
+Le modèle vocal n’est pas stocké dans ce dépôt.
 
-The Raspberry Pi sends spoken feedback directly to the CVP through USB Audio.
+L’installateur :
 
-Examples:
+1. crée un environnement Python isolé ;
+2. installe Piper ;
+3. télécharge automatiquement `fr_FR-siwis-medium` ;
+4. génère automatiquement toute la banque de fichiers WAV.
+
+Exemples d’annonces :
 
 ```text
 Piste 1 coupée.
@@ -212,677 +236,506 @@ Piste 1 activée.
 
 Tempo 100.
 
-Transpose zéro.
 Transpose plus 7.
 
-Volume de la voix 70 pour cent.
+Accompagnement 85.
+
+Rythme 1 désactivé.
+
+Lecture.
+Pause.
+Arrêt.
+
+Mesure 24, temps 3.
 ```
 
-The current project uses **French spoken feedback**, but other languages can easily be added by generating another voice bank.
+Piper n’est pas chargé pendant l’utilisation normale du piano : les annonces sont pré-générées pour réduire fortement la latence.
 
 ---
 
-# Text-to-speech
+# Installation automatique
 
-Early tests used `espeak-ng`.
+## Système recommandé
 
-It was very lightweight and responsive, but the voice quality was too robotic for regular use.
-
-The project now uses **Piper**, an offline neural text-to-speech engine.
-
-Current voice tested:
+Utiliser une image fraîche :
 
 ```text
-fr_FR-siwis-medium
+Raspberry Pi OS Lite 64-bit
+Debian 13 / Trixie
 ```
 
-Piper is used only to **generate audio files in advance**.
+L’installateur vérifie automatiquement :
 
-It is not used for real-time synthesis during normal operation.
+- version de l’OS ;
+- architecture ARM64 ;
+- espace disque disponible.
 
----
+Il refuse volontairement une autre version majeure de Debian au lieu d’effectuer une migration système risquée.
 
-# Why pre-generated WAV files?
+## Installation
 
-Generating speech in real time on the Raspberry Pi introduced noticeable latency.
-
-The original chain was:
-
-```text
-keyboard press
-    ↓
-load Piper
-    ↓
-generate speech
-    ↓
-create WAV
-    ↓
-play WAV
-```
-
-This was too slow.
-
-The current design uses:
-
-```text
-keyboard press
-    ↓
-send MIDI immediately
-    ↓
-play pre-generated WAV
-```
-
-This provides much faster feedback while retaining the higher-quality Piper voice.
-
----
-
-# Voice files
-
-Song-channel announcements are generated in advance.
-
-Example:
-
-```text
-cvp_voice/
-├── piste_01_off.wav
-├── piste_01_on.wav
-├── piste_02_off.wav
-├── piste_02_on.wav
-├── ...
-├── piste_16_off.wav
-└── piste_16_on.wav
-```
-
-Examples:
-
-```text
-piste_01_off.wav
-→ "Piste 1 coupée."
-
-piste_01_on.wav
-→ "Piste 1 activée."
-```
-
----
-
-# Tempo voice bank
-
-The supported tempo range discovered in the Yamaha protocol is:
-
-```text
-5 – 280 BPM
-```
-
-A complete set of audio announcements can therefore be generated:
-
-```text
-tempo/
-├── tempo_005.wav
-├── tempo_006.wav
-├── ...
-├── tempo_083.wav
-├── tempo_100.wav
-├── tempo_120.wav
-├── ...
-└── tempo_280.wav
-```
-
-Example:
-
-```text
-tempo_083.wav
-→ "Tempo 83."
-```
-
----
-
-# Transpose voice bank
-
-The supported transpose range is:
-
-```text
--12 to +12 semitones
-```
-
-Files are generated as:
-
-```text
-transpose/
-├── transpose_m12.wav
-├── ...
-├── transpose_m01.wav
-├── transpose_000.wav
-├── transpose_p01.wav
-├── ...
-└── transpose_p12.wav
-```
-
-Examples:
-
-```text
-transpose_m03.wav
-→ "Transpose moins 3."
-
-transpose_000.wav
-→ "Transpose zéro."
-
-transpose_p07.wav
-→ "Transpose plus 7."
-```
-
----
-
-# Reading real CVP state
-
-One important design choice is that CVP Access does not need to assume the state of the piano.
-
-The Yamaha protocol allows the Raspberry Pi to query the CVP.
-
-At application startup, CVP Access asks for the state of all 16 Song channels.
-
-Example result:
-
-```text
-Active channels:
-1, 5, 6, 9, 11, 14, 15, 16
-
-Muted channels:
-2, 3, 4, 7, 8, 10, 12, 13
-```
-
-The Raspberry therefore starts synchronized with the actual piano state.
-
----
-
-# Reading tempo
-
-Tempo can also be requested from the CVP.
-
-Example Yamaha response:
-
-```text
-00 64
-```
-
-Hexadecimal:
-
-```text
-0x0064 = 100
-```
-
-Result:
-
-```text
-Tempo: 100 BPM
-```
-
-Tests have also successfully returned changed values such as:
-
-```text
-Tempo: 83
-```
-
----
-
-# Reading transpose
-
-Transpose can also be read directly from the CVP.
-
-The value is centered around:
-
-```text
-0x40 = transpose 0
-```
-
-Examples:
-
-```text
-0x34 = -12
-0x3F = -1
-0x40 = 0
-0x41 = +1
-0x47 = +7
-0x4C = +12
-```
-
-Validated examples:
-
-```text
-Transpose: 0
-Transpose: +7
-```
-
----
-
-# Yamaha SysEx protocol
-
-The protocol used by CVP Access was identified with major help from the open-source **ConPianist** project.
-
-General Yamaha message prefix:
-
-```text
-F0 43 73 01 52 25 26
-```
-
-The CVP-909 has been experimentally confirmed to respond to several of these commands.
-
----
-
-## Song channel Active property
-
-Property:
-
-```text
-0C 00 01 01
-```
-
-Song channel indexes:
-
-```text
-Channel 1  = 0x10
-Channel 2  = 0x11
-...
-Channel 16 = 0x1F
-```
-
-Values:
-
-```text
-00 = inactive / muted
-01 = active
-```
-
----
-
-## Example: mute Song channel 1
-
-```text
-F0 43 73 01 52 25 26
-01 01
-0C 00 01 01
-10
-01 00
-00 01
-00
-F7
-```
-
----
-
-## Example: activate Song channel 1
-
-```text
-F0 43 73 01 52 25 26
-01 01
-0C 00 01 01
-10
-01 00
-00 01
-01
-F7
-```
-
----
-
-## GET Song channel state
-
-Example request for channel 1:
-
-```text
-F0 43 73 01 52 25 26
-01 00
-0C 00 01 01
-10
-01 00
-F7
-```
-
-The CVP returns the real channel state.
-
----
-
-# Tempo property
-
-Property:
-
-```text
-08 00 00 01
-```
-
-Validated range:
-
-```text
-5 – 280 BPM
-```
-
----
-
-# Transpose property
-
-Property:
-
-```text
-0A 00 00 01
-```
-
-Validated range:
-
-```text
--12 – +12 semitones
-```
-
----
-
-# MIDI reception
-
-One implementation issue discovered during development involved `amidi -d`.
-
-`amidi` displays incoming SysEx bytes immediately, but the output does not necessarily behave as newline-terminated messages.
-
-A normal Python loop such as:
-
-```python
-for line in process.stdout:
-```
-
-therefore failed to receive completed messages correctly.
-
-CVP Access instead parses the MIDI dump stream and considers:
-
-```text
-F0 = beginning of SysEx message
-F7 = end of SysEx message
-```
-
-This allowed reliable GET responses for:
-
-* Song-channel state;
-* tempo;
-* transpose.
-
----
-
-# Linux / Raspberry Pi requirements
-
-Typical packages:
+Depuis une Raspberry Pi OS Lite fraîche :
 
 ```bash
-sudo apt update
+git clone https://github.com/ocverclock/cvp_access.git CVP_access
+cd CVP_access
 
-sudo apt install -y \
-    python3 \
-    python3-venv \
-    python3-evdev \
-    alsa-utils
+sudo bash cvp_access_installer/install.sh
 ```
 
-Python keyboard access uses:
+L’utilisation de `bash` est volontaire : les fichiers ajoutés via l’interface web GitHub peuvent ne pas avoir le bit exécutable.
+
+---
+
+# Ce que l’installateur configure
+
+`install.sh` réalise automatiquement :
 
 ```text
+contrôle Raspberry Pi OS / ARM64
+        ↓
+contrôle espace disque
+        ↓
+apt update
+        ↓
+apt full-upgrade
+        ↓
+installation dépendances
+        ↓
+permissions audio + input
+        ↓
+installation Piper dans un venv
+        ↓
+téléchargement fr_FR-siwis-medium
+        ↓
+génération de la banque vocale
+        ↓
+installation CVP Access dans /opt/cvp-access
+        ↓
+configuration systemd
+        ↓
+configuration Samba
+        ↓
+activation SSH
+        ↓
+activation Avahi / .local
+        ↓
+CVP Doctor
+        ↓
+proposition de redémarrage
+```
+
+Les principales dépendances installées comprennent :
+
+- Python 3 ;
+- `evdev` ;
+- ALSA / `amidi` / `aplay` ;
+- Mido ;
+- RtMidi ;
+- Piper ;
+- Samba ;
+- SSH ;
+- Avahi ;
+- outils USB et diagnostic.
+
+La liste APT autoritative se trouve dans :
+
+```text
+cvp_access_installer/apt-packages.txt
+```
+
+---
+
+# Installation runtime
+
+Le programme exécuté n’est pas lancé directement depuis le dépôt Git.
+
+L’installateur copie la version courante dans :
+
+```text
+/opt/cvp-access/cvp_access.py
+```
+
+Le dépôt reste donc modifiable par Samba sans casser immédiatement le programme actuellement exécuté.
+
+Le service `systemd` utilise la copie située dans `/opt/cvp-access`.
+
+---
+
+# Démarrage automatique
+
+Le service :
+
+```text
+cvp-access.service
+```
+
+est activé au démarrage.
+
+Comportement attendu :
+
+```text
+Raspberry Pi démarre
+        ↓
+CVP Access démarre
+        ↓
+interface MIDI recherchée
+        ↓
+états CVP synchronisés
+        ↓
+clavier USB actif
+```
+
+En cas d’arrêt du programme :
+
+```text
+systemd
+   ↓
+redémarrage automatique
+```
+
+Ainsi, la touche `ESC` permet également de provoquer un redémarrage propre de CVP Access.
+
+---
+
+# Samba
+
+L’installateur installe et configure Samba.
+
+Le **dépôt Git complet** est partagé sur le réseau sous le nom :
+
+```text
+CVP_access
+```
+
+Exemple depuis Windows :
+
+```text
+\\cvp-access.local\CVP_access
+```
+
+Exemple depuis Linux :
+
+```text
+smb://cvp-access.local/CVP_access
+```
+
+Lors de l’installation, un mot de passe Samba est demandé pour l’utilisateur Linux.
+
+Si un autre hostname a été configuré avec Raspberry Pi Imager, il est conservé.
+
+---
+
+# SSH et découverte réseau
+
+L’installateur active :
+
+```text
+openssh-server
+avahi-daemon
+```
+
+Sur une installation utilisant le hostname par défaut, celui-ci devient :
+
+```text
+cvp-access
+```
+
+Connexion typique :
+
+```bash
+ssh utilisateur@cvp-access.local
+```
+
+---
+
+# CVP Doctor
+
+Le projet fournit un outil de diagnostic :
+
+```bash
+python3 cvp_access_installer/tools/cvp_doctor.py
+```
+
+Il contrôle notamment :
+
+```text
+Raspberry Pi OS
+architecture ARM64
+Python
 evdev
+Piper
+banque vocale
+clavier USB
+Prodipe MIDI
+Clavinova USB Audio
+runtime CVP Access
+service systemd
+Samba
+Avahi
+SSH
 ```
 
-MIDI communication currently uses:
+## Test MIDI réel
 
-```text
-amidi
+Pour effectuer un vrai `GET Tempo` sur le Yamaha :
+
+```bash
+sudo systemctl stop cvp-access
+
+python3 cvp_access_installer/tools/cvp_doctor.py --active-midi
+
+sudo systemctl start cvp-access
 ```
 
-Audio playback currently uses:
+## Test audio réel
 
-```text
-aplay
+```bash
+python3 cvp_access_installer/tools/cvp_doctor.py --active-audio
+```
+
+## Test MIDI + audio
+
+```bash
+sudo systemctl stop cvp-access
+
+python3 cvp_access_installer/tools/cvp_doctor.py \
+    --active-midi \
+    --active-audio
+
+sudo systemctl start cvp-access
 ```
 
 ---
 
-# Piper installation
-
-Create a Python environment:
+# Mise à jour
 
 ```bash
-python3 -m venv ~/piper-env
-source ~/piper-env/bin/activate
+cd ~/CVP_access
+
+sudo bash cvp_access_installer/update.sh
 ```
 
-Install Piper:
+La mise à jour :
 
-```bash
-pip install piper-tts
-```
+- récupère les changements GitHub ;
+- met Raspberry Pi OS à jour ;
+- installe les éventuelles nouvelles dépendances ;
+- met Piper à jour selon la version définie par le projet ;
+- régénère uniquement les annonces vocales manquantes ;
+- actualise le runtime ;
+- actualise `systemd` ;
+- actualise Samba ;
+- redémarre CVP Access ;
+- lance CVP Doctor.
 
-Create a voice directory:
-
-```bash
-mkdir -p ~/piper-voices
-cd ~/piper-voices
-```
-
-Download a compatible French model, for example:
-
-```text
-fr_FR-siwis-medium
-```
-
-Voice-model licensing must be checked before redistributing any Piper voice model.
-
-CVP Access should therefore distribute **voice-generation scripts**, not the voice model itself.
+Pour protéger le travail local, `update.sh` **n’écrase pas un dépôt Git contenant des modifications non validées**.
 
 ---
 
-# Repository layout
+# Désinstallation
 
-Planned repository structure:
+Retirer CVP Access tout en conservant Piper et la banque vocale :
+
+```bash
+sudo bash cvp_access_installer/uninstall.sh
+```
+
+Suppression complète du runtime, de Piper et des voix générées :
+
+```bash
+sudo bash cvp_access_installer/uninstall.sh --purge
+```
+
+Les paquets système, SSH, Samba et Avahi ne sont volontairement pas supprimés automatiquement.
+
+---
+
+# Yamaha SysEx
+
+Le protocole utilisé par CVP Access est issu d’un travail de reverse engineering et de tests pratiques.
+
+Le projet **ConPianist** de `hugbug` a constitué une source majeure pour comprendre plusieurs propriétés Yamaha.
+
+Préfixe général rencontré :
 
 ```text
-cvp-access/
+F0 43 73 01 52 25 26
+```
+
+Actions principales :
+
+```text
+GET       01 00
+SET       01 01
+INFO      00 00
+RESPONSE  00 01
+EVENTS    02 00
+```
+
+Exemple de propriétés déjà exploitées :
+
+```text
+Active piste     0C 00 01 01
+Volume           0C 00 00 01
+Tempo            08 00 00 01
+Transpose        0A 00 00 01
+Song Play        04 00 05 01
+Song Position    04 00 0A 01
+```
+
+La documentation détaillée et les commandes encore expérimentales sont conservées dans :
+
+```text
+docs/yamaha-sysex-library.md
+docs/PROTOCOL_NOTES.md
+docs/cvp_probe_readonly.py
+```
+
+Une commande trouvée dans une documentation ou dans ConPianist n’est pas considérée comme compatible CVP tant qu’elle n’a pas été testée sur le matériel réel.
+
+---
+
+# Structure actuelle du dépôt
+
+```text
+cvp_access/
 ├── README.md
 ├── LICENSE
-├── requirements.txt
-├── cvp_access.py
+├── .gitignore
 │
-├── tools/
-│   ├── generate_track_voices.py
-│   └── generate_value_voices.py
+├── cvp_access_v1.4.1.py
+├── versions.md
+├── listes_commande.md
 │
-├── systemd/
-│   └── cvp-access.service
+├── cvp_access_installer/
+│   ├── install.sh
+│   ├── update.sh
+│   ├── uninstall.sh
+│   ├── apt-packages.txt
+│   ├── requirements-piper.txt
+│   │
+│   ├── tools/
+│   │   ├── cvp_doctor.py
+│   │   ├── generate_track_voices.py
+│   │   └── generate_value_voices.py
+│   │
+│   ├── systemd/
+│   │   └── cvp-access.service.in
+│   │
+│   ├── samba/
+│   │   └── cvp-access.conf.in
+│   │
+│   └── docs/
+│       ├── INSTALLATION.md
+│       └── DEPENDENCIES.md
 │
-├── docs/
-│   └── yamaha-protocol.md
-│
-└── .gitignore
+└── docs/
+    ├── yamaha-sysex-library.md
+    ├── PROTOCOL_NOTES.md
+    └── cvp_probe_readonly.py
 ```
 
-Generated files should not be committed:
+Les anciennes versions du programme sont actuellement conservées dans le dépôt pour documenter l’évolution du projet.
+
+---
+
+# Matériel actuellement utilisé pendant le développement
+
+- Raspberry Pi sous Raspberry Pi OS Lite 64-bit ;
+- clavier USB AZERTY ;
+- interface Prodipe USB MIDI ;
+- Yamaha Clavinova CVP ;
+- liaison MIDI DIN bidirectionnelle ;
+- liaison USB Audio CVP.
+
+La compatibilité avec d’autres interfaces USB MIDI ou d’autres modèles Yamaha doit être confirmée expérimentalement.
+
+---
+
+# Principes du projet
+
+CVP Access privilégie :
+
+- l’accessibilité sans écran ;
+- une réponse immédiate ;
+- un comportement prévisible ;
+- la lecture de l’état réel du piano lorsqu’elle est possible ;
+- la vérification après modification ;
+- le fonctionnement entièrement local ;
+- l’absence de dépendance au cloud ;
+- une installation reproductible depuis une Raspberry Pi OS Lite fraîche.
+
+---
+
+# Contribution et reverse engineering
+
+Les tests de nouvelles commandes sont les bienvenus.
+
+Pour chaque commande, il est utile de préciser :
 
 ```text
-*.wav
-*.onnx
-piper-env/
-cvp_voice/
-__pycache__/
+modèle Yamaha
+fonction testée
+SysEx envoyé
+réponse reçue
+résultat sur le piano
+GET validé ?
+SET validé ?
 ```
 
----
-
-# Automatic startup
-
-The final installation is intended to run without a monitor, mouse or terminal.
-
-Target behaviour:
+Le script :
 
 ```text
-Raspberry Pi power on
-        ↓
-CVP Access starts automatically
-        ↓
-MIDI interface detected
-        ↓
-16 Song channel states read
-        ↓
-tempo read
-        ↓
-transpose read
-        ↓
-spoken message:
-"Interface prête."
+docs/cvp_probe_readonly.py
 ```
 
-The application will eventually be managed using `systemd`.
+est destiné à faciliter l’exploration en lecture seule des propriétés encore inconnues.
 
-If the program crashes:
+---
+
+# Crédits
+
+Développement et tests :
+
+**David Roussel — Melody Music Caen**
+
+Travail de protocole réalisé avec l’aide de :
+
+- ConPianist / hugbug ;
+- documentation MIDI Yamaha ;
+- tests directs sur les instruments Yamaha CVP.
+
+Merci aux auteurs des projets open source utilisés par CVP Access, notamment Piper.
+
+---
+
+# Licence
+
+Le dépôt est actuellement distribué sous licence **MIT**.
+
+Voir :
 
 ```text
-systemd → automatic restart
+LICENSE
 ```
 
-If the user presses `ESC`:
+Les modèles vocaux Piper possèdent leurs propres conditions de licence. CVP Access télécharge le modèle vocal pendant l’installation au lieu de le redistribuer dans ce dépôt.
 
-```text
-application exits
-      ↓
-systemd restarts it
-      ↓
-CVP state is synchronized again
+---
+
+# English summary
+
+CVP Access is a Raspberry Pi accessibility controller for Yamaha Clavinova CVP digital pianos.
+
+It provides tactile USB-keyboard control, Yamaha MIDI SysEx communication over MIDI DIN, and pre-generated French spoken feedback through the piano’s USB Audio interface.
+
+A fresh Raspberry Pi OS Lite 64-bit installation can be provisioned with:
+
+```bash
+git clone https://github.com/ocverclock/cvp_access.git CVP_access
+cd CVP_access
+sudo bash cvp_access_installer/install.sh
 ```
 
----
-
-# Accessibility design philosophy
-
-The objective is not to expose every CVP parameter.
-
-The priority is to expose functions that are difficult to access without vision and which provide real musical value.
-
-The interface should remain:
-
-* predictable;
-* tactile;
-* fast;
-* easy to memorize;
-* usable without a screen;
-* independent from cloud services;
-* able to report the real state of the instrument.
-
----
-
-# Future development
-
-Possible future functions already identified in the Yamaha protocol include:
-
-* Play;
-* Pause;
-* Stop;
-* Song position;
-* individual channel volume;
-* pan;
-* reverb;
-* Voice selection;
-* Right Hand part;
-* Left Hand part;
-* Backing part;
-* Guide functions;
-* octave;
-* split point;
-* Local Control;
-* Master Tune;
-* Touch Curve;
-* VRM;
-* Damper Resonance;
-* String Resonance.
-
-These functions are **not yet confirmed on the CVP-909 unless explicitly documented as tested**.
-
----
-
-# Compatibility
-
-| Device                     | Status                                  |
-| -------------------------- | --------------------------------------- |
-| Yamaha CVP-909             | ✅ Tested                                |
-| Other Yamaha CVP models    | ⚠️ Not tested                           |
-| Yamaha CSP series          | ⚠️ Related protocol, not validated here |
-| Raspberry Pi               | ✅ Tested                                |
-| Prodipe MIDI USB interface | ✅ Tested                                |
-
-Community testing on other Yamaha models is welcome.
-
----
-
-# Credits
-
-This project would not have been possible without the work done by the **ConPianist** project and its author, which provided essential information about Yamaha's Smart Pianist / CSP SysEx protocol.
-
-ConPianist:
-
-`https://github.com/hugbug/conpianist`
-
-CVP Access independently tests and implements the required protocol functions on a Yamaha CVP-909 for accessibility purposes.
-
----
-
-# Disclaimer
-
-CVP Access is an **unofficial community project**.
-
-It is not affiliated with, endorsed by, sponsored by, or supported by Yamaha Corporation.
-
-Yamaha, Clavinova, CVP and Smart Pianist are trademarks of their respective owners.
-
-Use the software at your own risk.
-
----
-
-# License
-
-The project is intended to be distributed as open-source software.
-
-Before the first stable release, a `LICENSE` file should be added to the repository.
-
-GPL-3.0 is currently the preferred license due to the open-source ecosystem and upstream projects used during development.
-
----
-
-# Contributing
-
-Contributions are welcome, especially from users able to test:
-
-* other CVP models;
-* CSP models;
-* different USB MIDI interfaces;
-* other keyboard layouts;
-* additional languages;
-* additional Yamaha SysEx functions.
-
-When reporting compatibility, please include:
-
-```text
-Yamaha model
-Raspberry Pi model
-Linux distribution
-MIDI interface
-Connection method
-Command tested
-Result
-```
-
----
-
-# Project status
-
-**Experimental but functional.**
-
-Current development target:
-
-```text
-Yamaha CVP-909
-+
-Raspberry Pi
-+
-USB keyboard
-+
-MIDI SysEx
-+
-spoken accessibility feedback
-```
+The installer configures the OS dependencies, MIDI/audio tools, Piper TTS with the `fr_FR-siwis-medium` voice, Samba, SSH, Avahi, systemd autostart and the CVP Doctor diagnostic tool.
