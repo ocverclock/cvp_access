@@ -1,5 +1,5 @@
 [CVP_access]
-    comment = CVP Access project
+    comment = CVP Access Git project
     path = @PROJECT_DIR@
     browseable = yes
     read only = no
