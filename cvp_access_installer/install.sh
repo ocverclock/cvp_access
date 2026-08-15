@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-INSTALLER_VERSION="0.1.0"
+INSTALLER_VERSION="0.2.0"
 REQUIRED_CODENAME="${CVP_REQUIRED_CODENAME:-trixie}"
 REQUIRED_ARCH="${CVP_REQUIRED_ARCH:-arm64}"
 MIN_FREE_KB="${CVP_MIN_FREE_KB:-2097152}"   # 2 GiB
@@ -11,17 +11,23 @@ log()  { printf '\n[CVP Access] %s\n' "$*"; }
 warn() { printf '\n[CVP Access] WARNING: %s\n' "$*" >&2; }
 die()  { printf '\n[CVP Access] ERROR: %s\n' "$*" >&2; exit 1; }
 
-if [[ ${EUID} -ne 0 ]]; then
-    die "Run this installer with: sudo ./install.sh"
+[[ ${EUID} -eq 0 ]] || die "Run with: sudo bash cvp_access_installer/install.sh"
+
+INSTALLER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+
+# Locate the repository root even though this installer lives in a subdirectory.
+if REPO_DIR="$(git -C "$INSTALLER_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
+    :
+elif [[ -f "$INSTALLER_DIR/../README.md" ]]; then
+    REPO_DIR="$(cd "$INSTALLER_DIR/.." && pwd -P)"
+else
+    REPO_DIR="$INSTALLER_DIR"
 fi
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-[[ "$SCRIPT_DIR" != *" "* ]] || die "The project path must not contain spaces: $SCRIPT_DIR"
-
-# Prefer the user who invoked sudo. Fall back to the project owner, then UID 1000.
+# Prefer the user who invoked sudo. Fall back to repository owner, then UID 1000.
 CVP_USER="${CVP_USER:-${SUDO_USER:-}}"
 if [[ -z "$CVP_USER" || "$CVP_USER" == "root" ]]; then
-    owner="$(stat -c '%U' "$SCRIPT_DIR" 2>/dev/null || true)"
+    owner="$(stat -c '%U' "$REPO_DIR" 2>/dev/null || true)"
     if [[ -n "$owner" && "$owner" != "root" ]]; then
         CVP_USER="$owner"
     else
@@ -32,7 +38,6 @@ fi
 getent passwd "$CVP_USER" >/dev/null || die "User '$CVP_USER' does not exist."
 
 CVP_HOME="$(getent passwd "$CVP_USER" | cut -d: -f6)"
-PROJECT_DIR="$SCRIPT_DIR"
 RUNTIME_DIR="/opt/cvp-access"
 VOICE_DIR="$CVP_HOME/cvp_voice"
 PIPER_DIR="$CVP_HOME/.local/share/cvp-access/piper-env"
@@ -44,7 +49,8 @@ SAMBA_FRAGMENT="/etc/samba/cvp-access.conf"
 log "CVP Access installer $INSTALLER_VERSION"
 printf 'User        : %s\n' "$CVP_USER"
 printf 'Home        : %s\n' "$CVP_HOME"
-printf 'Project     : %s\n' "$PROJECT_DIR"
+printf 'Repository  : %s\n' "$REPO_DIR"
+printf 'Installer   : %s\n' "$INSTALLER_DIR"
 printf 'Runtime     : %s\n' "$RUNTIME_DIR"
 printf 'Voice bank  : %s\n' "$VOICE_DIR"
 
@@ -58,12 +64,15 @@ CODENAME="${VERSION_CODENAME:-${DEBIAN_CODENAME:-unknown}}"
 ARCH="$(dpkg --print-architecture)"
 
 log "System detected: ${PRETTY_NAME:-unknown} / $ARCH"
-[[ "$CODENAME" == "$REQUIRED_CODENAME" ]] || die "This release expects Debian/Raspberry Pi OS '$REQUIRED_CODENAME' (found '$CODENAME'). For a major OS change, re-image Raspberry Pi OS Lite instead of forcing an in-place upgrade."
-[[ "$ARCH" == "$REQUIRED_ARCH" ]] || die "This release expects $REQUIRED_ARCH (found $ARCH). Use Raspberry Pi OS Lite 64-bit."
+[[ "$CODENAME" == "$REQUIRED_CODENAME" ]] || die \
+    "This release supports Debian/Raspberry Pi OS '$REQUIRED_CODENAME' (found '$CODENAME'). Re-image with a supported Raspberry Pi OS Lite release rather than forcing a major in-place upgrade."
+[[ "$ARCH" == "$REQUIRED_ARCH" ]] || die \
+    "This release expects $REQUIRED_ARCH (found $ARCH). Use Raspberry Pi OS Lite 64-bit."
 
 AVAILABLE_KB="$(df -Pk / | awk 'NR==2 {print $4}')"
 [[ "$AVAILABLE_KB" =~ ^[0-9]+$ ]] || die "Unable to determine free disk space."
-(( AVAILABLE_KB >= MIN_FREE_KB )) || die "Less than $((MIN_FREE_KB / 1024)) MiB free on /. Free disk space before installation."
+(( AVAILABLE_KB >= MIN_FREE_KB )) || die \
+    "Less than $((MIN_FREE_KB / 1024)) MiB free on /. Free disk space before installation."
 
 # -----------------------------------------------------------------------------
 # Full OS update
@@ -76,39 +85,20 @@ apt-get full-upgrade -y
 # -----------------------------------------------------------------------------
 # Packages
 # -----------------------------------------------------------------------------
+PACKAGE_FILE="$INSTALLER_DIR/apt-packages.txt"
+[[ -f "$PACKAGE_FILE" ]] || die "Missing dependency list: $PACKAGE_FILE"
+mapfile -t APT_PACKAGES < <(grep -Ev '^[[:space:]]*(#|$)' "$PACKAGE_FILE")
+(( ${#APT_PACKAGES[@]} > 0 )) || die "APT dependency list is empty."
+
 log "Installing CVP Access dependencies"
-apt-get install -y \
-    python3 \
-    python3-venv \
-    python3-pip \
-    python3-evdev \
-    python3-rtmidi \
-    python3-mido \
-    alsa-utils \
-    sox \
-    git \
-    curl \
-    wget \
-    ca-certificates \
-    rsync \
-    unzip \
-    jq \
-    samba \
-    samba-common-bin \
-    smbclient \
-    avahi-daemon \
-    openssh-server \
-    usbutils \
-    lsof \
-    psmisc \
-    nano \
-    tree \
-    htop
+apt-get install -y "${APT_PACKAGES[@]}"
 
 # -----------------------------------------------------------------------------
 # User permissions
 # -----------------------------------------------------------------------------
 log "Configuring audio/input permissions"
+getent group audio >/dev/null || groupadd --system audio
+getent group input >/dev/null || groupadd --system input
 usermod -aG audio,input "$CVP_USER"
 
 # -----------------------------------------------------------------------------
@@ -124,26 +114,32 @@ if [[ "$CURRENT_HOSTNAME" == "raspberrypi" ]]; then
 fi
 
 # -----------------------------------------------------------------------------
+# Locate current application source
+# -----------------------------------------------------------------------------
+SOURCE_MAIN=""
+if [[ -f "$REPO_DIR/cvp_access.py" ]]; then
+    SOURCE_MAIN="$REPO_DIR/cvp_access.py"
+else
+    SOURCE_MAIN="$(
+        find "$REPO_DIR" -maxdepth 1 -type f -iname 'cvp_access_v*.py' -printf '%p\n' \
+        | sort -V \
+        | tail -n 1
+    )"
+fi
+[[ -n "$SOURCE_MAIN" && -f "$SOURCE_MAIN" ]] || die \
+    "No cvp_access.py or versioned cvp_access_v*.py was found at repository root."
+
+log "Using application source: $(basename "$SOURCE_MAIN")"
+
+# -----------------------------------------------------------------------------
 # Runtime copy
 # -----------------------------------------------------------------------------
 log "Installing runtime files"
-mkdir -p "$RUNTIME_DIR"
-
-SOURCE_MAIN=""
-for candidate in \
-    "$PROJECT_DIR/cvp_access.py" \
-    "$PROJECT_DIR/cvp_access_v1.4.1.py"; do
-    if [[ -f "$candidate" ]]; then
-        SOURCE_MAIN="$candidate"
-        break
-    fi
-done
-[[ -n "$SOURCE_MAIN" ]] || die "cvp_access.py is missing from the repository."
-
+install -d -m 0755 "$RUNTIME_DIR"
 install -m 0755 "$SOURCE_MAIN" "$RUNTIME_DIR/cvp_access.py"
 
-# Transitional compatibility with older source releases that hard-coded /home/pi.
-# The Git checkout is never modified; only the runtime copy is adjusted.
+# Transitional compatibility with releases that hard-coded /home/pi.
+# Only the runtime copy is changed; source files in Git are never rewritten.
 if grep -Fq '/home/pi/cvp_voice' "$RUNTIME_DIR/cvp_access.py"; then
     sed -i "s#/home/pi/cvp_voice#$VOICE_DIR#g" "$RUNTIME_DIR/cvp_access.py"
 fi
@@ -152,7 +148,10 @@ fi
 # Piper
 # -----------------------------------------------------------------------------
 log "Installing Piper in an isolated Python environment"
-install -d -o "$CVP_USER" -g "$CVP_USER" "$CVP_HOME/.local/share/cvp-access" "$PIPER_VOICE_DIR" "$VOICE_DIR"
+install -d -o "$CVP_USER" -g "$CVP_USER" \
+    "$CVP_HOME/.local/share/cvp-access" \
+    "$PIPER_VOICE_DIR" \
+    "$VOICE_DIR"
 
 if [[ ! -x "$PIPER_DIR/bin/python" ]]; then
     runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" python3 -m venv "$PIPER_DIR"
@@ -161,13 +160,10 @@ fi
 runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" \
     "$PIPER_DIR/bin/python" -m pip install --upgrade pip
 
-if [[ -f "$PROJECT_DIR/requirements-piper.txt" ]]; then
-    runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" \
-        "$PIPER_DIR/bin/python" -m pip install -r "$PROJECT_DIR/requirements-piper.txt"
-else
-    runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" \
-        "$PIPER_DIR/bin/python" -m pip install 'piper-tts>=1.4.2,<2'
-fi
+PIPER_REQUIREMENTS="$INSTALLER_DIR/requirements-piper.txt"
+[[ -f "$PIPER_REQUIREMENTS" ]] || die "Missing $PIPER_REQUIREMENTS"
+runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" \
+    "$PIPER_DIR/bin/python" -m pip install -r "$PIPER_REQUIREMENTS"
 
 if [[ ! -f "$PIPER_MODEL" || ! -f "$PIPER_MODEL.json" ]]; then
     log "Downloading Piper voice $PIPER_VOICE"
@@ -181,8 +177,8 @@ fi
 # -----------------------------------------------------------------------------
 log "Generating missing voice prompts"
 for generator in \
-    "$PROJECT_DIR/tools/generate_track_voices.py" \
-    "$PROJECT_DIR/tools/generate_value_voices.py"; do
+    "$INSTALLER_DIR/tools/generate_track_voices.py" \
+    "$INSTALLER_DIR/tools/generate_value_voices.py"; do
     [[ -f "$generator" ]] || die "Missing voice generator: $generator"
     runuser -u "$CVP_USER" -- env \
         HOME="$CVP_HOME" \
@@ -195,31 +191,37 @@ done
 # systemd
 # -----------------------------------------------------------------------------
 log "Installing systemd service"
-[[ -f "$PROJECT_DIR/systemd/cvp-access.service.in" ]] || die "Missing systemd template."
+SERVICE_TEMPLATE="$INSTALLER_DIR/systemd/cvp-access.service.in"
+[[ -f "$SERVICE_TEMPLATE" ]] || die "Missing systemd template."
 sed \
     -e "s#@CVP_USER@#$CVP_USER#g" \
     -e "s#@CVP_HOME@#$CVP_HOME#g" \
     -e "s#@PROJECT_DIR@#$RUNTIME_DIR#g" \
     -e "s#@VOICE_DIR@#$VOICE_DIR#g" \
-    "$PROJECT_DIR/systemd/cvp-access.service.in" > "$SERVICE_FILE"
+    "$SERVICE_TEMPLATE" > "$SERVICE_FILE"
 chmod 0644 "$SERVICE_FILE"
 systemctl daemon-reload
 
 # -----------------------------------------------------------------------------
 # Samba
 # -----------------------------------------------------------------------------
-log "Configuring Samba project share"
-[[ -f "$PROJECT_DIR/samba/cvp-access.conf.in" ]] || die "Missing Samba template."
+log "Configuring Samba repository share"
+SAMBA_TEMPLATE="$INSTALLER_DIR/samba/cvp-access.conf.in"
+[[ -f "$SAMBA_TEMPLATE" ]] || die "Missing Samba template."
 sed \
     -e "s#@CVP_USER@#$CVP_USER#g" \
-    -e "s#@PROJECT_DIR@#$PROJECT_DIR#g" \
-    "$PROJECT_DIR/samba/cvp-access.conf.in" > "$SAMBA_FRAGMENT"
+    -e "s#@PROJECT_DIR@#$REPO_DIR#g" \
+    "$SAMBA_TEMPLATE" > "$SAMBA_FRAGMENT"
 chmod 0644 "$SAMBA_FRAGMENT"
 
 INCLUDE_LINE="include = $SAMBA_FRAGMENT"
 grep -Fqx "$INCLUDE_LINE" /etc/samba/smb.conf || printf '\n%s\n' "$INCLUDE_LINE" >> /etc/samba/smb.conf
 
 testparm -s >/dev/null || die "Samba configuration validation failed."
+
+if ! runuser -u "$CVP_USER" -- test -r "$REPO_DIR"; then
+    warn "The repository is not readable by $CVP_USER. Samba access may fail."
+fi
 
 if ! pdbedit -L 2>/dev/null | cut -d: -f1 | grep -Fxq "$CVP_USER"; then
     if [[ -t 0 && -r /dev/tty ]]; then
@@ -247,10 +249,9 @@ log "Enabling services"
 systemctl enable --now ssh
 systemctl enable --now avahi-daemon
 systemctl enable --now smbd
-systemctl enable --now nmbd || true
+systemctl enable --now nmbd 2>/dev/null || true
 systemctl restart smbd
 
-# Start CVP Access only after all generated assets exist.
 systemctl enable cvp-access.service
 systemctl restart cvp-access.service || true
 
@@ -258,17 +259,18 @@ systemctl restart cvp-access.service || true
 # Diagnostic
 # -----------------------------------------------------------------------------
 log "Running CVP Doctor"
-if [[ -f "$PROJECT_DIR/tools/cvp_doctor.py" ]]; then
+DOCTOR="$INSTALLER_DIR/tools/cvp_doctor.py"
+if [[ -f "$DOCTOR" ]]; then
     runuser -u "$CVP_USER" -- env \
         HOME="$CVP_HOME" \
-        CVP_PROJECT_DIR="$PROJECT_DIR" \
+        CVP_PROJECT_DIR="$REPO_DIR" \
         CVP_RUNTIME_DIR="$RUNTIME_DIR" \
         CVP_VOICE_DIR="$VOICE_DIR" \
         CVP_PIPER_MODEL="$PIPER_MODEL" \
-        python3 "$PROJECT_DIR/tools/cvp_doctor.py" || true
+        python3 "$DOCTOR" || true
 fi
 
-apt-get autoremove -y
+# Keep installed packages intact. Do not autoremove on a machine we did not provision.
 apt-get clean
 
 HOST_NOW="$(hostnamectl --static 2>/dev/null || hostname)"
@@ -276,12 +278,12 @@ log "Installation complete"
 printf 'SSH   : ssh %s@%s.local\n' "$CVP_USER" "$HOST_NOW"
 printf 'Samba : \\\\%s.local\\CVP_access\n' "$HOST_NOW"
 printf 'Status: systemctl status cvp-access\n'
-printf 'Doctor: python3 %s/tools/cvp_doctor.py\n' "$PROJECT_DIR"
+printf 'Doctor: python3 %s/tools/cvp_doctor.py\n' "$INSTALLER_DIR"
 
 if [[ -f /var/run/reboot-required ]]; then
     warn "A reboot is required by the OS update."
 else
-    warn "A reboot is recommended so the new audio/input group membership is applied everywhere."
+    warn "A reboot is recommended after the first installation."
 fi
 
 if [[ -t 0 && -r /dev/tty ]]; then
