@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tomllib
 from pathlib import Path
 
 MIDI_NAME = "ProdipeMIDIlilo MIDI 1"
@@ -174,6 +175,19 @@ def main():
         "CVP_PIPER_MODEL",
         home / "piper-voices" / "fr_FR-siwis-medium.onnx"
     ))
+    config_file = Path(os.environ.get(
+        "CVP_CONFIG_FILE",
+        "/etc/cvp-access/keyboard.toml"
+    ))
+    if "CVP_PIPER_MODEL" not in os.environ and config_file.is_file():
+        try:
+            with config_file.open("rb") as handle:
+                cfg = tomllib.load(handle)
+            configured_voice = cfg.get("speech", {}).get("voice")
+            if configured_voice:
+                model = home / "piper-voices" / f"{configured_voice}.onnx"
+        except Exception:
+            pass
     piper_python = home / ".local/share/cvp-access/piper-env/bin/python"
 
     results = []
@@ -227,6 +241,37 @@ def main():
     check("Runtime", OK if (runtime / "cvp_access.py").is_file() else FAIL,
           str(runtime / "cvp_access.py"))
 
+    speech_runtime = runtime / "cvp_speech.py"
+    piper_worker = runtime / "cvp_piper_worker.py"
+    if speech_runtime.is_file() or piper_worker.is_file():
+        check(
+            "Runtime speech",
+            OK if speech_runtime.is_file() and piper_worker.is_file() else FAIL,
+            "cvp_speech.py + cvp_piper_worker.py"
+            if speech_runtime.is_file() and piper_worker.is_file()
+            else "runtime speech files incomplete",
+        )
+
+    keyboard_router = runtime / "cvp_keyboard.py"
+    if keyboard_router.is_file():
+        rc, out, err = run(
+            ["python3", str(keyboard_router), "--check", str(config_file)],
+            timeout=10,
+        )
+        detail_lines = [
+            line.strip()
+            for line in (out + "\n" + err).splitlines()
+            if line.strip()
+        ]
+        detail = detail_lines[0] if detail_lines else str(config_file)
+        check("Keyboard config", OK if rc == 0 else FAIL, detail)
+    elif config_file.exists():
+        check("Keyboard config", WARN,
+              f"{config_file} present but cvp_keyboard.py is missing")
+    else:
+        check("Keyboard config", SKIP,
+              "v1.4.x runtime / configurable keyboard not installed")
+
     keyboards = glob.glob("/dev/input/by-id/*-event-kbd")
     check("USB keyboard", OK if keyboards else WARN,
           keyboards[0] if keyboards else "not detected")
@@ -244,32 +289,106 @@ def main():
           OK if model.is_file() and Path(str(model) + ".json").is_file() else FAIL,
           str(model))
 
-    expected = {
-        "tracks": (voices, "piste_*.wav", 32),
-        "tempo": (voices / "tempo", "tempo_*.wav", 276),
-        "transpose": (voices / "transpose", "transpose_*.wav", 25),
-        "voice volume": (voices / "volume", "volume_*.wav", 10),
-        "style volume": (voices / "style_volume", "style_volume_*.wav", 128),
-        "style parts": (voices / "style_part", "*.wav", 16),
-        "voice parts": (voices / "voice_part", "*.wav", 4),
-        "numbers": (voices / "numbers", "number_*.wav", 101),
-        "words": (voices / "words", "*.wav", 2),
-        "transport": (voices / "transport", "*.wav", 3),
-        "status": (voices / "status", "*.wav", 2),
-    }
-    total = 0
-    total_expected = 0
-    incomplete = []
-    for label, (directory, pattern, wanted) in expected.items():
-        got = count_glob(directory, pattern)
-        total += got
-        total_expected += wanted
-        if got < wanted:
-            incomplete.append(f"{label} {got}/{wanted}")
-    check("Voice bank",
-          OK if not incomplete else WARN,
-          f"{total}/{total_expected} core WAV" +
-          ("; " + ", ".join(incomplete) if incomplete else ""))
+    # Voice bank expectations follow keyboard.toml instead of assuming a
+    # permanently generated 599-file bank.
+    try:
+        with config_file.open("rb") as handle:
+            config_data = tomllib.load(handle)
+    except Exception:
+        config_data = {}
+
+    speech_cfg = config_data.get("speech", {}) if isinstance(config_data, dict) else {}
+    speech_mode = speech_cfg.get("mode", "pregenerated")
+    generation_mode = speech_cfg.get("generation", "core")
+
+    def parse_action(value):
+        if not isinstance(value, str):
+            return None, None
+        if ":" in value:
+            name, raw = value.split(":", 1)
+            try:
+                return name.strip().lower(), int(raw.strip())
+            except ValueError:
+                return name.strip().lower(), None
+        return value.strip().lower(), None
+
+    def required_voice_files():
+        actions = set()
+        keys = config_data.get("keys", {}) if isinstance(config_data, dict) else {}
+        if generation_mode == "configured" and isinstance(keys, dict):
+            for value in keys.values():
+                name, parameter = parse_action(value)
+                if name:
+                    actions.add((name, parameter))
+        else:
+            actions.update(("song_track_toggle", n) for n in range(1, 17))
+            actions.update(("style_part_toggle", n) for n in range(1, 9))
+            actions.update({
+                ("layer_toggle", None), ("left_toggle", None),
+                ("announce_tempo", None), ("announce_transpose", None),
+                ("song_play_pause", None), ("song_stop", None),
+                ("song_position", None),
+                ("voice_volume_up", None), ("voice_volume_down", None),
+                ("style_volume_up", None), ("style_volume_down", None),
+            })
+
+        style_stems = [
+            "rhythm_1", "rhythm_2", "bass", "chord_1",
+            "chord_2", "pad", "phrase_1", "phrase_2",
+        ]
+        paths = set()
+        for name, parameter in actions:
+            if name == "song_track_toggle" and parameter and 1 <= parameter <= 16:
+                paths.add(voices / f"piste_{parameter:02d}_off.wav")
+                paths.add(voices / f"piste_{parameter:02d}_on.wav")
+            elif name == "style_part_toggle" and parameter and 1 <= parameter <= 8:
+                stem = style_stems[parameter - 1]
+                paths.add(voices / "style_part" / f"{stem}_on.wav")
+                paths.add(voices / "style_part" / f"{stem}_off.wav")
+            elif name == "layer_toggle":
+                paths.add(voices / "voice_part" / "layer_on.wav")
+                paths.add(voices / "voice_part" / "layer_off.wav")
+            elif name == "left_toggle":
+                paths.add(voices / "voice_part" / "left_on.wav")
+                paths.add(voices / "voice_part" / "left_off.wav")
+            elif name == "announce_tempo":
+                paths.update(voices / "tempo" / f"tempo_{v:03d}.wav" for v in range(5, 281))
+            elif name == "announce_transpose":
+                paths.add(voices / "transpose" / "transpose_000.wav")
+                paths.update(voices / "transpose" / f"transpose_m{v:02d}.wav" for v in range(1, 13))
+                paths.update(voices / "transpose" / f"transpose_p{v:02d}.wav" for v in range(1, 13))
+            elif name in {"voice_volume_up", "voice_volume_down"}:
+                paths.update(voices / "volume" / f"volume_{v:03d}.wav" for v in range(10, 101, 10))
+            elif name in {"style_volume_up", "style_volume_down"}:
+                paths.update(voices / "style_volume" / f"style_volume_{v:03d}.wav" for v in range(128))
+            elif name == "song_play_pause":
+                paths.add(voices / "transport" / "lecture.wav")
+                paths.add(voices / "transport" / "pause.wav")
+            elif name == "song_stop":
+                paths.add(voices / "transport" / "stop.wav")
+            elif name == "song_position":
+                paths.add(voices / "words" / "mesure.wav")
+                paths.add(voices / "words" / "temps.wav")
+                paths.update(voices / "numbers" / f"number_{v:03d}.wav" for v in range(101))
+        return paths
+
+    if speech_mode == "runtime":
+        check("Voice bank", SKIP, "runtime mode: Piper synthesizes on demand")
+    else:
+        required = required_voice_files()
+        missing = [path for path in required if not path.is_file()]
+        present = len(required) - len(missing)
+        if not missing:
+            voice_status = OK
+        elif speech_mode == "hybrid":
+            voice_status = WARN
+        else:
+            voice_status = FAIL
+        detail = f"{present}/{len(required)} required WAV ({generation_mode})"
+        if missing:
+            sample = ", ".join(str(path.relative_to(voices)) for path in missing[:4])
+            detail += f"; missing {len(missing)}: {sample}"
+        check("Voice bank", voice_status, detail)
 
     for service in ["cvp-access.service", "smbd.service",
                     "avahi-daemon.service", "ssh.service"]:
