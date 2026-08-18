@@ -1,0 +1,74 @@
+# CVP Access - propriétés à caractériser manuellement sur CVP-905
+#
+# Le script docs/cvp_watch_properties.py ne fait que des GET.
+# Il affiche une ligne uniquement quand la valeur brute change.
+#
+# Usage :
+#
+#   sudo systemctl stop cvp-access
+#   cd ~/CVP_access
+#   python3 docs/cvp_watch_properties.py \
+#       --config config/cvp905_characterization.toml
+#
+# Ensuite modifier UN réglage à la fois sur l'écran du CVP-905.
+# Ctrl+C pour arrêter.
+
+[watch]
+format_version = 1
+interval = 0.20
+timeout = 0.30
+
+[[property]]
+name = "brightness"
+signature = "0C 00 0B 01"
+index = "00"
+
+[[property]]
+name = "touch_curve"
+signature = "00 00 00 01"
+index = "00"
+
+[[property]]
+name = "fixed_curve"
+signature = "00 00 01 01"
+index = "00"
+
+[[property]]
+name = "fixed_velocity"
+signature = "00 00 02 01"
+index = "00"
+
+[[property]]
+name = "master_tune"
+signature = "03 00 00 01"
+index = "00"
+
+[[property]]
+name = "split_point"
+signature = "09 00 00 01"
+index = "00"
+
+[[property]]
+name = "reverb_effect"
+signature = "0C 01 00 01"
+index = "00"
+
+[[property]]
+name = "loop"
+signature = "04 00 0D 01"
+index = "00"
+
+[[property]]
+name = "voice_midi_song1"
+signature = "02 00 01 01"
+index = "10"
+
+[[property]]
+name = "key_off_sampling"
+signature = "02 02 06 01"
+index = "00"
+
+[[property]]
+name = "vrm_reference"
+signature = "02 02 00 01"
+index = "00"

@@ -1,0 +1,663 @@
+# ============================================================
+# CVP ACCESS - VALIDATION FONCTIONNELLE REVERSIBLE
+# CVP-905 / famille CVP-900
+# ============================================================
+#
+# Ce fichier ne sert PAS au fonctionnement normal de CVP Access.
+# Il pilote uniquement docs/cvp_validate_functional.py.
+#
+# Principe de chaque test :
+#
+#   GET valeur initiale
+#       ↓
+#   calcul d'une valeur test très proche
+#       ↓
+#   SET valeur test
+#       ↓
+#   GET vérification
+#       ↓
+#   SET valeur initiale
+#       ↓
+#   GET vérification restauration
+#
+# Le script s'arrête immédiatement si une restauration échoue.
+#
+# IMPORTANT :
+#   - il faut arrêter cvp-access avant le test ;
+#   - --execute est obligatoire pour autoriser les SET ;
+#   - sans --execute, le script affiche seulement le plan.
+#
+# Exemple :
+#
+#   sudo systemctl stop cvp-access
+#
+#   cd ~/CVP_access
+#
+#   python3 docs/cvp_validate_functional.py \
+#       --config config/functional_validation.toml \
+#       --wave 1
+#
+#   # Si le plan est correct :
+#
+#   python3 docs/cvp_validate_functional.py \
+#       --config config/functional_validation.toml \
+#       --wave 1 \
+#       --execute \
+#       --output cvp_functional_wave1
+#
+#   sudo systemctl start cvp-access
+#
+# ============================================================
+
+[validation]
+format_version = 1
+
+# Sécurité : ce fichier autorise une validation SET uniquement
+# via le script dédié et uniquement avec l'option --execute.
+require_execute_flag = true
+
+timeout = 0.40
+apply_delay = 0.15
+between_tests = 0.10
+verify_attempts = 4
+
+
+# ============================================================
+# WAVE 1 - TESTS PRUDENTS
+# ============================================================
+#
+# Booléens 0/1 et paramètres 7-bit 0..127.
+# Les modifications sont minuscules et immédiatement restaurées.
+#
+
+[[test]]
+name = "guide"
+wave = 1
+enabled = true
+signature = "04 03 00 01"
+index = "00"
+kind = "bool"
+mutation = "toggle"
+comment = "Guide Yamaha ON/OFF."
+
+[[test]]
+name = "stream_lights"
+wave = 1
+enabled = true
+signature = "04 02 00 01"
+index = "00"
+kind = "bool"
+mutation = "toggle"
+comment = "Stream Lights ON/OFF. Le GET répond sur le CVP-905."
+
+[[test]]
+name = "part_auto"
+wave = 1
+enabled = true
+signature = "04 00 10 01"
+index = "00"
+kind = "bool"
+mutation = "toggle"
+comment = "Affectation automatique des parties Song."
+
+[[test]]
+name = "vrm"
+wave = 1
+enabled = true
+signature = "02 02 00 01"
+index = "00"
+kind = "bool"
+mutation = "toggle"
+comment = "VRM ON/OFF."
+
+# --- ACTIVE : index encore non validés en SET ---
+
+[[test]]
+name = "active_main"
+wave = 1
+enabled = true
+signature = "0C 00 01 01"
+index = "00"
+kind = "bool"
+mutation = "toggle"
+comment = "Main ON/OFF, restauration immédiate."
+
+[[test]]
+name = "active_mic"
+wave = 1
+enabled = true
+signature = "0C 00 01 01"
+index = "40"
+kind = "bool"
+mutation = "toggle"
+
+[[test]]
+name = "active_wave"
+wave = 1
+enabled = false
+signature = "0C 00 01 01"
+index = "44"
+kind = "bool"
+mutation = "toggle"
+
+[[test]]
+name = "active_midi_master"
+wave = 1
+enabled = false
+signature = "0C 00 01 01"
+index = "50"
+kind = "bool"
+mutation = "toggle"
+
+[[test]]
+name = "active_style"
+wave = 1
+enabled = false
+signature = "0C 00 01 01"
+index = "51"
+kind = "bool"
+mutation = "toggle"
+
+# --- VOLUME : variation de 1 seulement ---
+
+[[test]]
+name = "volume_main"
+wave = 1
+enabled = true
+signature = "0C 00 00 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "volume_layer"
+wave = 1
+enabled = true
+signature = "0C 00 00 01"
+index = "01"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "volume_left"
+wave = 1
+enabled = true
+signature = "0C 00 00 01"
+index = "02"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "volume_song_1"
+wave = 1
+enabled = true
+signature = "0C 00 00 01"
+index = "10"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "volume_mic"
+wave = 1
+enabled = true
+signature = "0C 00 00 01"
+index = "40"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "volume_auxin"
+wave = 1
+enabled = true
+signature = "0C 00 00 01"
+index = "41"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "volume_wave"
+wave = 1
+enabled = true
+signature = "0C 00 00 01"
+index = "44"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "volume_midi_master"
+wave = 1
+enabled = true
+signature = "0C 00 00 01"
+index = "50"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+# --- PAN : variation de 1 ---
+
+[[test]]
+name = "pan_main"
+wave = 1
+enabled = true
+signature = "0C 00 03 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "pan_layer"
+wave = 1
+enabled = true
+signature = "0C 00 03 01"
+index = "01"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "pan_left"
+wave = 1
+enabled = true
+signature = "0C 00 03 01"
+index = "02"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "pan_song_1"
+wave = 1
+enabled = true
+signature = "0C 00 03 01"
+index = "10"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "pan_style"
+wave = 1
+enabled = true
+signature = "0C 00 03 01"
+index = "51"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+# --- REVERB : variation de 1 ---
+
+[[test]]
+name = "reverb_main"
+wave = 1
+enabled = true
+signature = "0C 00 04 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "reverb_layer"
+wave = 1
+enabled = true
+signature = "0C 00 04 01"
+index = "01"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "reverb_left"
+wave = 1
+enabled = true
+signature = "0C 00 04 01"
+index = "02"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "reverb_song_1"
+wave = 1
+enabled = true
+signature = "0C 00 04 01"
+index = "10"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "reverb_style"
+wave = 1
+enabled = true
+signature = "0C 00 04 01"
+index = "51"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+
+# ============================================================
+# WAVE 2 - RÉVERSIBLE MAIS INTERPRÉTATION À CONFIRMER
+# ============================================================
+#
+# On ne lancera cette vague qu'après analyse de la Wave 1.
+#
+
+[[test]]
+name = "part_0"
+wave = 2
+enabled = false
+signature = "04 00 0E 01"
+index = "00"
+kind = "bool"
+mutation = "toggle"
+comment = "Index pédagogique encore à identifier précisément."
+
+[[test]]
+name = "part_1"
+wave = 2
+enabled = false
+signature = "04 00 0E 01"
+index = "01"
+kind = "bool"
+mutation = "toggle"
+
+[[test]]
+name = "part_2"
+wave = 2
+enabled = false
+signature = "04 00 0E 01"
+index = "02"
+kind = "bool"
+mutation = "toggle"
+
+[[test]]
+name = "part_3"
+wave = 2
+enabled = false
+signature = "04 00 0E 01"
+index = "03"
+kind = "bool"
+mutation = "toggle"
+
+[[test]]
+name = "guide_type"
+wave = 2
+enabled = false
+signature = "04 03 01 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 2
+comment = "Modes ConPianist supposés 0..2."
+
+[[test]]
+name = "stream_speed"
+wave = 2
+enabled = false
+signature = "04 02 02 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 10
+comment = "Plage exacte encore inconnue."
+
+[[test]]
+name = "octave_main"
+wave = 2
+enabled = false
+signature = "0C 00 12 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+comment = "Encodage signé/offset à confirmer."
+
+[[test]]
+name = "octave_layer"
+wave = 2
+enabled = false
+signature = "0C 00 12 01"
+index = "01"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "octave_left"
+wave = 2
+enabled = false
+signature = "0C 00 12 01"
+index = "02"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "lid_position"
+wave = 2
+enabled = false
+signature = "02 02 07 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "environment"
+wave = 2
+enabled = false
+signature = "02 02 03 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "brightness"
+wave = 2
+enabled = false
+signature = "0C 00 0B 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "touch_curve"
+wave = 2
+enabled = false
+signature = "00 00 00 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "fixed_velocity"
+wave = 2
+enabled = false
+signature = "00 00 02 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 1
+max = 127
+
+[[test]]
+name = "damper_resonance"
+wave = 2
+enabled = true
+signature = "02 02 01 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+[[test]]
+name = "string_resonance"
+wave = 2
+enabled = true
+signature = "02 02 02 01"
+index = "00"
+kind = "u7"
+mutation = "step"
+step = 1
+min = 0
+max = 127
+
+
+# ============================================================
+# WAVE 3 - NE PAS AUTOMATISER POUR L'INSTANT
+# ============================================================
+#
+# Ces propriétés nécessitent d'abord un décodage ou une stratégie spécifique.
+# Elles sont documentées ici mais désactivées.
+#
+
+[[test]]
+name = "song_loop_multibyte"
+wave = 3
+enabled = false
+signature = "04 00 0D 01"
+index = "00"
+kind = "raw"
+comment = "9 octets : format à décoder avant SET."
+
+[[test]]
+name = "part_channel"
+wave = 3
+enabled = false
+signature = "04 00 0F 01"
+index = "00"
+kind = "u7"
+comment = "Modifier un routage de canal demande un test manuel ciblé."
+
+[[test]]
+name = "reverb_effect_multibyte"
+wave = 3
+enabled = false
+signature = "0C 01 00 01"
+index = "00"
+kind = "raw"
+comment = "3 octets : dictionnaire/type effet à comprendre."
+
+[[test]]
+name = "voice_midi_multibyte"
+wave = 3
+enabled = false
+signature = "02 00 01 01"
+index = "10"
+kind = "raw"
+comment = "4 octets : Bank/Program à décoder."
+
+[[test]]
+name = "voice_preset"
+wave = 3
+enabled = false
+signature = "02 00 00 01"
+index = "00"
+kind = "raw"
+comment = "GET EMPTY sur Main/Layer/Left dans notre campagne."
+
+[[test]]
+name = "split_point"
+wave = 3
+enabled = false
+signature = "09 00 00 01"
+index = "00"
+kind = "u7"
+comment = "Valeur GET=0 à interpréter avant écriture."
+
+[[test]]
+name = "fixed_curve"
+wave = 3
+enabled = false
+signature = "00 00 01 01"
+index = "00"
+kind = "raw"
+comment = "Le GET brut vaut 06 : ce n'est manifestement pas un simple booléen."
+
+[[test]]
+name = "master_tune_multibyte"
+wave = 3
+enabled = false
+signature = "03 00 00 01"
+index = "00"
+kind = "raw"
+comment = "GET sur 2 octets : encodage à déterminer."
+
+[[test]]
+name = "key_off_sampling"
+wave = 3
+enabled = false
+signature = "02 02 06 01"
+index = "00"
+kind = "u7"
+comment = "TIMEOUT lors des audits NO_SONG et WITH_SONG."
