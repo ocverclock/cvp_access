@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-08-18T12:22:25.123415",
+  "wave": 2,
+  "records": [
+    {
+      "name": "part_0",
+      "signature": "04 00 0E 01",
+      "index": 0,
+      "index_hex": "00",
+      "kind": "bool",
+      "status": "PASS",
+      "initial_hex": "01",
+      "test_hex": "00",
+      "observed_hex": "00",
+      "restored_hex": "01"
+    },
+    {
+      "name": "part_1",
+      "signature": "04 00 0E 01",
+      "index": 1,
+      "index_hex": "01",
+      "kind": "bool",
+      "status": "PASS",
+      "initial_hex": "01",
+      "test_hex": "00",
+      "observed_hex": "00",
+      "restored_hex": "01"
+    },
+    {
+      "name": "part_2",
+      "signature": "04 00 0E 01",
+      "index": 2,
+      "index_hex": "02",
+      "kind": "bool",
+      "status": "PASS",
+      "initial_hex": "01",
+      "test_hex": "00",
+      "observed_hex": "00",
+      "restored_hex": "01"
+    },
+    {
+      "name": "part_3",
+      "signature": "04 00 0E 01",
+      "index": 3,
+      "index_hex": "03",
+      "kind": "bool",
+      "status": "RESTORE_VERIFY_FAILED",
+      "initial_hex": "01",
+      "test_hex": "00",
+      "observed_hex": "31",
+      "restored_hex": "31"
+    }
+  ],
+  "summary": {
+    "PASS": 3,
+    "RESTORE_VERIFY_FAILED": 1
+  }
+}
