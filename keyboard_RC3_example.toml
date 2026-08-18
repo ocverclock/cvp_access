@@ -1,0 +1,58 @@
+[general]
+format_version = 2
+layout = "azerty"
+caps_lock_layer = true
+caps_fallback_to_base = true
+
+[speech]
+mode = "hybrid"
+generation = "configured"
+cache = true
+voice = "fr_FR-siwis-medium"
+length_scale = 0.85
+
+[keys]
+TOP1 = "style_part_toggle:1"
+TOP2 = "style_part_toggle:2"
+TOP3 = "style_part_toggle:3"
+TOP4 = "style_part_toggle:4"
+TOP5 = "style_part_toggle:5"
+TOP6 = "style_part_toggle:6"
+TOP7 = "style_part_toggle:7"
+TOP8 = "style_part_toggle:8"
+TOP9 = "layer_toggle"
+TOP0 = "left_toggle"
+A = "song_track_toggle:1"
+Z = "song_track_toggle:2"
+E = "song_track_toggle:3"
+R = "song_track_toggle:4"
+T = "song_track_toggle:5"
+Y = "song_track_toggle:6"
+U = "song_track_toggle:7"
+I = "song_track_toggle:8"
+Q = "song_track_toggle:9"
+S = "song_track_toggle:10"
+D = "song_track_toggle:11"
+F = "song_track_toggle:12"
+G = "song_track_toggle:13"
+H = "song_track_toggle:14"
+J = "song_track_toggle:15"
+K = "song_track_toggle:16"
+F1 = "announce_tempo"
+F2 = "announce_transpose"
+F3 = "song_goto_measure"
+F4 = "song_loop_point_a"
+F5 = "song_loop_point_b"
+F6 = "song_loop_toggle"
+SPACE = "song_play_pause"
+ENTER = "song_stop"
+P = "song_position"
+LEFT = "song_measure_previous"
+RIGHT = "song_measure_next"
+"SHIFT+LEFT" = "song_measure_previous_5"
+"SHIFT+RIGHT" = "song_measure_next_5"
+UP = "voice_volume_up"
+DOWN = "voice_volume_down"
+PAGEUP = "style_volume_up"
+PAGEDOWN = "style_volume_down"
+ESC = "restart"
