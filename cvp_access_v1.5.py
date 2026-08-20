@@ -27,7 +27,7 @@ from evdev import ecodes
 from cvp_speech import install_speech_hooks
 
 
-VERSION = "1.5-RC3-dev-controls"
+VERSION = "1.5-RC3-dev-fast"
 CORE_FILENAME = "cvp_access_v1.4.1.py"
 
 CONFIG_FILE = Path(
@@ -97,6 +97,15 @@ class CVPActions:
         # Mode modal de saisie "Aller à la mesure".
         self.goto_buffer = None
         self.goto_max_measure = None
+
+        # Cache local des volumes validés.
+        # Premier appui : GET réel.
+        # Appuis suivants : utilisation immédiate de la dernière valeur
+        # confirmée, puis GET de contrôle après le SET.
+        self._mixer_volume_cache = {
+            0x50: None,  # Song / MidiMaster
+            0x00: None,  # Main
+        }
 
     def dispatch(self, invocation):
         name = invocation.name
@@ -777,9 +786,14 @@ class CVPActions:
         prop,
         index,
         expected,
-        attempts=5,
+        attempts=3,
+        initial_delay=0.015,
+        retry_delay=0.015,
     ):
-        time.sleep(0.08)
+        # Les réponses GET du CVP arrivent normalement très vite.
+        # On garde une marge courte, puis plusieurs tentatives.
+        if initial_delay > 0:
+            time.sleep(initial_delay)
 
         for attempt in range(attempts):
             value = self._get_scalar_property(
@@ -788,8 +802,9 @@ class CVPActions:
             )
             if value == expected:
                 return value
+
             if attempt < attempts - 1:
-                time.sleep(0.05)
+                time.sleep(retry_delay)
 
         return None
 
@@ -845,15 +860,25 @@ class CVPActions:
     ):
         prop = [0x0C, 0x00, 0x00, 0x01]
 
-        current = self._get_scalar_property(
-            prop,
-            index,
+        # Après le premier GET réussi, on évite de relire le volume
+        # avant chaque pression. C'est le principal gain de réactivité.
+        current = self._mixer_volume_cache.get(
+            index
         )
+
         if current is None:
-            print(
-                f"Impossible de lire le volume {label}."
+            current = self._get_scalar_property(
+                prop,
+                index,
             )
-            return
+
+            if current is None:
+                print(
+                    f"Impossible de lire le volume {label}."
+                )
+                return
+
+            self._mixer_volume_cache[index] = current
 
         target = max(
             0,
@@ -876,22 +901,45 @@ class CVPActions:
             index,
             target,
         ):
+            self._mixer_volume_cache[index] = None
             print(
                 f"Impossible de modifier le volume {label}."
             )
             return
 
+        # Cache optimiste : une pression suivante peut déjà partir de la
+        # nouvelle valeur. La commande reste tout de même contrôlée par GET.
+        self._mixer_volume_cache[index] = target
+
         verified = self._verify_scalar_property(
             prop,
             index,
             target,
+            attempts=2,
+            initial_delay=0.012,
+            retry_delay=0.012,
         )
+
+        # Fallback conservateur uniquement si le contrôle rapide échoue.
         if verified is None:
+            verified = self._verify_scalar_property(
+                prop,
+                index,
+                target,
+                attempts=2,
+                initial_delay=0.040,
+                retry_delay=0.030,
+            )
+
+        if verified is None:
+            self._mixer_volume_cache[index] = None
             print(
                 f"Volume {label} modifié, "
                 "mais vérification impossible."
             )
             return
+
+        self._mixer_volume_cache[index] = verified
 
         print(
             f"Volume {label} :",

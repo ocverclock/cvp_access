@@ -53,6 +53,12 @@ class SpeechManager:
         self._profile_warning_printed = False
 
         self.speech_queue = queue.Queue(maxsize=16)
+
+        # Générations utilisées pour rendre obsolètes les anciennes annonces
+        # d'une même famille (par exemple Volume Song 81, 82, 83...).
+        self._replace_generation = {}
+        self._replace_lock = threading.Lock()
+
         self._closing = False
         self.speech_thread = threading.Thread(
             target=self._speech_loop,
@@ -147,27 +153,84 @@ class SpeechManager:
             except queue.Full:
                 return False
 
-    def speak(self, text: str, wav_path: Path | None = None):
+    def _new_replace_generation(self, replace_key):
+        if replace_key is None:
+            return None
+
+        with self._replace_lock:
+            generation = (
+                self._replace_generation.get(
+                    replace_key,
+                    0,
+                )
+                + 1
+            )
+            self._replace_generation[
+                replace_key
+            ] = generation
+
+        return generation
+
+    def _is_current_generation(
+        self,
+        replace_key,
+        generation,
+    ):
+        if replace_key is None:
+            return True
+
+        with self._replace_lock:
+            return (
+                self._replace_generation.get(
+                    replace_key
+                )
+                == generation
+            )
+
+    def speak(
+        self,
+        text: str,
+        wav_path: Path | None = None,
+        replace_key: str | None = None,
+    ):
+        generation = self._new_replace_generation(
+            replace_key
+        )
+
         return self._enqueue(
             (
                 "speak",
                 text,
                 Path(wav_path) if wav_path is not None else None,
+                replace_key,
+                generation,
             )
         )
 
-    def speak_sequence(self, text: str, files):
+    def speak_sequence(
+        self,
+        text: str,
+        files,
+        replace_key: str | None = None,
+    ):
+        generation = self._new_replace_generation(
+            replace_key
+        )
+
         return self._enqueue(
             (
                 "sequence",
                 text,
                 [Path(p) for p in files],
+                replace_key,
+                generation,
             )
         )
 
     def _speech_loop(self):
         while True:
             item = self.speech_queue.get()
+
             try:
                 if item is None:
                     return
@@ -175,12 +238,46 @@ class SpeechManager:
                 kind = item[0]
 
                 if kind == "speak":
-                    _, text, wav_path = item
-                    self._speak_now(text, wav_path)
+                    (
+                        _,
+                        text,
+                        wav_path,
+                        replace_key,
+                        generation,
+                    ) = item
+
+                    # Une annonce plus récente de la même famille existe :
+                    # on ignore instantanément celle-ci.
+                    if not self._is_current_generation(
+                        replace_key,
+                        generation,
+                    ):
+                        continue
+
+                    self._speak_now(
+                        text,
+                        wav_path,
+                    )
 
                 elif kind == "sequence":
-                    _, text, files = item
-                    self._speak_sequence_now(text, files)
+                    (
+                        _,
+                        text,
+                        files,
+                        replace_key,
+                        generation,
+                    ) = item
+
+                    if not self._is_current_generation(
+                        replace_key,
+                        generation,
+                    ):
+                        continue
+
+                    self._speak_sequence_now(
+                        text,
+                        files,
+                    )
 
             except Exception as exc:
                 print("Erreur thread vocal :", exc)
@@ -436,24 +533,28 @@ def install_speech_hooks(core, speech_config):
         return manager.speak(
             f"Volume de la voix {value} pour cent.",
             voice_dir / "volume" / f"volume_{value:03d}.wav",
+            replace_key="voice_volume",
         )
 
     def announce_style_volume(value):
         return manager.speak(
             f"Accompagnement {value}.",
             voice_dir / "style_volume" / f"style_volume_{value:03d}.wav",
+            replace_key="style_volume",
         )
 
     def announce_song_volume(value):
         return manager.speak(
             f"Volume Song {value}.",
             voice_dir / "song_volume" / f"song_volume_{value:03d}.wav",
+            replace_key="song_volume",
         )
 
     def announce_main_volume(value):
         return manager.speak(
             f"Volume Main {value}.",
             voice_dir / "main_volume" / f"main_volume_{value:03d}.wav",
+            replace_key="main_volume",
         )
 
     def announce_style_part(part, active):
