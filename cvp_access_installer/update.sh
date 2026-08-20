@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-UPDATE_VERSION="0.3.1"
+UPDATE_VERSION="0.3.2"
 REQUIRED_CODENAME="${CVP_REQUIRED_CODENAME:-trixie}"
 REQUIRED_ARCH="${CVP_REQUIRED_ARCH:-arm64}"
 PIPER_VOICE="${CVP_PIPER_VOICE:-fr_FR-siwis-medium}"
@@ -170,17 +170,22 @@ install -m 0755 "$SOURCE_MAIN" "$RUNTIME_DIR/cvp_access.py"
 if [[ "$(basename "$SOURCE_MAIN")" == "cvp_access_v1.5.py" ]]; then
     [[ -f "$REPO_DIR/cvp_access_v1.4.1.py" ]] || die "v1.5 requires cvp_access_v1.4.1.py."
     [[ -f "$REPO_DIR/cvp_keyboard.py" ]] || die "v1.5 requires cvp_keyboard.py."
+    [[ -f "$REPO_DIR/cvp_song.py" ]] || die "v1.5 requires cvp_song.py."
     [[ -f "$REPO_DIR/cvp_speech.py" ]] || die "v1.5 requires cvp_speech.py."
     [[ -f "$REPO_DIR/cvp_piper_worker.py" ]] || die "v1.5 requires cvp_piper_worker.py."
     [[ -f "$REPO_DIR/config/default.toml" ]] || die "v1.5 requires config/default.toml."
 
     install -m 0644 "$REPO_DIR/cvp_access_v1.4.1.py" "$RUNTIME_DIR/cvp_access_v1.4.1.py"
     install -m 0644 "$REPO_DIR/cvp_keyboard.py" "$RUNTIME_DIR/cvp_keyboard.py"
+    install -m 0644 "$REPO_DIR/cvp_song.py" "$RUNTIME_DIR/cvp_song.py"
     install -m 0644 "$REPO_DIR/cvp_speech.py" "$RUNTIME_DIR/cvp_speech.py"
     install -m 0644 "$REPO_DIR/cvp_piper_worker.py" "$RUNTIME_DIR/cvp_piper_worker.py"
     install -m 0644 "$REPO_DIR/config/default.toml" "$RUNTIME_DIR/default-keyboard.toml"
     if [[ -f "$INSTALLER_DIR/tools/generate_configured_voices.py" ]]; then
         install -m 0755 "$INSTALLER_DIR/tools/generate_configured_voices.py" "$RUNTIME_DIR/generate_configured_voices.py"
+    fi
+    if [[ -f "$REPO_DIR/cvp_keyboard_map.py" ]]; then
+        install -m 0755 "$REPO_DIR/cvp_keyboard_map.py" "$RUNTIME_DIR/cvp_keyboard_map.py"
     fi
 
     log "Refreshing configurable keyboard support"
@@ -194,6 +199,19 @@ if [[ "$(basename "$SOURCE_MAIN")" == "cvp_access_v1.5.py" ]]; then
         log "Preserving customer keyboard configuration: $CONFIG_FILE"
     fi
 fi
+# -----------------------------------------------------------------------------
+# Optional keyboard map
+# -----------------------------------------------------------------------------
+if [[ -f "$RUNTIME_DIR/cvp_keyboard_map.py" && -f "$CONFIG_FILE" ]]; then
+    log "Generating keyboard map HTML"
+    if ! runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" \
+        python3 "$RUNTIME_DIR/cvp_keyboard_map.py" \
+        --config "$CONFIG_FILE" \
+        --output "$CONFIG_DIR/keyboard-map.html"; then
+        warn "Keyboard map generation failed; runtime installation continues."
+    fi
+fi
+
 if grep -Fq '/home/pi/cvp_voice' "$RUNTIME_DIR/cvp_access.py"; then
     sed -i "s#/home/pi/cvp_voice#$VOICE_DIR#g" "$RUNTIME_DIR/cvp_access.py"
 fi
