@@ -87,7 +87,7 @@ KEY_NAME_TO_CODE = {
     "LESS": ecodes.KEY_102ND,            # < / >
 
     # Function keys
-    **{f"F{i}": getattr(ecodes, f"KEY_F{i}") for i in range(1, 13)},
+    **{f"F{i}": getattr(ecodes, f"KEY_F{i}") for i in range(1, 14)},
 
     # Navigation / common keys
     "ESC": ecodes.KEY_ESC,
@@ -230,6 +230,33 @@ ACTION_SPECS = {
     "song_play_pause": ActionSpec(description="Lecture / pause du Song"),
     "song_stop": ActionSpec(description="Stop du Song"),
     "song_position": ActionSpec(description="Annonce mesure et temps"),
+    "style_start_stop": ActionSpec(description="Demarre ou arrete le Style"),
+    "song_volume_change": ActionSpec(True, -5, 5, "Modifie le volume Song / MidiMaster"),
+    "main_volume_change": ActionSpec(True, -5, 5, "Modifie le volume Main"),
+    "song_measure_previous": ActionSpec(
+        description="Recule le Song d'une mesure"
+    ),
+    "song_measure_next": ActionSpec(
+        description="Avance le Song d'une mesure"
+    ),
+    "song_measure_previous_5": ActionSpec(
+        description="Recule le Song de cinq mesures"
+    ),
+    "song_measure_next_5": ActionSpec(
+        description="Avance le Song de cinq mesures"
+    ),
+    "song_goto_measure": ActionSpec(
+        description="Saisie directe d'une mesure"
+    ),
+    "song_loop_point_a": ActionSpec(
+        description="Mémorise le point A à la mesure courante"
+    ),
+    "song_loop_point_b": ActionSpec(
+        description="Mémorise le point B à la mesure courante"
+    ),
+    "song_loop_toggle": ActionSpec(
+        description="Active ou désactive la boucle A/B"
+    ),
     "voice_volume_up": ActionSpec(description="Augmente le volume vocal"),
     "voice_volume_down": ActionSpec(description="Diminue le volume vocal"),
     "style_volume_up": ActionSpec(description="Augmente le volume Style"),
@@ -242,12 +269,41 @@ ACTION_SPECS = {
 class ActionInvocation:
     name: str
     parameter: Optional[int] = None
+    help_only: bool = False
 
     @property
     def text(self) -> str:
         if self.parameter is None:
             return self.name
         return f"{self.name}:{self.parameter}"
+
+
+
+def describe_invocation(invocation: ActionInvocation) -> str:
+    name = invocation.name
+    parameter = invocation.parameter
+
+    if name == "song_track_toggle":
+        return f"Piste {parameter} du Song, activer ou couper."
+
+    if name == "style_part_toggle":
+        return f"Partie Style {parameter}, activer ou couper."
+
+    if name == "song_volume_change":
+        if parameter is not None and parameter > 0:
+            return f"Augmenter le volume Song de {parameter}."
+        return f"Diminuer le volume Song de {abs(parameter or 0)}."
+
+    if name == "main_volume_change":
+        if parameter is not None and parameter > 0:
+            return f"Augmenter le volume Main de {parameter}."
+        return f"Diminuer le volume Main de {abs(parameter or 0)}."
+
+    spec = ACTION_SPECS.get(name)
+    if spec is not None and spec.description:
+        return spec.description + "."
+
+    return name.replace("_", " ") + "."
 
 
 @dataclass(frozen=True)
@@ -273,7 +329,7 @@ class KeyboardConfig:
             self.issues = []
 
 
-# Exact built-in fallback reproducing v1.4.1.
+# Built-in fallback reproducing the current RC3 mapping.
 BUILTIN_BINDINGS = {
     "TOP1": "style_part_toggle:1",
     "TOP2": "style_part_toggle:2",
@@ -306,13 +362,26 @@ BUILTIN_BINDINGS = {
 
     "F1": "announce_tempo",
     "F2": "announce_transpose",
+    "F3": "song_goto_measure",
+    "F4": "song_loop_point_a",
+    "F5": "song_loop_point_b",
+    "F6": "song_loop_toggle",
     "SPACE": "song_play_pause",
     "ENTER": "song_stop",
     "P": "song_position",
+    "LEFT": "song_measure_previous",
+    "RIGHT": "song_measure_next",
+    "SHIFT+LEFT": "song_measure_previous_5",
+    "SHIFT+RIGHT": "song_measure_next_5",
     "UP": "voice_volume_up",
     "DOWN": "voice_volume_down",
     "PAGEUP": "style_volume_up",
     "PAGEDOWN": "style_volume_down",
+    "F13": "style_start_stop",
+    "SHIFT+HOME": "song_volume_change:5",
+    "SHIFT+END": "song_volume_change:-5",
+    "SHIFT+INSERT": "main_volume_change:5",
+    "SHIFT+DELETE": "main_volume_change:-5",
     "ESC": "restart",
 }
 
@@ -628,6 +697,56 @@ class KeyRouter:
 
         key_name = CODE_TO_KEY_NAME.get(event.code)
         if key_name is None:
+            return None
+
+        help_requested = any(
+            MODIFIER_CODES.get(code) == "CTRL"
+            for code in self.pressed_modifier_codes
+        )
+
+        if help_requested:
+            modifiers = {
+                MODIFIER_CODES[code]
+                for code in self.pressed_modifier_codes
+                if (
+                    code in MODIFIER_CODES
+                    and MODIFIER_CODES[code] != "CTRL"
+                )
+            }
+
+            if self.caps_active:
+                modifiers.add("CAPS")
+
+            ordered = [
+                modifier
+                for modifier in MODIFIER_ORDER
+                if modifier in modifiers
+            ]
+            help_combo = "+".join(ordered + [key_name])
+            invocation = self.config.bindings.get(help_combo)
+
+            if (
+                invocation is None
+                and self.caps_active
+                and self.config.caps_fallback_to_base
+            ):
+                modifiers.discard("CAPS")
+                ordered = [
+                    modifier
+                    for modifier in MODIFIER_ORDER
+                    if modifier in modifiers
+                ]
+                help_combo = "+".join(ordered + [key_name])
+                invocation = self.config.bindings.get(help_combo)
+
+            if invocation is not None:
+                print(f"Aide CTRL+{help_combo} -> {invocation.text}")
+                return ActionInvocation(
+                    invocation.name,
+                    invocation.parameter,
+                    help_only=True,
+                )
+
             return None
 
         combo = self._combo_for(key_name, include_caps=True)

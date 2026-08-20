@@ -19,6 +19,7 @@ from pathlib import Path
 
 from cvp_keyboard import (
     CODE_TO_KEY_NAME,
+    describe_invocation,
     KeyRouter,
     load_keyboard_config,
 )
@@ -27,7 +28,7 @@ from evdev import ecodes
 from cvp_speech import install_speech_hooks
 
 
-VERSION = "1.5-RC3-dev-fast"
+VERSION = "1.5-RC3"
 CORE_FILENAME = "cvp_access_v1.4.1.py"
 
 CONFIG_FILE = Path(
@@ -1126,6 +1127,12 @@ def main():
         invocation = router.process_event(event)
 
         if invocation is None:
+            continue
+
+        if invocation.help_only:
+            description = describe_invocation(invocation)
+            print("Aide :", description)
+            core.announce_action_help(description)
             continue
 
         try:

@@ -574,6 +574,12 @@ def install_speech_hooks(core, speech_config):
             / ("start.wav" if active else "stop.wav"),
         )
 
+    def announce_action_help(text):
+        return manager.speak(
+            text,
+            replace_key="action_help",
+        )
+
     def announce_voice_part(name, active):
         state = "on" if active else "off"
         label = "Dual" if name == "layer" else "Left"
@@ -694,6 +700,7 @@ def install_speech_hooks(core, speech_config):
     core.announce_main_volume = announce_main_volume
     core.announce_style_part = announce_style_part
     core.announce_style_play_state = announce_style_play_state
+    core.announce_action_help = announce_action_help
     core.announce_voice_part = announce_voice_part
     core.announce_song_state = announce_song_state
     core.announce_song_position = announce_song_position
