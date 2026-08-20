@@ -120,6 +120,17 @@ def main():
             ("song_play_pause", None),
             ("song_stop", None),
             ("song_position", None),
+            ("song_measure_previous", None),
+            ("song_measure_next", None),
+            ("song_measure_previous_5", None),
+            ("song_measure_next_5", None),
+            ("song_goto_measure", None),
+            ("song_loop_point_a", None),
+            ("song_loop_point_b", None),
+            ("song_loop_toggle", None),
+            ("style_start_stop", None),
+            ("song_volume_change", 1),
+            ("main_volume_change", 1),
             ("voice_volume_up", None),
             ("voice_volume_down", None),
             ("style_volume_up", None),
@@ -181,6 +192,36 @@ def main():
                     f"style_volume/style_volume_{volume:03d}.wav",
                     f"Accompagnement {volume}.",
                 )
+
+        elif name == "song_volume_change":
+            for volume in range(0, 128):
+                add(
+                    f"song_volume/song_volume_{volume:03d}.wav",
+                    f"Volume Song {volume}.",
+                )
+
+        elif name == "main_volume_change":
+            for volume in range(0, 128):
+                add(
+                    f"main_volume/main_volume_{volume:03d}.wav",
+                    f"Volume Main {volume}.",
+                )
+
+        elif name == "style_start_stop":
+            add("style_transport/start.wav", "Style démarré.")
+            add("style_transport/stop.wav", "Style arrêté.")
+
+        elif name == "song_goto_measure":
+            add("song/no_song.wav", "Aucun Song chargé.")
+            add("song/detection_error.wav", "Impossible de vérifier le Song.")
+            add("song/goto_prompt.wav", "Saisir le numéro de mesure puis Entrée.")
+            add("song/goto_cancelled.wav", "Saisie mesure annulée.")
+            add("song/invalid_measure.wav", "Mesure invalide.")
+
+        elif name in {"song_loop_point_a", "song_loop_point_b", "song_loop_toggle"}:
+            add("song/loop_a_missing.wav", "Point A non défini.")
+            add("song/loop_b_invalid.wav", "Point B invalide.")
+            add("song/loop_points_missing.wav", "Points A et B non définis.")
 
         elif name == "song_play_pause":
             add("transport/lecture.wav", "Lecture")
