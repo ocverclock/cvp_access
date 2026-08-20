@@ -5,53 +5,34 @@ Testé sur Yamaha CVP-905 firmware 1.03.
 ## Validé GET + SET
 
 ### Métronome
+- `07 00 00 01 | 00`
+- `00` OFF / `01` ON
+- conservation automatique sur LEFT, SHIFT+LEFT et F3 vers l'arrière.
 
-- Propriété : `07 00 00 01`
-- Index : `00`
-- `00` = OFF
-- `01` = ON
-- GET validé
-- SET validé
+### Style Start / Stop
+- `06 00 03 01 | 00`
+- `00` STOP / `01` START
+- affectation : F13.
 
-Comportement CVP observé : une navigation Song vers une mesure antérieure
-coupe le métronome. `cvp_song.py` mémorise désormais son état avant une
-navigation arrière et le remet ON uniquement s'il était ON auparavant.
+### Volume Song / MidiMaster
+- `0C 00 00 01 | 50`
+- GET + SET validés.
+- UI 80 = `0x50`, UI 90 = `0x5A`.
+- HOME +1, SHIFT+HOME +5, END -1, SHIFT+END -5.
 
-Cela couvre :
-- LEFT : mesure -1
-- SHIFT+LEFT : mesure -5
-- F3 : aller à une mesure inférieure à la position courante
+### Volume Main
+- `0C 00 00 01 | 00`
+- GET + SET validés.
+- INSERT +1, SHIFT+INSERT +5, DELETE -1, SHIFT+DELETE -5.
 
 ### Song position
-
-- Propriété : `04 00 0A 01`
-- Index : `00`
-- DATA : mesure 14-bit + temps 14-bit
+- `04 00 0A 01 | 00`
+- mesure 14-bit + temps 14-bit.
 
 ### Song Loop A/B
+- `04 00 0D 01 | 00`
+- mémoire A/B locale conservée quand Loop passe OFF.
 
-- Propriété : `04 00 0D 01`
-- Index : `00`
-- Mémoire A/B locale conservée quand Loop passe OFF.
-
-## Observé GET, SET à valider
-
-### Style Start/Stop
-
-- Propriété candidate : `06 00 03 01`
-- Index de référence : `00`
-- STOP = `00`
-- START = `01`
-- Diff STOP -> START -> STOP reproductible
-- SET non encore validé : ne pas intégrer au runtime avant validation.
-
-## Non trouvé pour le moment
-
-### Chord Fingering Type
-
-Aucun changement reproductible détecté :
-- Fingered -> AI Full Keyboard -> Fingered
-- brute-force 1 048 576 couples dans l'espace testé
-- retest avec ACMP + Style actif : aucun candidat
-
-À reprendre plus tard par une autre voie, notamment diff de Registration/Backup.
+## Fingering Type
+Recherche MIDI suspendue. Aucun candidat reproductible, y compris avec
+ACMP + Style actifs. À reprendre plutôt par diff Registration/Backup.

@@ -28,6 +28,7 @@ ACTION_LABELS = {
     "song_loop_point_a": "Point A",
     "song_loop_point_b": "Point B",
     "song_loop_toggle": "Boucle A/B",
+    "style_start_stop": "Style Start / Stop",
     "voice_volume_up": "Voix +",
     "voice_volume_down": "Voix −",
     "style_volume_up": "Volume Style +",
@@ -51,7 +52,7 @@ MOD_LABELS = {"SHIFT": "Maj", "CTRL": "Ctrl", "ALT": "Alt", "ALTGR": "AltGr", "M
 MOD_ORDER = ("CAPS", "CTRL", "ALT", "ALTGR", "META", "SHIFT")
 
 ROWS = [
-    [("ESC", 1.25)] + [(f"F{i}", 1) for i in range(1, 13)],
+    [("ESC", 1.25)] + [(f"F{i}", 1) for i in range(1, 14)],
     [("TOP1",1),("TOP2",1),("TOP3",1),("TOP4",1),("TOP5",1),("TOP6",1),("TOP7",1),("TOP8",1),("TOP9",1),("TOP0",1),("RPAREN",1),("EQUAL",1),("BACKSPACE",2)],
     [("TAB",1.5),("A",1),("Z",1),("E",1),("R",1),("T",1),("Y",1),("U",1),("I",1),("O",1),("P",1),("CARET",1),("DOLLAR",1)],
     [("CAPSLOCK",1.8),("Q",1),("S",1),("D",1),("F",1),("G",1),("H",1),("J",1),("K",1),("L",1),("M",1),("U_GRAVE",1),("ASTERISK",1),("ENTER",1.8)],
@@ -87,6 +88,12 @@ def human_action(raw: str):
         return f"Piste Song {param}"
     if name == "style_part_toggle":
         return STYLE_PARTS.get(param, f"Partie Style {param}")
+    if name == "song_volume_change" and param is not None:
+        sign = "+" if param > 0 else "−"
+        return f"Volume Song {sign}{abs(param)}"
+    if name == "main_volume_change" and param is not None:
+        sign = "+" if param > 0 else "−"
+        return f"Volume Main {sign}{abs(param)}"
     return ACTION_LABELS.get(name, name.replace("_", " "))
 
 
@@ -96,7 +103,7 @@ def group_for(raw: str):
         return "song"
     if name.startswith("style_") or name in {"layer_toggle", "left_toggle"}:
         return "style"
-    if name.startswith("voice_"):
+    if name.startswith("voice_") or name.startswith("main_volume"):
         return "voice"
     if name == "restart":
         return "system"

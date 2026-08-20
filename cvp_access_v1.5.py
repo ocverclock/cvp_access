@@ -27,7 +27,7 @@ from evdev import ecodes
 from cvp_speech import install_speech_hooks
 
 
-VERSION = "1.5-RC3-dev-metronome"
+VERSION = "1.5-RC3-dev-controls"
 CORE_FILENAME = "cvp_access_v1.4.1.py"
 
 CONFIG_FILE = Path(
@@ -120,6 +120,9 @@ class CVPActions:
             "song_loop_point_a": self.song_loop_point_a,
             "song_loop_point_b": self.song_loop_point_b,
             "song_loop_toggle": self.song_loop_toggle,
+            "style_start_stop": self.style_start_stop,
+            "song_volume_change": self.song_volume_change,
+            "main_volume_change": self.main_volume_change,
             "voice_volume_up": self.voice_volume_up,
             "voice_volume_down": self.voice_volume_down,
             "style_volume_up": self.style_volume_up,
@@ -735,6 +738,181 @@ class CVPActions:
     def style_volume_down(self):
         self._change_style_volume(
             -self.core.STYLE_VOLUME_STEP
+        )
+
+    # ------------------------------------------------------------------
+    # Contrôles validés RC3 : Style transport + volumes Song/Main
+    # ------------------------------------------------------------------
+
+    def _get_scalar_property(self, prop, index):
+        data = self.core.get_property(
+            self.port,
+            prop,
+            index,
+        )
+        if data is None or len(data) != 1:
+            return None
+        return data[0]
+
+    def _set_scalar_property(self, prop, index, value):
+        if not 0 <= value <= 0x7F:
+            return False
+
+        message = (
+            self.core.HEADER
+            + [0x01, 0x01]
+            + prop
+            + [index, 0x01, 0x00]
+            + [0x00, 0x01]
+            + [value]
+            + [0xF7]
+        )
+        return self.core.send_sysex(
+            self.port,
+            message,
+        )
+
+    def _verify_scalar_property(
+        self,
+        prop,
+        index,
+        expected,
+        attempts=5,
+    ):
+        time.sleep(0.08)
+
+        for attempt in range(attempts):
+            value = self._get_scalar_property(
+                prop,
+                index,
+            )
+            if value == expected:
+                return value
+            if attempt < attempts - 1:
+                time.sleep(0.05)
+
+        return None
+
+    def style_start_stop(self):
+        prop = [0x06, 0x00, 0x03, 0x01]
+        index = 0x00
+
+        current = self._get_scalar_property(
+            prop,
+            index,
+        )
+        if current not in (0x00, 0x01):
+            print("Impossible de lire l'état du Style.")
+            return
+
+        target = 0x00 if current == 0x01 else 0x01
+
+        if not self._set_scalar_property(
+            prop,
+            index,
+            target,
+        ):
+            print("Impossible de modifier l'état du Style.")
+            return
+
+        verified = self._verify_scalar_property(
+            prop,
+            index,
+            target,
+        )
+        if verified is None:
+            print(
+                "Commande Style envoyée, "
+                "mais vérification impossible."
+            )
+            return
+
+        active = verified == 0x01
+        print(
+            "Style ->",
+            "START" if active else "STOP",
+        )
+        self.core.announce_style_play_state(
+            active
+        )
+
+    def _change_mixer_volume(
+        self,
+        index,
+        delta,
+        label,
+        announcer,
+    ):
+        prop = [0x0C, 0x00, 0x00, 0x01]
+
+        current = self._get_scalar_property(
+            prop,
+            index,
+        )
+        if current is None:
+            print(
+                f"Impossible de lire le volume {label}."
+            )
+            return
+
+        target = max(
+            0,
+            min(
+                127,
+                current + delta,
+            ),
+        )
+
+        if target == current:
+            print(
+                f"Volume {label} :",
+                current,
+            )
+            announcer(current)
+            return
+
+        if not self._set_scalar_property(
+            prop,
+            index,
+            target,
+        ):
+            print(
+                f"Impossible de modifier le volume {label}."
+            )
+            return
+
+        verified = self._verify_scalar_property(
+            prop,
+            index,
+            target,
+        )
+        if verified is None:
+            print(
+                f"Volume {label} modifié, "
+                "mais vérification impossible."
+            )
+            return
+
+        print(
+            f"Volume {label} :",
+            verified,
+        )
+        announcer(verified)
+
+    def song_volume_change(self, delta):
+        self._change_mixer_volume(
+            0x50,
+            delta,
+            "Song",
+            self.core.announce_song_volume,
+        )
+
+    def main_volume_change(self, delta):
+        self._change_mixer_volume(
+            0x00,
+            delta,
+            "Main",
+            self.core.announce_main_volume,
         )
 
     # ------------------------------------------------------------------
