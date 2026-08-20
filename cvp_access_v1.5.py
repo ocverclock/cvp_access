@@ -17,11 +17,17 @@ import threading
 import time
 from pathlib import Path
 
-from cvp_keyboard import KeyRouter, load_keyboard_config
+from cvp_keyboard import (
+    CODE_TO_KEY_NAME,
+    KeyRouter,
+    load_keyboard_config,
+)
+from cvp_song import SongController
+from evdev import ecodes
 from cvp_speech import install_speech_hooks
 
 
-VERSION = "1.5-RC2"
+VERSION = "1.5-RC3-dev-metronome"
 CORE_FILENAME = "cvp_access_v1.4.1.py"
 
 CONFIG_FILE = Path(
@@ -86,6 +92,11 @@ class CVPActions:
     def __init__(self, core, port):
         self.core = core
         self.port = port
+        self.song = SongController(core, port)
+
+        # Mode modal de saisie "Aller à la mesure".
+        self.goto_buffer = None
+        self.goto_max_measure = None
 
     def dispatch(self, invocation):
         name = invocation.name
@@ -101,6 +112,14 @@ class CVPActions:
             "song_play_pause": self.song_play_pause,
             "song_stop": self.song_stop,
             "song_position": self.song_position,
+            "song_measure_previous": self.song_measure_previous,
+            "song_measure_next": self.song_measure_next,
+            "song_measure_previous_5": self.song_measure_previous_5,
+            "song_measure_next_5": self.song_measure_next_5,
+            "song_goto_measure": self.song_goto_measure,
+            "song_loop_point_a": self.song_loop_point_a,
+            "song_loop_point_b": self.song_loop_point_b,
+            "song_loop_toggle": self.song_loop_toggle,
             "voice_volume_up": self.voice_volume_up,
             "voice_volume_down": self.voice_volume_down,
             "style_volume_up": self.style_volume_up,
@@ -169,6 +188,9 @@ class CVPActions:
     # ------------------------------------------------------------------
 
     def song_track_toggle(self, track):
+        if not self._require_song():
+            return
+
         current = self.core.get_track_state(
             self.port,
             track,
@@ -216,6 +238,9 @@ class CVPActions:
         )
 
     def song_play_pause(self):
+        if not self._require_song():
+            return
+
         current_state = self.core.get_song_play_state(
             self.port
         )
@@ -259,6 +284,9 @@ class CVPActions:
         self.core.announce_song_state(verified_state)
 
     def song_stop(self):
+        if not self._require_song():
+            return
+
         current_state = self.core.get_song_play_state(
             self.port
         )
@@ -297,6 +325,9 @@ class CVPActions:
         self.core.announce_song_state(verified_state)
 
     def song_position(self):
+        if not self._require_song():
+            return
+
         position = self.core.get_song_position(
             self.port
         )
@@ -314,6 +345,293 @@ class CVPActions:
             measure,
             beat,
         )
+
+    def _require_song(self):
+        loaded = self.song.is_loaded()
+
+        if loaded is True:
+            return True
+
+        if loaded is False:
+            print("Aucun Song chargé.")
+            self.core.announce_no_song()
+            return False
+
+        print("Impossible de vérifier si un Song est chargé.")
+        self.core.announce_song_detection_error()
+        return False
+
+    def _announce_song_action_error(self, status):
+        if status == "no_song":
+            print("Aucun Song chargé.")
+            self.core.announce_no_song()
+        elif status == "song_unknown":
+            print("Impossible de vérifier le Song.")
+            self.core.announce_song_detection_error()
+        elif status == "invalid":
+            print("Mesure invalide.")
+            self.core.announce_invalid_measure()
+        elif status == "read_error":
+            print("Impossible de lire le Song.")
+        elif status == "send_error":
+            print("Impossible d'envoyer la commande Song.")
+        elif status == "verify_error":
+            print("Commande Song envoyée mais non confirmée.")
+        else:
+            print("Erreur Song :", status)
+
+    def _move_song_measure(self, delta):
+        status, measure = self.song.move(delta)
+
+        if status != "ok":
+            self._announce_song_action_error(status)
+            return
+
+        print(f"Position -> mesure {measure}")
+        self.core.announce_measure(measure)
+
+    def song_measure_previous(self):
+        self._move_song_measure(-1)
+
+    def song_measure_next(self):
+        self._move_song_measure(1)
+
+    def song_measure_previous_5(self):
+        self._move_song_measure(-5)
+
+    def song_measure_next_5(self):
+        self._move_song_measure(5)
+
+    # --------------------------------------------------------------
+    # Aller à la mesure : mode de saisie numérique
+    # --------------------------------------------------------------
+
+    def song_goto_measure(self):
+        if not self._require_song():
+            return
+
+        self.goto_buffer = ""
+
+        length = self.song.get_length()
+
+        self.goto_max_measure = (
+            length[0]
+            if length is not None
+            else None
+        )
+
+        print(
+            "Saisie mesure : entre un numéro puis Entrée."
+        )
+        self.core.announce_goto_measure_prompt()
+
+    def _cancel_goto(self, router):
+        self.goto_buffer = None
+        self.goto_max_measure = None
+        router.pressed_modifier_codes.clear()
+
+        print("Saisie mesure annulée.")
+        self.core.announce_goto_measure_cancelled()
+
+    def process_modal_event(self, event, router):
+        """
+        Retourne True si l'événement a été consommé par un mode modal.
+        """
+
+        if self.goto_buffer is None:
+            return False
+
+        # Pendant la saisie on isole totalement le clavier des commandes
+        # normales : une touche numérique ne doit pas muter une partie Style.
+        if event.type != ecodes.EV_KEY:
+            return True
+
+        if event.value != 1:
+            return True
+
+        key_name = CODE_TO_KEY_NAME.get(
+            event.code
+        )
+
+        if key_name is None:
+            return True
+
+        digit = None
+
+        if key_name.startswith("TOP"):
+            suffix = key_name[3:]
+
+            if suffix.isdigit():
+                digit = suffix
+
+        elif key_name.startswith("KP"):
+            suffix = key_name[2:]
+
+            if suffix.isdigit():
+                digit = suffix
+
+        if digit is not None:
+            if len(self.goto_buffer) < 5:
+                self.goto_buffer += digit
+
+            print(
+                "Saisie mesure :",
+                self.goto_buffer or "vide",
+            )
+            return True
+
+        if key_name == "BACKSPACE":
+            self.goto_buffer = self.goto_buffer[:-1]
+
+            print(
+                "Saisie mesure :",
+                self.goto_buffer or "vide",
+            )
+            return True
+
+        if key_name == "ESC":
+            self._cancel_goto(router)
+            return True
+
+        if key_name in {
+            "ENTER",
+            "KPENTER",
+        }:
+            if not self.goto_buffer:
+                print("Aucun numéro saisi.")
+                self.core.announce_goto_measure_prompt()
+                return True
+
+            measure = int(self.goto_buffer)
+
+            max_measure = self.goto_max_measure
+
+            self.goto_buffer = None
+            self.goto_max_measure = None
+            router.pressed_modifier_codes.clear()
+
+            if (
+                measure < 1
+                or (
+                    max_measure is not None
+                    and measure > max_measure
+                )
+            ):
+                print(
+                    "Mesure invalide :",
+                    measure,
+                    (
+                        f"(Song = {max_measure} mesures)"
+                        if max_measure is not None
+                        else ""
+                    ),
+                )
+                self.core.announce_invalid_measure()
+                return True
+
+            status, verified = self.song.goto(
+                measure
+            )
+
+            if status != "ok":
+                self._announce_song_action_error(status)
+                return True
+
+            print(
+                f"Position -> mesure {verified}"
+            )
+            self.core.announce_measure(
+                verified
+            )
+            return True
+
+        return True
+
+    # --------------------------------------------------------------
+    # Points A / B et Loop mémorisé
+    # --------------------------------------------------------------
+
+    def song_loop_point_a(self):
+        status, measure = self.song.set_point_a()
+
+        if status != "ok":
+            self._announce_song_action_error(status)
+            return
+
+        print(f"Point A -> mesure {measure}")
+        self.core.announce_loop_point_a(
+            measure
+        )
+
+    def song_loop_point_b(self):
+        status, measure = self.song.set_point_b()
+
+        if status == "missing_a":
+            print("Point A non défini.")
+            self.core.announce_loop_point_a_missing()
+            return
+
+        if status == "invalid_b":
+            print(
+                "Point B invalide :",
+                measure,
+                "doit être supérieur au point A",
+                self.song.loop_a,
+            )
+            self.core.announce_loop_point_b_invalid()
+            return
+
+        if status != "ok":
+            self._announce_song_action_error(status)
+            return
+
+        print(f"Point B -> mesure {measure}")
+        self.core.announce_loop_point_b(
+            measure
+        )
+
+    def song_loop_toggle(self):
+        status, points = self.song.toggle_loop()
+
+        if status == "missing_points":
+            print("Points A et B non définis.")
+            self.core.announce_loop_points_missing()
+            return
+
+        if status == "invalid_b":
+            print("Point B invalide.")
+            self.core.announce_loop_point_b_invalid()
+            return
+
+        if status == "on":
+            point_a, point_b = points
+
+            print(
+                f"Loop -> ON mesures "
+                f"{point_a} à {point_b}"
+            )
+            self.core.announce_loop_state(
+                True,
+                point_a,
+                point_b,
+            )
+            return
+
+        if status == "off":
+            point_a, point_b = points
+
+            print(
+                "Loop -> OFF ; "
+                f"mémoire conservée {point_a}->{point_b}"
+            )
+            self.core.announce_loop_state(
+                False,
+                point_a,
+                point_b,
+            )
+            return
+
+        self._announce_song_action_error(status)
 
     # ------------------------------------------------------------------
     # Style
@@ -573,6 +891,12 @@ def main():
     print()
 
     for event in keyboard.read_loop():
+        if actions.process_modal_event(
+            event,
+            router,
+        ):
+            continue
+
         invocation = router.process_event(event)
 
         if invocation is None:
