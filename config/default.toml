@@ -1,131 +1,8 @@
-# ============================================================
-# CVP ACCESS - CONFIGURATION CLAVIER ET RETOUR VOCAL
-# ============================================================
-#
-# Ce fichier est volontairement très commenté : il sert à la fois de
-# CONFIGURATION et de MODE D'EMPLOI intégré.
-#
-# RÈGLE SIMPLE :
-#   - une ligne qui commence par # est une explication ;
-#   - une ligne sans # configure réellement CVP Access.
-#
-# Fichier actif après installation :
-#
-#   /etc/cvp-access/keyboard.toml
-#
-# Accès réseau Samba :
-#
-#   \\cvp-access.local\CVP_config\keyboard.toml
-#
-# ------------------------------------------------------------
-# SAUVEGARDER AVANT UNE MODIFICATION IMPORTANTE
-# ------------------------------------------------------------
-#
-#   sudo cp /etc/cvp-access/keyboard.toml \
-#       /etc/cvp-access/keyboard.toml.backup
-#
-# ------------------------------------------------------------
-# VÉRIFIER LE FICHIER APRÈS MODIFICATION
-# ------------------------------------------------------------
-#
-#   python3 /opt/cvp-access/cvp_keyboard.py \
-#       --check /etc/cvp-access/keyboard.toml
-#
-# ------------------------------------------------------------
-# (OPTIONNEL) PRÉ-GÉNÉRER LES WAV APRÈS AVOIR CHANGÉ LES TOUCHES
-# ------------------------------------------------------------
-#
-# Recommandé pour préparer une configuration client définitive.
-# En mode hybrid, ce n'est pas obligatoire : Piper peut créer une phrase
-# manquante à la demande. En mode pregenerated, cette commande est nécessaire
-# pour préparer les nouvelles annonces utilisées par le TOML.
-#
-#   ~/.local/share/cvp-access/piper-env/bin/python \
-#       /opt/cvp-access/generate_configured_voices.py \
-#       --config /etc/cvp-access/keyboard.toml
-#
-# ------------------------------------------------------------
-# ACTIVER LES MODIFICATIONS
-# ------------------------------------------------------------
-#
-#   sudo systemctl restart cvp-access
-#
-# ------------------------------------------------------------
-# RESTAURER LA SAUVEGARDE
-# ------------------------------------------------------------
-#
-#   sudo cp /etc/cvp-access/keyboard.toml.backup \
-#       /etc/cvp-access/keyboard.toml
-#   sudo systemctl restart cvp-access
-#
-# ============================================================
-
-
-# ============================================================
-# RÉGLAGES GÉNÉRAUX DU CLAVIER
-# ============================================================
-
 [general]
-
-# Version du format de configuration.
-# Ne pas modifier sauf indication d'une future version de CVP Access.
 format_version = 2
-
-# Le nom des touches de ce fichier suit un clavier français AZERTY.
 layout = "azerty"
-
-# true : Caps Lock devient une deuxième couche de commandes CVP Access.
-# Exemple :
-#   A        peut contrôler la piste 1
-#   CAPS+A   peut annoncer le tempo
 caps_lock_layer = true
-
-# true : si CAPS+R n'est pas défini, R conserve son action normale.
-# false : avec Caps Lock actif, seules les commandes CAPS+... définies
-#         fonctionnent.
 caps_fallback_to_base = true
-
-
-# ============================================================
-# RETOUR VOCAL / PIPER
-# ============================================================
-#
-# mode = "pregenerated"
-#   Utilise uniquement les fichiers WAV préparés à l'avance.
-#   Avantage : latence minimale.
-#   Si un WAV manque, aucune synthèse à la demande n'est effectuée.
-#
-# mode = "hybrid"
-#   MODE RECOMMANDÉ.
-#   Utilise le WAV pré-généré lorsqu'il existe.
-#   Sinon Piper synthétise la phrase à la demande et la met en cache.
-#   Très pratique pour la recherche de nouvelles fonctions.
-#
-# mode = "runtime"
-#   Piper synthétise toutes les annonces à la demande.
-#   Utile surtout pour le développement ; première annonce plus lente.
-#
-# generation = "configured"
-#   MODE RECOMMANDÉ.
-#   À l'installation/mise à jour, ne génère que les WAV nécessaires aux
-#   ACTIONS réellement présentes dans [keys].
-#
-# generation = "core"
-#   Génère toute la banque vocale des fonctions stables de CVP Access.
-#
-# generation = "all"
-#   Génère toutes les annonces prédéfinies connues par cette version.
-#   Actuellement équivalent à core ; il pourra devenir plus large ensuite.
-#
-# cache = true
-#   Les phrases créées dynamiquement par Piper sont conservées dans :
-#   ~/.cache/cvp-access/tts/
-#
-# voice
-#   Modèle Piper téléchargé automatiquement par l'installateur.
-#
-# length_scale
-#   Vitesse de parole Piper. 0.85 correspond au réglage actuel validé.
 
 [speech]
 mode = "hybrid"
@@ -134,70 +11,17 @@ cache = true
 voice = "fr_FR-siwis-medium"
 length_scale = 0.85
 
-
-# ============================================================
-# AFFECTATION DES TOUCHES
-# ============================================================
-#
-# Syntaxe :
-#
-#   TOUCHE = "action"
-#
-# Exemples :
-#
-#   F1 = "announce_tempo"
-#   A = "song_track_toggle:1"
-#
-# Pour une combinaison, mettre le nom entre guillemets :
-#
-#   "SHIFT+F1" = "song_position"
-#   "CTRL+A" = "announce_transpose"
-#   "CAPS+A" = "announce_tempo"
-#
-# Modificateurs disponibles :
-#
-#   SHIFT  CTRL  ALT  ALTGR  META  CAPS
-#
-# Les pressions longues, doubles pressions et répétitions automatiques
-# ne déclenchent volontairement aucune fonction spéciale dans cette version.
-
 [keys]
-
-
-# ------------------------------------------------------------
-# PARTIES STYLE - rangée & é " ' ( - è _
-# ------------------------------------------------------------
-#
-# TOP1 = touche & / 1
-# TOP2 = touche é / 2
-# TOP3 = touche " / 3
-# TOP4 = touche ' / 4
-# TOP5 = touche ( / 5
-# TOP6 = touche - / 6
-# TOP7 = touche è / 7
-# TOP8 = touche _ / 8
-# TOP9 = touche ç / 9
-# TOP0 = touche à / 0
-
-TOP1 = "style_part_toggle:1"  # Rhythm 1
-TOP2 = "style_part_toggle:2"  # Rhythm 2
-TOP3 = "style_part_toggle:3"  # Bass
-TOP4 = "style_part_toggle:4"  # Chord 1
-TOP5 = "style_part_toggle:5"  # Chord 2
-TOP6 = "style_part_toggle:6"  # Pad
-TOP7 = "style_part_toggle:7"  # Phrase 1
-TOP8 = "style_part_toggle:8"  # Phrase 2
-
-TOP9 = "layer_toggle"         # Layer / Dual
-TOP0 = "left_toggle"          # Left
-
-
-# ------------------------------------------------------------
-# PISTES SONG 1 À 16
-# ------------------------------------------------------------
-#
-# L'action song_track_toggle:N lit d'abord l'état réel de la piste N,
-# envoie l'état inverse, puis vérifie la réponse du CVP.
+TOP1 = "style_part_toggle:1"
+TOP2 = "style_part_toggle:2"
+TOP3 = "style_part_toggle:3"
+TOP4 = "style_part_toggle:4"
+TOP5 = "style_part_toggle:5"
+TOP6 = "style_part_toggle:6"
+TOP7 = "style_part_toggle:7"
+TOP8 = "style_part_toggle:8"
+TOP9 = "layer_toggle"
+TOP0 = "left_toggle"
 
 A = "song_track_toggle:1"
 Z = "song_track_toggle:2"
@@ -207,7 +31,6 @@ T = "song_track_toggle:5"
 Y = "song_track_toggle:6"
 U = "song_track_toggle:7"
 I = "song_track_toggle:8"
-
 Q = "song_track_toggle:9"
 S = "song_track_toggle:10"
 D = "song_track_toggle:11"
@@ -217,149 +40,36 @@ H = "song_track_toggle:14"
 J = "song_track_toggle:15"
 K = "song_track_toggle:16"
 
-
-# ------------------------------------------------------------
-# INFORMATIONS ET TRANSPORT SONG
-# ------------------------------------------------------------
-
 F1 = "announce_tempo"
 F2 = "announce_transpose"
+F3 = "song_goto_measure"
+F4 = "song_loop_point_a"
+F5 = "song_loop_point_b"
+F6 = "song_loop_toggle"
+F13 = "style_start_stop"
 
 SPACE = "song_play_pause"
 ENTER = "song_stop"
 P = "song_position"
 
-
-# ------------------------------------------------------------
-# VOLUMES
-# ------------------------------------------------------------
+LEFT = "song_measure_previous"
+RIGHT = "song_measure_next"
+"SHIFT+LEFT" = "song_measure_previous_5"
+"SHIFT+RIGHT" = "song_measure_next_5"
 
 UP = "voice_volume_up"
 DOWN = "voice_volume_down"
-
 PAGEUP = "style_volume_up"
 PAGEDOWN = "style_volume_down"
 
+HOME = "song_volume_change:1"
+"SHIFT+HOME" = "song_volume_change:5"
+END = "song_volume_change:-1"
+"SHIFT+END" = "song_volume_change:-5"
 
-# ------------------------------------------------------------
-# SYSTÈME
-# ------------------------------------------------------------
-#
-# Le service systemd redémarre CVP Access après sa sortie.
+INSERT = "main_volume_change:1"
+"SHIFT+INSERT" = "main_volume_change:5"
+DELETE = "main_volume_change:-1"
+"SHIFT+DELETE" = "main_volume_change:-5"
 
 ESC = "restart"
-
-
-# ============================================================
-# EXEMPLES DE COMBINAISONS - INACTIFS
-# ============================================================
-#
-# Pour activer un exemple, retirer simplement le # au début de la ligne.
-#
-# "SHIFT+A" = "announce_tempo"
-# "CTRL+A" = "announce_transpose"
-# "SHIFT+P" = "song_position"
-# "CAPS+A" = "announce_tempo"
-# "CAPS+Z" = "announce_transpose"
-# "CAPS+E" = "song_position"
-# "CAPS+SPACE" = "song_stop"
-#
-# Avec caps_fallback_to_base = true, si "CAPS+R" n'est pas défini,
-# R garde sa fonction normale lorsque Caps Lock est actif.
-
-
-# ============================================================
-# CATALOGUE DES ACTIONS ACTUELLEMENT UTILISABLES
-# ============================================================
-#
-# SONG
-#   song_track_toggle:1 ... song_track_toggle:16
-#   song_play_pause
-#   song_stop
-#   song_position
-#   announce_tempo
-#   announce_transpose
-#
-# STYLE
-#   style_part_toggle:1 ... style_part_toggle:8
-#   style_volume_up
-#   style_volume_down
-#
-# PARTIES CLAVIER
-#   layer_toggle
-#   left_toggle
-#
-# ACCESSIBILITÉ
-#   voice_volume_up
-#   voice_volume_down
-#
-# SYSTÈME
-#   restart
-#
-# ATTENTION : seules les actions de cette liste sont acceptées dans [keys].
-# Une commande inconnue est signalée par le vérificateur et ignorée.
-#
-# Exemple invalide :
-#   A = "song_track_toggle:17"
-# car les pistes Song valides vont uniquement de 1 à 16.
-#
-
-
-# ============================================================
-# TOUCHES RECONNUES
-# ============================================================
-#
-# Lettres :
-#   A Z E R T Y U I O P
-#   Q S D F G H J K L M
-#   W X C V B N
-#
-# Rangée supérieure :
-#   TOP1 TOP2 TOP3 TOP4 TOP5 TOP6 TOP7 TOP8 TOP9 TOP0
-#
-# Autres touches imprimables AZERTY :
-#   RPAREN       ) / °
-#   EQUAL        = / +
-#   CARET        ^ / ¨
-#   DOLLAR       $ / £
-#   U_GRAVE      ù / %
-#   ASTERISK     * / µ
-#   COMMA        , / ?
-#   SEMICOLON    ; / .
-#   COLON        : / /
-#   EXCLAMATION  ! / §
-#   LESS         < / >
-#
-# Fonction/navigation :
-#   F1 ... F12
-#   ESC TAB SPACE ENTER BACKSPACE
-#   PRINT SCROLLLOCK PAUSE NUMLOCK
-#   UP DOWN LEFT RIGHT
-#   PAGEUP PAGEDOWN HOME END INSERT DELETE
-#
-# Pavé numérique :
-#   KP0 ... KP9
-#   KPENTER KPPLUS KPMINUS KPDOT KPSLASH KPASTERISK
-#
-
-
-# ============================================================
-# FONCTIONS CONPIANIST / RECHERCHE
-# ============================================================
-#
-# Les propriétés découvertes dans ConPianist mais pas encore validées sur le
-# CVP réel NE DOIVENT PAS être inventées ici comme actions clavier.
-#
-# Procédure de recherche en lecture seule :
-#
-#   sudo systemctl stop cvp-access
-#   cd ~/CVP_access
-#   python3 docs/cvp_probe_readonly.py --output cvp_validation_conpianist
-#   sudo systemctl start cvp-access
-#
-# Les réponses DATA sont ensuite étudiées et, après validation fonctionnelle,
-# deviennent de vraies actions ajoutées au catalogue ci-dessus.
-#
-# Cela évite de coder et de générer des voix pour des fonctions auxquelles le
-# modèle de CVP utilisé ne répond pas.
-# ============================================================
