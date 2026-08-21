@@ -28,7 +28,7 @@ from evdev import ecodes
 from cvp_speech import install_speech_hooks
 
 
-VERSION = "1.5-RC3"
+VERSION = "1.5-RC4-dev"
 CORE_FILENAME = "cvp_access_v1.4.1.py"
 
 CONFIG_FILE = Path(
@@ -131,6 +131,12 @@ class CVPActions:
             "song_loop_point_b": self.song_loop_point_b,
             "song_loop_toggle": self.song_loop_toggle,
             "style_start_stop": self.style_start_stop,
+            "style_intro": self.style_intro,
+            "style_main": self.style_main,
+            "style_fill": self.style_fill,
+            "style_ending": self.style_ending,
+            "style_break": self.style_break,
+            "registration_recall": self.registration_recall,
             "song_volume_change": self.song_volume_change,
             "main_volume_change": self.main_volume_change,
             "voice_volume_up": self.voice_volume_up,
@@ -680,6 +686,54 @@ class CVPActions:
             part,
             verified_state,
         )
+
+    # Yamaha Section Control + Registration Recall
+    # Valide materiellement sur CVP-905 firmware 1.03.
+
+    def _send_style_section(self, switch_number, label):
+        message = [0xF0, 0x43, 0x7E, 0x00, switch_number, 0x7F, 0xF7]
+        if not self.core.send_sysex(self.port, message):
+            print("Impossible d'envoyer la section Style :", label)
+            return False
+        print("Section Style ->", label)
+        announcer = getattr(self.core, "announce_action_help", None)
+        if callable(announcer):
+            announcer(label)
+        return True
+
+    def style_intro(self, number):
+        self._send_style_section(0x00 + (number - 1), f"Intro {number}")
+
+    def style_main(self, number):
+        letter = "ABCD"[number - 1]
+        self._send_style_section(0x08 + (number - 1), f"Main {letter}")
+
+    def style_fill(self, number):
+        letter = "ABCD"[number - 1]
+        self._send_style_section(0x10 + (number - 1), f"Fill {letter}")
+
+    def style_break(self):
+        self._send_style_section(0x18, "Break")
+
+    def style_ending(self, number):
+        self._send_style_section(0x20 + (number - 1), f"Ending {number}")
+
+    def registration_recall(self, number):
+        index = number - 1
+        if not 0 <= index <= 7:
+            print("Numero de Registration invalide :", number)
+            return
+        message = [
+            0xF0, 0x43, 0x73, 0x01, 0x52, 0x25,
+            0x11, 0x00, 0x02, 0x00, index, 0xF7,
+        ]
+        if not self.core.send_sysex(self.port, message):
+            print("Impossible de rappeler Registration", number)
+            return
+        print("Registration ->", number)
+        announcer = getattr(self.core, "announce_action_help", None)
+        if callable(announcer):
+            announcer(f"Registration {number}")
 
     def _change_style_volume(self, delta):
         current_volume = self.core.get_style_volume(
