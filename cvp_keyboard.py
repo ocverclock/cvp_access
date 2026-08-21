@@ -2,8 +2,11 @@
 """
 CVP Access - configurable keyboard router.
 
-This module translates evdev key events into a fixed catalogue of CVP Access
-actions.  The TOML file can select actions, but can never execute Python code.
+This module translates Linux evdev keyboard events into the fixed CVP Access
+action catalogue. keyboard.toml selects actions but cannot execute Python code.
+
+CTRL is reserved as an accessibility help modifier:
+CTRL + an assigned key announces the action without executing it.
 """
 
 from __future__ import annotations
@@ -22,74 +25,40 @@ from evdev import ecodes
 # ---------------------------------------------------------------------------
 # AZERTY logical names -> Linux evdev physical codes
 # ---------------------------------------------------------------------------
-#
-# Linux evdev key codes use physical/QWERTY-style names.  CVP Access exposes
-# names printed on a French AZERTY keyboard instead.
-#
+
 KEY_NAME_TO_CODE = {
-    # AZERTY first letter row
-    "A": ecodes.KEY_Q,
-    "Z": ecodes.KEY_W,
-    "E": ecodes.KEY_E,
-    "R": ecodes.KEY_R,
-    "T": ecodes.KEY_T,
-    "Y": ecodes.KEY_Y,
-    "U": ecodes.KEY_U,
-    "I": ecodes.KEY_I,
-    "O": ecodes.KEY_O,
+    "A": ecodes.KEY_Q, "Z": ecodes.KEY_W, "E": ecodes.KEY_E,
+    "R": ecodes.KEY_R, "T": ecodes.KEY_T, "Y": ecodes.KEY_Y,
+    "U": ecodes.KEY_U, "I": ecodes.KEY_I, "O": ecodes.KEY_O,
     "P": ecodes.KEY_P,
 
-    # AZERTY second letter row
-    "Q": ecodes.KEY_A,
-    "S": ecodes.KEY_S,
-    "D": ecodes.KEY_D,
-    "F": ecodes.KEY_F,
-    "G": ecodes.KEY_G,
-    "H": ecodes.KEY_H,
-    "J": ecodes.KEY_J,
-    "K": ecodes.KEY_K,
-    "L": ecodes.KEY_L,
+    "Q": ecodes.KEY_A, "S": ecodes.KEY_S, "D": ecodes.KEY_D,
+    "F": ecodes.KEY_F, "G": ecodes.KEY_G, "H": ecodes.KEY_H,
+    "J": ecodes.KEY_J, "K": ecodes.KEY_K, "L": ecodes.KEY_L,
     "M": ecodes.KEY_SEMICOLON,
 
-    # AZERTY third letter row
-    "W": ecodes.KEY_Z,
-    "X": ecodes.KEY_X,
-    "C": ecodes.KEY_C,
-    "V": ecodes.KEY_V,
-    "B": ecodes.KEY_B,
-    "N": ecodes.KEY_N,
+    "W": ecodes.KEY_Z, "X": ecodes.KEY_X, "C": ecodes.KEY_C,
+    "V": ecodes.KEY_V, "B": ecodes.KEY_B, "N": ecodes.KEY_N,
 
-    # Physical top row.  On French AZERTY:
-    # TOP1=&/1 TOP2=é/2 TOP3="/3 TOP4='/4 TOP5=(/5
-    # TOP6=-/6 TOP7=è/7 TOP8=_/8 TOP9=ç/9 TOP0=à/0
-    "TOP1": ecodes.KEY_1,
-    "TOP2": ecodes.KEY_2,
-    "TOP3": ecodes.KEY_3,
-    "TOP4": ecodes.KEY_4,
-    "TOP5": ecodes.KEY_5,
-    "TOP6": ecodes.KEY_6,
-    "TOP7": ecodes.KEY_7,
-    "TOP8": ecodes.KEY_8,
-    "TOP9": ecodes.KEY_9,
+    "TOP1": ecodes.KEY_1, "TOP2": ecodes.KEY_2, "TOP3": ecodes.KEY_3,
+    "TOP4": ecodes.KEY_4, "TOP5": ecodes.KEY_5, "TOP6": ecodes.KEY_6,
+    "TOP7": ecodes.KEY_7, "TOP8": ecodes.KEY_8, "TOP9": ecodes.KEY_9,
     "TOP0": ecodes.KEY_0,
 
-    # Remaining French AZERTY printable keys
-    "RPAREN": ecodes.KEY_MINUS,          # ) / °
-    "EQUAL": ecodes.KEY_EQUAL,           # = / +
-    "CARET": ecodes.KEY_LEFTBRACE,       # ^ / ¨
-    "DOLLAR": ecodes.KEY_RIGHTBRACE,     # $ / £
-    "U_GRAVE": ecodes.KEY_APOSTROPHE,    # ù / %
-    "ASTERISK": ecodes.KEY_BACKSLASH,    # * / µ
-    "COMMA": ecodes.KEY_M,               # , / ?
-    "SEMICOLON": ecodes.KEY_COMMA,       # ; / .
-    "COLON": ecodes.KEY_DOT,             # : / /
-    "EXCLAMATION": ecodes.KEY_SLASH,     # ! / §
-    "LESS": ecodes.KEY_102ND,            # < / >
+    "RPAREN": ecodes.KEY_MINUS,
+    "EQUAL": ecodes.KEY_EQUAL,
+    "CARET": ecodes.KEY_LEFTBRACE,
+    "DOLLAR": ecodes.KEY_RIGHTBRACE,
+    "U_GRAVE": ecodes.KEY_APOSTROPHE,
+    "ASTERISK": ecodes.KEY_BACKSLASH,
+    "COMMA": ecodes.KEY_M,
+    "SEMICOLON": ecodes.KEY_COMMA,
+    "COLON": ecodes.KEY_DOT,
+    "EXCLAMATION": ecodes.KEY_SLASH,
+    "LESS": ecodes.KEY_102ND,
 
-    # Function keys
     **{f"F{i}": getattr(ecodes, f"KEY_F{i}") for i in range(1, 14)},
 
-    # Navigation / common keys
     "ESC": ecodes.KEY_ESC,
     "TAB": ecodes.KEY_TAB,
     "SPACE": ecodes.KEY_SPACE,
@@ -110,17 +79,11 @@ KEY_NAME_TO_CODE = {
     "INSERT": ecodes.KEY_INSERT,
     "DELETE": ecodes.KEY_DELETE,
 
-    # Numeric keypad
-    "KP0": ecodes.KEY_KP0,
-    "KP1": ecodes.KEY_KP1,
-    "KP2": ecodes.KEY_KP2,
-    "KP3": ecodes.KEY_KP3,
-    "KP4": ecodes.KEY_KP4,
-    "KP5": ecodes.KEY_KP5,
-    "KP6": ecodes.KEY_KP6,
-    "KP7": ecodes.KEY_KP7,
-    "KP8": ecodes.KEY_KP8,
-    "KP9": ecodes.KEY_KP9,
+    "KP0": ecodes.KEY_KP0, "KP1": ecodes.KEY_KP1,
+    "KP2": ecodes.KEY_KP2, "KP3": ecodes.KEY_KP3,
+    "KP4": ecodes.KEY_KP4, "KP5": ecodes.KEY_KP5,
+    "KP6": ecodes.KEY_KP6, "KP7": ecodes.KEY_KP7,
+    "KP8": ecodes.KEY_KP8, "KP9": ecodes.KEY_KP9,
     "KPENTER": ecodes.KEY_KPENTER,
     "KPPLUS": ecodes.KEY_KPPLUS,
     "KPMINUS": ecodes.KEY_KPMINUS,
@@ -129,59 +92,26 @@ KEY_NAME_TO_CODE = {
     "KPASTERISK": ecodes.KEY_KPASTERISK,
 }
 
-# Friendly aliases accepted in configuration files.
 KEY_ALIASES = {
-    "1": "TOP1",
-    "2": "TOP2",
-    "3": "TOP3",
-    "4": "TOP4",
-    "5": "TOP5",
-    "6": "TOP6",
-    "7": "TOP7",
-    "8": "TOP8",
-    "9": "TOP9",
-    "0": "TOP0",
-    "AMPERSAND": "TOP1",
-    "E_ACUTE": "TOP2",
-    "QUOTE": "TOP3",
-    "APOSTROPHE": "TOP4",
-    "LPAREN": "TOP5",
-    "MINUS": "TOP6",
-    "E_GRAVE": "TOP7",
-    "UNDERSCORE": "TOP8",
-    "C_CEDILLA": "TOP9",
+    "1": "TOP1", "2": "TOP2", "3": "TOP3", "4": "TOP4",
+    "5": "TOP5", "6": "TOP6", "7": "TOP7", "8": "TOP8",
+    "9": "TOP9", "0": "TOP0",
+    "AMPERSAND": "TOP1", "E_ACUTE": "TOP2", "QUOTE": "TOP3",
+    "APOSTROPHE": "TOP4", "LPAREN": "TOP5", "MINUS": "TOP6",
+    "E_GRAVE": "TOP7", "UNDERSCORE": "TOP8", "C_CEDILLA": "TOP9",
     "A_GRAVE": "TOP0",
-    "&": "TOP1",
-    "É": "TOP2",
-    '"': "TOP3",
-    "'": "TOP4",
-    "(": "TOP5",
-    "-": "TOP6",
-    "È": "TOP7",
-    "_": "TOP8",
-    "Ç": "TOP9",
-    "À": "TOP0",
-    ")": "RPAREN",
-    "=": "EQUAL",
-    "^": "CARET",
-    "$": "DOLLAR",
-    "Ù": "U_GRAVE",
-    "*": "ASTERISK",
-    ",": "COMMA",
-    ";": "SEMICOLON",
-    ":": "COLON",
-    "!": "EXCLAMATION",
-    "<": "LESS",
-    "RETURN": "ENTER",
-    "PGUP": "PAGEUP",
-    "PGDN": "PAGEDOWN",
-    "DEL": "DELETE",
-    "INS": "INSERT",
+    "&": "TOP1", "É": "TOP2", '"': "TOP3", "'": "TOP4",
+    "(": "TOP5", "-": "TOP6", "È": "TOP7", "_": "TOP8",
+    "Ç": "TOP9", "À": "TOP0",
+    ")": "RPAREN", "=": "EQUAL", "^": "CARET", "$": "DOLLAR",
+    "Ù": "U_GRAVE", "*": "ASTERISK", ",": "COMMA",
+    ";": "SEMICOLON", ":": "COLON", "!": "EXCLAMATION",
+    "<": "LESS", "RETURN": "ENTER", "PGUP": "PAGEUP",
+    "PGDN": "PAGEDOWN", "DEL": "DELETE", "INS": "INSERT",
 }
 
 CODE_TO_KEY_NAME = {}
 for _name, _code in KEY_NAME_TO_CODE.items():
-    # The canonical name is the first explicit logical name.
     CODE_TO_KEY_NAME.setdefault(_code, _name)
 
 
@@ -230,15 +160,6 @@ ACTION_SPECS = {
     "song_play_pause": ActionSpec(description="Lecture / pause du Song"),
     "song_stop": ActionSpec(description="Stop du Song"),
     "song_position": ActionSpec(description="Annonce mesure et temps"),
-    "style_start_stop": ActionSpec(description="Demarre ou arrete le Style"),
-    "style_intro": ActionSpec(True, 1, 3, "Selectionne une Intro Style"),
-    "style_main": ActionSpec(True, 1, 4, "Selectionne une variation Main Style"),
-    "style_fill": ActionSpec(True, 1, 4, "Declenche un Fill Style"),
-    "style_ending": ActionSpec(True, 1, 3, "Declenche un Ending Style"),
-    "style_break": ActionSpec(description="Declenche le Break Style"),
-    "registration_recall": ActionSpec(True, 1, 8, "Rappelle une Registration Memory"),
-    "song_volume_change": ActionSpec(True, -5, 5, "Modifie le volume Song / MidiMaster"),
-    "main_volume_change": ActionSpec(True, -5, 5, "Modifie le volume Main"),
     "song_measure_previous": ActionSpec(
         description="Recule le Song d'une mesure"
     ),
@@ -263,11 +184,43 @@ ACTION_SPECS = {
     "song_loop_toggle": ActionSpec(
         description="Active ou désactive la boucle A/B"
     ),
+    "style_start_stop": ActionSpec(
+        description="Démarre ou arrête le Style"
+    ),
+
+    # RC4 — Yamaha Section Control
+    "style_intro": ActionSpec(
+        True, 1, 3, "Sélectionne une Intro Style"
+    ),
+    "style_main": ActionSpec(
+        True, 1, 4, "Sélectionne une variation Main Style"
+    ),
+    "style_fill": ActionSpec(
+        True, 1, 4, "Déclenche un Fill Style"
+    ),
+    "style_ending": ActionSpec(
+        True, 1, 3, "Déclenche un Ending Style"
+    ),
+    "style_break": ActionSpec(
+        description="Déclenche le Break Style"
+    ),
+    "registration_recall": ActionSpec(
+        True, 1, 8, "Rappelle une Registration Memory"
+    ),
+
+    "song_volume_change": ActionSpec(
+        True, -5, 5, "Modifie le volume Song / MidiMaster"
+    ),
+    "main_volume_change": ActionSpec(
+        True, -5, 5, "Modifie le volume Main"
+    ),
     "voice_volume_up": ActionSpec(description="Augmente le volume vocal"),
     "voice_volume_down": ActionSpec(description="Diminue le volume vocal"),
     "style_volume_up": ActionSpec(description="Augmente le volume Style"),
     "style_volume_down": ActionSpec(description="Diminue le volume Style"),
-    "restart": ActionSpec(description="Quitte CVP Access pour redémarrage systemd"),
+    "restart": ActionSpec(
+        description="Quitte CVP Access pour redémarrage systemd"
+    ),
 }
 
 
@@ -282,7 +235,6 @@ class ActionInvocation:
         if self.parameter is None:
             return self.name
         return f"{self.name}:{self.parameter}"
-
 
 
 def describe_invocation(invocation: ActionInvocation) -> str:
@@ -355,7 +307,8 @@ class KeyboardConfig:
             self.issues = []
 
 
-# Built-in fallback reproducing the current RC3 mapping.
+# Complete built-in fallback. RC4 adds actions to the catalogue but deliberately
+# keeps the validated RC3 default mapping unchanged.
 BUILTIN_BINDINGS = {
     "TOP1": "style_part_toggle:1",
     "TOP2": "style_part_toggle:2",
@@ -392,22 +345,34 @@ BUILTIN_BINDINGS = {
     "F4": "song_loop_point_a",
     "F5": "song_loop_point_b",
     "F6": "song_loop_toggle",
+    "F13": "style_start_stop",
+
     "SPACE": "song_play_pause",
     "ENTER": "song_stop",
     "P": "song_position",
+
     "LEFT": "song_measure_previous",
     "RIGHT": "song_measure_next",
     "SHIFT+LEFT": "song_measure_previous_5",
     "SHIFT+RIGHT": "song_measure_next_5",
+
     "UP": "voice_volume_up",
     "DOWN": "voice_volume_down",
     "PAGEUP": "style_volume_up",
     "PAGEDOWN": "style_volume_down",
-    "F13": "style_start_stop",
+
+    # Song / MidiMaster volume
+    "HOME": "song_volume_change:1",
     "SHIFT+HOME": "song_volume_change:5",
+    "END": "song_volume_change:-1",
     "SHIFT+END": "song_volume_change:-5",
+
+    # Main volume
+    "INSERT": "main_volume_change:1",
     "SHIFT+INSERT": "main_volume_change:5",
+    "DELETE": "main_volume_change:-1",
     "SHIFT+DELETE": "main_volume_change:-5",
+
     "ESC": "restart",
 }
 
@@ -463,7 +428,11 @@ def normalize_key_name(name: str) -> str:
 
 
 def normalize_combo(combo: str) -> str:
-    parts = [part.strip().upper() for part in combo.split("+") if part.strip()]
+    parts = [
+        part.strip().upper()
+        for part in combo.split("+")
+        if part.strip()
+    ]
     if not parts:
         raise ValueError("combinaison vide")
 
@@ -479,11 +448,17 @@ def normalize_combo(combo: str) -> str:
         modifiers.append(modifier)
 
     key_name = normalize_key_name(raw_key)
-    ordered = [m for m in MODIFIER_ORDER if m in modifiers]
+    ordered = [
+        modifier
+        for modifier in MODIFIER_ORDER
+        if modifier in modifiers
+    ]
     return "+".join(ordered + [key_name])
 
 
-def _parse_bindings(raw_bindings: dict) -> tuple[dict[str, ActionInvocation], list[str]]:
+def _parse_bindings(
+    raw_bindings: dict,
+) -> tuple[dict[str, ActionInvocation], list[str]]:
     bindings: dict[str, ActionInvocation] = {}
     issues: list[str] = []
 
@@ -491,6 +466,7 @@ def _parse_bindings(raw_bindings: dict) -> tuple[dict[str, ActionInvocation], li
         if not isinstance(raw_combo, str):
             issues.append(f"clé TOML non textuelle: {raw_combo!r}")
             continue
+
         if not isinstance(raw_action, str):
             issues.append(f"{raw_combo}: l'action doit être du texte")
             continue
@@ -504,7 +480,8 @@ def _parse_bindings(raw_bindings: dict) -> tuple[dict[str, ActionInvocation], li
 
         if combo in bindings:
             issues.append(
-                f"{raw_combo}: combinaison dupliquée après normalisation ({combo})"
+                f"{raw_combo}: combinaison dupliquée après "
+                f"normalisation ({combo})"
             )
             continue
 
@@ -517,7 +494,7 @@ def builtin_config() -> KeyboardConfig:
     parsed, issues = _parse_bindings(BUILTIN_BINDINGS)
     return KeyboardConfig(
         bindings=parsed,
-        source=Path("<builtin-v1.4.1>"),
+        source=Path("<builtin-RC4>"),
         caps_lock_layer=True,
         caps_fallback_to_base=True,
         issues=issues,
@@ -543,11 +520,15 @@ def read_config_file(path: Path) -> KeyboardConfig:
 
     format_version = general.get("format_version", 1)
     if format_version not in {1, 2}:
-        issues.append("general.format_version non supporté (valeurs connues : 1 ou 2)")
+        issues.append(
+            "general.format_version non supporté (valeurs connues : 1 ou 2)"
+        )
 
     layout = general.get("layout", "azerty")
     if layout != "azerty":
-        issues.append("general.layout : seule la valeur azerty est supportée actuellement")
+        issues.append(
+            "general.layout : seule la valeur azerty est supportée actuellement"
+        )
 
     caps_lock_layer = general.get("caps_lock_layer", True)
     caps_fallback_to_base = general.get("caps_fallback_to_base", True)
@@ -562,12 +543,16 @@ def read_config_file(path: Path) -> KeyboardConfig:
 
     mode = speech_raw.get("mode", "hybrid")
     if mode not in {"pregenerated", "hybrid", "runtime"}:
-        issues.append("speech.mode doit être pregenerated, hybrid ou runtime")
+        issues.append(
+            "speech.mode doit être pregenerated, hybrid ou runtime"
+        )
         mode = "hybrid"
 
     generation = speech_raw.get("generation", "configured")
     if generation not in {"configured", "core", "all"}:
-        issues.append("speech.generation doit être configured, core ou all")
+        issues.append(
+            "speech.generation doit être configured, core ou all"
+        )
         generation = "configured"
 
     cache = speech_raw.get("cache", True)
@@ -582,17 +567,24 @@ def read_config_file(path: Path) -> KeyboardConfig:
     else:
         voice = voice.strip()
         if not re.fullmatch(r"[A-Za-z0-9_.-]+", voice):
-            issues.append("speech.voice contient des caractères non autorisés")
+            issues.append(
+                "speech.voice contient des caractères non autorisés"
+            )
             voice = "fr_FR-siwis-medium"
 
     length_scale = speech_raw.get("length_scale", 0.85)
-    if not isinstance(length_scale, (int, float)) or isinstance(length_scale, bool):
+    if (
+        not isinstance(length_scale, (int, float))
+        or isinstance(length_scale, bool)
+    ):
         issues.append("speech.length_scale doit être un nombre")
         length_scale = 0.85
     else:
         length_scale = float(length_scale)
         if not 0.25 <= length_scale <= 3.0:
-            issues.append("speech.length_scale doit être compris entre 0.25 et 3.0")
+            issues.append(
+                "speech.length_scale doit être compris entre 0.25 et 3.0"
+            )
             length_scale = 0.85
 
     speech = SpeechConfig(
@@ -621,16 +613,12 @@ def load_keyboard_config(
     fallback_path: Optional[Path] = None,
 ) -> KeyboardConfig:
     """
-    Runtime loader.
-
-    A malformed TOML file never prevents CVP Access from starting:
-    - active config is tried first;
-    - optional default file is tried next;
-    - built-in v1.4.1 mapping is the final safety net.
-
-    Individual invalid bindings are skipped and reported, while valid bindings
-    remain usable.
+    Loading order:
+    1. active keyboard.toml;
+    2. optional repository/runtime default;
+    3. complete built-in mapping.
     """
+
     candidates = [path]
     if fallback_path is not None and fallback_path != path:
         candidates.append(fallback_path)
@@ -644,7 +632,11 @@ def load_keyboard_config(
 
         try:
             config = read_config_file(candidate)
-        except (OSError, tomllib.TOMLDecodeError, ValueError) as exc:
+        except (
+            OSError,
+            tomllib.TOMLDecodeError,
+            ValueError,
+        ) as exc:
             failures.append(f"{candidate}: {exc}")
             continue
 
@@ -669,27 +661,84 @@ class KeyRouter:
         self.pressed_modifier_codes: set[int] = set()
         self.caps_active = False
 
-        # CVP Access owns Caps Lock as an action-layer switch.  Resetting it at
-        # startup makes behaviour deterministic after a service restart.
         if self.config.caps_lock_layer:
             self._set_caps_led(False)
 
     def _set_caps_led(self, enabled: bool):
         try:
-            self.keyboard.set_led(ecodes.LED_CAPSL, 1 if enabled else 0)
+            self.keyboard.set_led(
+                ecodes.LED_CAPSL,
+                1 if enabled else 0,
+            )
         except (AttributeError, OSError):
             pass
 
-    def _combo_for(self, key_name: str, include_caps: bool = True) -> str:
+    def _active_modifiers(
+        self,
+        *,
+        include_ctrl=True,
+        include_caps=True,
+    ) -> set[str]:
         modifiers = {
             MODIFIER_CODES[code]
             for code in self.pressed_modifier_codes
             if code in MODIFIER_CODES
         }
+
+        if not include_ctrl:
+            modifiers.discard("CTRL")
+
         if include_caps and self.caps_active:
             modifiers.add("CAPS")
-        ordered = [m for m in MODIFIER_ORDER if m in modifiers]
+        else:
+            modifiers.discard("CAPS")
+
+        return modifiers
+
+    def _combo_for(
+        self,
+        key_name: str,
+        *,
+        include_ctrl=True,
+        include_caps=True,
+    ) -> str:
+        modifiers = self._active_modifiers(
+            include_ctrl=include_ctrl,
+            include_caps=include_caps,
+        )
+        ordered = [
+            modifier
+            for modifier in MODIFIER_ORDER
+            if modifier in modifiers
+        ]
         return "+".join(ordered + [key_name])
+
+    def _resolve_binding(
+        self,
+        key_name: str,
+        *,
+        include_ctrl=True,
+    ):
+        combo = self._combo_for(
+            key_name,
+            include_ctrl=include_ctrl,
+            include_caps=True,
+        )
+        invocation = self.config.bindings.get(combo)
+
+        if (
+            invocation is None
+            and self.caps_active
+            and self.config.caps_fallback_to_base
+        ):
+            combo = self._combo_for(
+                key_name,
+                include_ctrl=include_ctrl,
+                include_caps=False,
+            )
+            invocation = self.config.bindings.get(combo)
+
+        return combo, invocation
 
     def process_event(self, event) -> Optional[ActionInvocation]:
         if event.type != ecodes.EV_KEY:
@@ -710,14 +759,9 @@ class KeyRouter:
             if event.value == 1:
                 self.caps_active = not self.caps_active
                 self._set_caps_led(self.caps_active)
-                print(
-                    "Couche CAPS :",
-                    "ON" if self.caps_active else "OFF"
-                )
+                print("Couche CAPS :", "ON" if self.caps_active else "OFF")
             return None
 
-        # 0 = release, 1 = press, 2 = auto-repeat.
-        # Long press / repeat actions are deliberately not implemented yet.
         if event.value != 1:
             return None
 
@@ -731,60 +775,24 @@ class KeyRouter:
         )
 
         if help_requested:
-            modifiers = {
-                MODIFIER_CODES[code]
-                for code in self.pressed_modifier_codes
-                if (
-                    code in MODIFIER_CODES
-                    and MODIFIER_CODES[code] != "CTRL"
-                )
-            }
+            combo, invocation = self._resolve_binding(
+                key_name,
+                include_ctrl=False,
+            )
+            if invocation is None:
+                return None
 
-            if self.caps_active:
-                modifiers.add("CAPS")
+            print(f"Aide CTRL+{combo} -> {invocation.text}")
+            return ActionInvocation(
+                invocation.name,
+                invocation.parameter,
+                help_only=True,
+            )
 
-            ordered = [
-                modifier
-                for modifier in MODIFIER_ORDER
-                if modifier in modifiers
-            ]
-            help_combo = "+".join(ordered + [key_name])
-            invocation = self.config.bindings.get(help_combo)
-
-            if (
-                invocation is None
-                and self.caps_active
-                and self.config.caps_fallback_to_base
-            ):
-                modifiers.discard("CAPS")
-                ordered = [
-                    modifier
-                    for modifier in MODIFIER_ORDER
-                    if modifier in modifiers
-                ]
-                help_combo = "+".join(ordered + [key_name])
-                invocation = self.config.bindings.get(help_combo)
-
-            if invocation is not None:
-                print(f"Aide CTRL+{help_combo} -> {invocation.text}")
-                return ActionInvocation(
-                    invocation.name,
-                    invocation.parameter,
-                    help_only=True,
-                )
-
-            return None
-
-        combo = self._combo_for(key_name, include_caps=True)
-        invocation = self.config.bindings.get(combo)
-
-        if (
-            invocation is None
-            and self.caps_active
-            and self.config.caps_fallback_to_base
-        ):
-            combo = self._combo_for(key_name, include_caps=False)
-            invocation = self.config.bindings.get(combo)
+        combo, invocation = self._resolve_binding(
+            key_name,
+            include_ctrl=True,
+        )
 
         if invocation is not None:
             print(f"Touche {combo} -> {invocation.text}")
@@ -799,7 +807,11 @@ def check_config(path: Path) -> int:
 
     try:
         config = read_config_file(path)
-    except (OSError, tomllib.TOMLDecodeError, ValueError) as exc:
+    except (
+        OSError,
+        tomllib.TOMLDecodeError,
+        ValueError,
+    ) as exc:
         print(f"FAIL  Configuration TOML : {exc}")
         return 1
 
@@ -822,7 +834,10 @@ def check_config(path: Path) -> int:
     print(f"OK    Voix Piper         : {config.speech.voice}")
     print(f"OK    Mode vocal         : {config.speech.mode}")
     print(f"OK    Génération WAV     : {config.speech.generation}")
-    print(f"OK    Cache Piper        : {'oui' if config.speech.cache else 'non'}")
+    print(
+        "OK    Cache Piper        : "
+        + ("oui" if config.speech.cache else "non")
+    )
     return 0
 
 
