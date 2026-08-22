@@ -1,8 +1,27 @@
 # CVP-905 — checkpoint protocole RC4
 
-Testé sur Yamaha CVP-905 firmware 1.03.
+État consolidé au **22 août 2026**.
 
-Ce document complète `CVP905_PROTOCOL_CHECKPOINT_RC3.md`.
+Testé sur Yamaha **CVP-905 firmware 1.03** via MIDI DIN Prodipe.
+
+Ce fichier est le checkpoint protocole actif. `CVP905_PROTOCOL_CHECKPOINT_RC3.md` reste historique ; en cas de contradiction, **RC4 prime**.
+
+## CSP moderne
+
+Header :
+
+```text
+F0 43 73 01 52 25 26
+```
+
+Actions observées :
+
+```text
+GET    01 00
+SET    01 01
+INFO   00 00
+EVENTS 02 00
+```
 
 ## Section Control — validé matériellement
 
@@ -12,7 +31,7 @@ Format :
 F0 43 7E 00 ss 7F F7
 ```
 
-Valeurs `ss` confirmées sur CVP-905 :
+Valeurs confirmées :
 
 ```text
 00 Intro 1
@@ -36,26 +55,15 @@ Valeurs `ss` confirmées sur CVP-905 :
 22 Ending 3
 ```
 
-Les commandes ont été testées une à une sur le CVP-905.
-
 ## Registration Memory — rappel externe validé
 
 ```text
 F0 43 73 01 52 25 11 00 02 00 XX F7
 ```
 
-```text
-00 Registration 1
-01 Registration 2
-02 Registration 3
-03 Registration 4
-04 Registration 5
-05 Registration 6
-06 Registration 7
-07 Registration 8
-```
+`XX = 00..07` pour Registration 1..8.
 
-Notification observée lors d’un changement / rappel de Registration :
+Notification observée :
 
 ```text
 F0 43 73 01 52 25 00 01 01 00 01 XX F7
@@ -71,28 +79,25 @@ Style Split Point validé :
 F0 43 73 01 51 00 00 00 03 10 00 dd F7
 ```
 
-L’adresse `10 00` agit sur le Style Split Point.
-
 Left Split Point validé séparément :
 
 ```text
 F0 43 73 01 51 00 00 00 03 10 01 dd F7
 ```
 
-Les contraintes de l’interface Split/Fingering peuvent forcer les deux splits
-à se déplacer ensemble selon le mode actif.
+Le codage exact de la note `dd` reste à documenter proprement.
 
-Le candidat suivant a été testé pour Fingering Type :
+Candidat testé pour Fingering :
 
 ```text
 F0 43 73 01 51 00 00 00 03 10 02 dd F7
 ```
 
-Résultat : aucun changement observé.
+Résultat : **aucun changement de Fingering Type**. Ne pas retester comme commande directe.
 
-## Fingering Type — stockage Registration / System Setup
+## Fingering Type — stockage `.rgt` / `.ssu`
 
-Les fichiers `.rgt` et `.ssu` confirment le codage :
+Valeurs confirmées :
 
 ```text
 03 = AI Fingered
@@ -100,7 +105,7 @@ Les fichiers `.rgt` et `.ssu` confirment le codage :
 0C = AI Full Keyboard
 ```
 
-Dans le bloc `GPm` étudié, l’ordre observé est :
+Dans le bloc `GPm` étudié :
 
 ```text
 Style Split | Left Split | Fingering Type
@@ -112,67 +117,152 @@ Exemple :
 ... 36 37 03 ...
 ```
 
-L’ordre de stockage `.rgt` ne se transpose donc pas directement en identifiants
-de commandes MIDI famille `51`.
+La présence dans `.rgt` / `.ssu` ne donne pas directement l'adresse MIDI.
 
-Le contrôle MIDI direct du Fingering Type reste non résolu.
+## CSP EVENTS — résultat
 
-## CSP EVENTS — validé
-
-Format utilisé :
+Abonnement :
 
 ```text
-F0 43 73 01 52 25 26 02 00 PP PP PP PP F7
+HEADER + 02 00 + Property-ID + F7
 ```
 
-Le CVP-905 accepte l’abonnement EVENTS sur plusieurs propriétés connues.
+Ack observé :
 
-Après abonnement sur Tempo, une modification manuelle a produit un `INFO`
-spontané valide.
+```text
+HEADER + 02 01 + Property-ID ...
+```
 
-Le rappel d’une Registration n’a cependant pas généré d’INFO exploitable
-permettant d’identifier Fingering Type.
+Tempo, Transpose, Guide, Song Play, Active et Volume ont produit des comportements EVENTS exploitables.
 
-## XG Parameter Request — validé
+Scan EVENTS Fingering large :
 
-Format :
+```text
+26 624 propriétés testées
+63 abonnements acceptés
+```
+
+Le rappel Registration n'a produit aucun INFO spontané permettant d'identifier le Fingering Type. Un rappel Registration n'est donc **pas** un trigger EVENTS fiable pour cette recherche.
+
+## XG Parameter Request — résultat
+
+Format validé :
 
 ```text
 F0 43 3n 4C hh mm ll F7
 ```
 
-Test de contrôle validé :
+Contrôle : Master Volume `00 00 04` répond correctement.
+
+Scan des zones XG documentées :
 
 ```text
-00 00 04 = Master Volume
+9 137 adresses testées
+1 936 adresses répondantes
+aucun candidat Fingering reproductible
+aucun exact 0C -> 03
 ```
 
-Le scan des zones XG documentées a obtenu 1 936 adresses répondantes communes
-entre les états testés, sans candidat reproductible pour Fingering Type.
+Ne pas répéter ce scan.
 
-## Sniff passif du panneau
+## Sniff passif du panneau — abandonné
 
-Les changements manuels de Split Point / Fingering ne sont pas retransmis
-sous forme de SysEx Yamaha exploitable sur MIDI OUT.
+Les changements manuels de Split/Fingering ne sont pas retransmis sous forme de SysEx Yamaha exploitable sur MIDI OUT. Même des changements de Split connus ne sont pas renvoyés.
 
-Cette piste est abandonnée.
+Cette piste est considérée épuisée.
 
-## Recherche en cours
+## Ancien Special Operator Fingering
 
-Scan GET read-only de l’espace CSP restant :
+Commande historique testée :
+
+```text
+F0 43 73 01 11 00 40 dd F7
+```
+
+Ignorée par le CVP-905. Ne pas retester.
+
+## Song Name — GET brut validé, décodage à corriger
+
+Propriété :
+
+```text
+04 00 01 01 | 00
+```
+
+Observations matérielles :
+
+- sans Song : réponse `EMPTY` ;
+- avec Song : réponse `DATA` ;
+- la propriété est donc utile pour la détection de Song chargé.
+
+**Attention :** le décodeur texte actuel de `cvp_song.py` suppose encore une longueur 14-bit en tête. Les observations modèle/firmware montrent plutôt un encodage Yamaha par groupes de 7 caractères précédés d'un masque. Le GET est validé, mais le décodage texte doit être revalidé avant de considérer le nom lisible comme fiable.
+
+## Campagne Fingering large — V2 SQLite
+
+Scanner actif :
+
+```text
+docs/cvp_find_fingering_indexes_20_7f_v2.py
+```
+
+Espace :
 
 ```text
 Property-ID : 00..0F / 00..0F / 00..7F / 01
 Indexes     : 20..7F
+256 blocs
+12 288 GET par bloc
 ```
 
 Comparaison automatique :
 
 ```text
-REG5 AI Full Keyboard
--> REG6 AI Fingered
--> REG5
--> REG6
+A  = REG5 / AI Full Keyboard
+B1 = REG6 / AI Fingered
+A2 = REG5
+B2 = REG6
 ```
 
-Aucun SET CSP inconnu n’est utilisé.
+Le résultat exact recherché reçoit un drapeau spécial :
+
+```text
+0C -> 03
+```
+
+### Migration V1 -> V2 du 22 août 2026
+
+La V1 stockait tout le baseline dans un JSON géant. Sur Raspberry 1 Go :
+
+```text
+fingering_idx20_7f_report.json : ~137 MiB
+Python avant OOM                : ~710 MiB RSS
+arrêt noyau                     : code 137 / OOM killer
+```
+
+Migration streaming V2 :
+
+```text
+1 951 899 réponses baseline récupérées
+159 blocs valides repris
+4 blocs legacy sans réponse rejetés :
+09:0F, 0A:00, 0A:01, 0A:02
+```
+
+Ces quatre blocs sont automatiquement rescannés.
+
+Premières mesures V2 :
+
+```text
+RSS max : ~27-28 MiB
+bloc    : ~1,3 min
+```
+
+La campagne tourne sous `cvp-fingering-scan.service` avec reprise automatique après crash/reboot et conflit explicite avec `cvp-access.service`.
+
+**Résultat final Fingering : encore en attente.** Ne conclure ni positif ni négatif avant la fin A/B/A/B.
+
+## Règles pour les prochaines recherches
+
+- Ne pas refaire les scans XG, EVENTS, passive sniff ou Special Operator listés ci-dessus.
+- Ne pas utiliser un vieux script expérimental comme preuve ; consulter ce checkpoint et `docs/FUNCTION_CATALOG.md`.
+- Pour un SET inconnu : test ciblé et restaurable uniquement, jamais brute force.
