@@ -2,110 +2,197 @@
 
 ## But
 
-Remplacer `cvp_find_fingering_indexes_20_7f.py`, dont le gros JSON finissait
-par saturer la RAM d'un Raspberry Pi 1 Go.
+Remplacer définitivement `cvp_find_fingering_indexes_20_7f.py` V1, dont le JSON géant saturait la RAM du Raspberry Pi 1 Go.
 
-La V2 garde la même recherche protocolaire :
+La V2 conserve la même recherche protocolaire :
 
 ```text
-A = REG5 / AI Full Keyboard
-B = REG6 / AI Fingered
+A  = REG5 / AI Full Keyboard
+B1 = REG6 / AI Fingered
 A2 = REG5
 B2 = REG6
 ```
 
 Les propriétés inconnues sont interrogées en **GET uniquement**.
 
-## Fichier
+Script actif :
 
 ```text
 docs/cvp_find_fingering_indexes_20_7f_v2.py
 ```
 
-## Reprise de la campagne V1
-
-Si ceci existe :
+## Espace scanné
 
 ```text
-~/CVP_access/fingering_idx20_7f_report.json
+Property-ID : 00..0F / 00..0F / 00..7F / 01
+Indexes     : 20..7F
+256 blocs
+12 288 GET par bloc
 ```
 
-et que la base SQLite V2 n'existe pas, la V2 importe le baseline en streaming
-dans :
+## Reprise de la campagne V1
+
+Si `~/CVP_access/fingering_idx20_7f_report.json` existe et que la base SQLite n'existe pas, V2 importe le baseline en streaming :
 
 ```text
 ~/CVP_access/fingering_idx20_7f.sqlite3
 ```
 
-Le JSON de la V1 n'est jamais modifié.
+Le JSON V1 n'est jamais modifié. Un bloc legacy marqué terminé mais ne contenant aucune réponse est rejeté et rescanné.
 
-Un bloc legacy marqué terminé mais ne contenant **aucune réponse** est rejeté
-pendant la migration et sera rescanné. Cela protège notamment contre les
-arrêts OOM observés pendant la campagne initiale.
+Migration réelle du 22 août 2026 :
 
-## Lancement conseillé
+```text
+1 951 899 réponses baseline
+159 blocs valides repris
+4 blocs rejetés puis rescannés : 09:0F, 0A:00, 0A:01, 0A:02
+```
 
-Arrêter l'ancienne campagne puis libérer le port MIDI :
+## Gain mémoire observé
+
+V1 :
+
+```text
+JSON ~137 MiB
+Python ~710 MiB RSS avant OOM
+bloc dégradé jusqu'à ~7 min
+```
+
+V2 :
+
+```text
+RSS max observée ~27-28 MiB
+bloc observé ~1,3 min
+```
+
+## Test migration uniquement
 
 ```bash
 cd ~/CVP_access
-
-sudo systemctl stop cvp-access
-sudo pkill -f amidi 2>/dev/null || true
-```
-
-Test de migration sans MIDI :
-
-```bash
 python3 -u docs/cvp_find_fingering_indexes_20_7f_v2.py --migrate-only
 ```
 
-Puis lancer la campagne :
+Cette commande ne nécessite pas le MIDI.
+
+## Lancement manuel
 
 ```bash
+cd ~/CVP_access
+sudo systemctl stop cvp-access
+sudo pkill -f amidi 2>/dev/null || true
+
 python3 -u docs/cvp_find_fingering_indexes_20_7f_v2.py 2>&1 \
   | tee -a ~/CVP_access/fingering_idx20_7f_v2.log
 ```
 
-## Fichiers générés
+## Mode autonome recommandé pour les longues campagnes
+
+Service utilisé avec succès :
+
+```ini
+[Unit]
+Description=CVP Access - Fingering GET Scan V2
+After=multi-user.target
+Conflicts=cvp-access.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/CVP_access
+Environment=PYTHONUNBUFFERED=1
+ExecStartPre=-/usr/bin/pkill -u pi -x amidi
+ExecStart=/usr/bin/python3 -u /home/pi/CVP_access/docs/cvp_find_fingering_indexes_20_7f_v2.py
+Restart=on-failure
+RestartSec=30
+KillMode=control-group
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Installation :
+
+```bash
+sudo tee /etc/systemd/system/cvp-fingering-scan.service >/dev/null <<'EOF'
+[Unit]
+Description=CVP Access - Fingering GET Scan V2
+After=multi-user.target
+Conflicts=cvp-access.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/CVP_access
+Environment=PYTHONUNBUFFERED=1
+ExecStartPre=-/usr/bin/pkill -u pi -x amidi
+ExecStart=/usr/bin/python3 -u /home/pi/CVP_access/docs/cvp_find_fingering_indexes_20_7f_v2.py
+Restart=on-failure
+RestartSec=30
+KillMode=control-group
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl disable --now cvp-access
+sudo systemctl daemon-reload
+sudo systemctl enable --now cvp-fingering-scan
+```
+
+Suivi :
+
+```bash
+journalctl -u cvp-fingering-scan -n 30 --no-pager
+journalctl -u cvp-fingering-scan -f
+systemctl status cvp-fingering-scan --no-pager -l
+```
+
+Fermer SSH ou quitter `journalctl -f` n'arrête pas le scan.
+
+## Reprise après crash/reboot
+
+- Phase 1 : blocs validés stockés dans `blocks`.
+- B1 : curseur persistant en SQLite.
+- A2/B2 : chaque candidat porte son état d'avancement.
+- `Restart=on-failure` relance le processus après crash.
+- `enable` relance le service après reboot.
+
+## Sorties générées — ne pas committer
 
 ```text
 fingering_idx20_7f.sqlite3
+fingering_idx20_7f.sqlite3-wal
+fingering_idx20_7f.sqlite3-shm
 fingering_idx20_7f_v2_report.json
 fingering_idx20_7f_v2.log
 ```
 
-La base SQLite et les logs sont des sorties de campagne et ne doivent pas être
-committés dans GitHub.
+Le `.gitignore` du projet doit les exclure.
 
-## Architecture mémoire
+## Fin de campagne
 
-La V1 faisait essentiellement :
-
-```text
-énorme JSON -> énorme dict Python -> réécriture du JSON complet
-```
-
-La V2 fait :
+Le rapport compact donne :
 
 ```text
-1 bloc / 1 batch en RAM
-        ↓
-SQLite
-        ↓
-libération mémoire
+baseline_responses
+preliminary_candidates_AB
+confirmed_ABA
+confirmed_ABAB
+exact_0C_03_count
+confirmed[]
 ```
 
-Les phases B1/A2/B2 sont elles aussi traitées par lots de 1500 propriétés.
+Le marqueur `0C -> 03` correspond aux valeurs de stockage observées pour AI Full Keyboard -> AI Fingered.
 
-## Résultat final
+Après la campagne :
 
-Le rapport compact conserve uniquement les compteurs et les candidats
-confirmés A/B/A/B, avec un marqueur spécial pour :
-
-```text
-0C -> 03
+```bash
+sudo systemctl disable --now cvp-fingering-scan
+sudo systemctl enable --now cvp-access
 ```
 
-qui correspond aux valeurs observées dans les fichiers `.rgt` / `.ssu` pour
-AI Full Keyboard -> AI Fingered.
+Ne conclure sur Fingering Type qu'après la fin complète A/B/A/B.
