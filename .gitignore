@@ -9,3 +9,17 @@ piper-env/
 piper-voices/
 cvp_voice/
 .cache/
+
+# Research / scan outputs — never commit
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite3-journal
+fingering_idx20_7f_report.json
+fingering_idx20_7f_v2_report.json
+cvp_validation_*.json
+cvp_validation_*.md
+cvp_functional_*.json
+cvp_functional_*.md
+diff_*.json
+*_capture.txt
