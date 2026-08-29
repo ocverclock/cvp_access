@@ -1,0 +1,36 @@
+CVP Access 1.5.1-RC1-dev
+
+IMPORTANT :
+Terminer le scan Genos en cours avant d'installer ces fichiers sur le Raspberry.
+
+Dans une COPIE locale du dépôt :
+
+1. Copier à la racine :
+   cvp_midi.py
+   cvp_yamaha.py
+   cvp_registration.py
+   cvp_style.py
+   cvp_voice.py
+   apply_1_5_1.py
+   VERIFY_1_5_1.sh
+
+2. Copier :
+   docs/CVP_ACCESS_1_5_1.md
+
+3. Appliquer la migration :
+   python3 apply_1_5_1.py .
+
+   Cela modifie :
+   cvp_access_v1.5.py
+   cvp_song.py
+   PROJECT_STATE.md
+
+4. Vérifier :
+   bash VERIFY_1_5_1.sh .
+
+5. Examiner git diff puis publier sur GitHub.
+
+Le nom cvp_access_v1.5.py reste volontairement inchangé pour ne pas casser
+systemd/installateur/updater.
+
+cvp_access_v1.4.1.py reste nécessaire temporairement.
