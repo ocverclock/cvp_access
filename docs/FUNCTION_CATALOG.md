@@ -1,27 +1,35 @@
 # CVP Access — catalogue maître des fonctions Yamaha
 
-Matériel de référence : **Yamaha CVP-905, firmware 1.03**.
+Matériel de référence principal : **Yamaha CVP-905, firmware 1.03**.
 
-Dernière consolidation : **28 août 2026**.
+Dernière consolidation : **29 août 2026**.
 
-Ce fichier décrit l'état **actuel** des connaissances. Les anciens scripts de recherche ne priment jamais sur ce catalogue.
+Les résultats Genos 1 sont explicitement marqués et ne constituent pas une validation CVP.
 
-Statuts :
+## Statuts
 
-- **VALIDÉE** : test matériel exploitable ;
-- **GET VALIDÉ** : lecture validée, écriture non revendiquée ;
-- **PARTIELLE** : validée seulement sur certains indexes/aspects ;
-- **NON RÉSOLUE** : fonction recherchée mais commande/propriété non établie ;
+- **VALIDÉE** : test matériel exploitable sur CVP-905.
+- **GET VALIDÉ** : lecture CVP validée, écriture non revendiquée.
+- **PARTIELLE** : validée seulement sur certains indexes/aspects.
+- **NON RÉSOLUE** : fonction recherchée mais commande/propriété non établie.
+- **CLÔTURÉE DIRECT** : recherche de commande MIDI directe arrêtée pour le projet courant.
 - **NON APPLICABLE / DANGEREUX** : ne pas exposer au runtime.
+- **VALIDÉ GENOS / NON TESTÉ CVP** : résultat matériel Genos uniquement.
 
-## Identification
+## Identification CVP
 
 | Fonction | Signature | Statut |
 |---|---|---|
-| Modèle | `0F 01 18 01 | 00` | GET VALIDÉ — données correspondant à `CVP-905` |
-| Firmware | `0F 01 0B 01 | 00` | GET VALIDÉ — `1.03` |
+| Modèle | `0F 01 18 01 | 00` | GET VALIDÉ — CVP-905 |
+| Firmware | `0F 01 0B 01 | 00` | GET VALIDÉ — 1.03 |
 
-Le format texte Yamaha observé sur Song/Style utilise des blocs `1 octet masque + jusqu'à 7 octets de données`. L'ancienne hypothèse d'une longueur 14-bit en tête ne doit plus être utilisée pour ces propriétés.
+Format texte Yamaha observé sur Song/Style :
+
+```text
+1 octet masque + jusqu'à 7 octets de données
+```
+
+L'ancienne hypothèse d'une longueur 14-bit en tête ne doit plus être utilisée pour ces propriétés.
 
 ## Song
 
@@ -30,42 +38,25 @@ Le format texte Yamaha observé sur Song/Style utilise des blocs `1 octet masque
 | Play / Pause / Stop | `04 00 05 01 | 00` | VALIDÉE — `00/01/02` |
 | Position mesure/temps | `04 00 0A 01 | 00` | VALIDÉE |
 | Longueur | `04 00 1B 01 | 00` | GET VALIDÉ |
-| Chemin / nom du Song | `04 00 01 01 | 00` | GET VALIDÉ — chemin complet observé |
+| Chemin / nom du Song | `04 00 01 01 | 00` | GET VALIDÉ |
 | Boucle A/B | `04 00 0D 01 | 00` | VALIDÉE GET/SET |
 | Présence pistes | `04 01 00 01 | 10..1F` | GET VALIDÉ |
 | Parties pédagogiques | `04 00 0E 01 | 00..02` | VALIDÉE GET/SET |
-| Partie index `03` | `04 00 0E 01 | 03` | NON APPLICABLE / SET naïf -> `0x31` |
+| Partie index `03` | `04 00 0E 01 | 03` | NON APPLICABLE — SET naïf -> `0x31` |
 | Affectation auto | `04 00 10 01 | 00` | VALIDÉE GET/SET |
+| Sélection directe Song | — | NON RÉSOLUE |
 
-Exemple Song réellement observé :
+Exemple observé :
 
 ```text
 PRESET:/SONG/60 Popular/Pop/Shallow.S000.mid
 ```
 
-La propriété permet donc d'extraire au minimum :
+`cvp_song.py` contient encore l'ancien décodeur 14-bit et doit être corrigé.
 
-```text
-source
-chemin
-nom
-extension
-```
+## Mixer / parties clavier CVP
 
-Détection « aucun Song » actuellement retenue :
-
-```text
-song_name EMPTY
-ET aucune piste 1..16 présente
-```
-
-Important : `cvp_song.py` contient encore un ancien décodeur basé sur une longueur 14-bit. Il doit être corrigé pour utiliser le format par blocs observé.
-
-Hypothèse de travail acceptée : traiter aussi `USER:` et `USB1:` comme sources Song comme pour Style, sans consacrer de campagne de validation séparée tant qu'aucune contradiction n'apparaît.
-
-## Song mixer / parties clavier
-
-Indexes principaux :
+Indexes principaux connus :
 
 ```text
 00 Main
@@ -83,13 +74,13 @@ Indexes principaux :
 |---|---|---|
 | Active Main/Layer/Left | `0C 00 01 01` | VALIDÉE |
 | Active Song 1..16 | `0C 00 01 01` | VALIDÉE |
-| Volume | `0C 00 00 01` | VALIDÉ sur Main/Layer/Left/Song1/Mic/AuxIn/Wave/MidiMaster/Style |
-| Pan | `0C 00 03 01` | VALIDÉ sur Main/Layer/Left/Song1/Style |
-| Reverb send | `0C 00 04 01` | VALIDÉ sur Main/Layer/Left/Song1/Style |
+| Volume | `0C 00 00 01` | VALIDÉ sur principaux indexes |
+| Pan | `0C 00 03 01` | VALIDÉ sur principaux indexes |
+| Reverb send | `0C 00 04 01` | VALIDÉ sur principaux indexes |
 | Voice MIDI | `02 00 01 01` | GET VALIDÉ dynamiquement |
-| Voice preset | `02 00 00 01` | GET EMPTY sur CVP-905 |
+| Voice preset/path | `02 00 00 01` | GET EMPTY sur CVP-905 |
 
-Active Wave `44` n'est pas un booléen simple : SET naïf a produit `0x31`.
+Active Wave `44` n'est pas un booléen simple : SET naïf -> `0x31`.
 
 ## Tempo / transpose
 
@@ -98,22 +89,23 @@ Active Wave `44` n'est pas un booléen simple : SET naïf a produit `0x31`.
 | Tempo | `08 00 00 01 | 00` | VALIDÉE |
 | Transpose | `0A 00 00 01 | 02` | VALIDÉE |
 
-## Style — runtime
+## Style — CVP runtime
 
 | Fonction | Mécanisme | Statut |
 |---|---|---|
-| Chemin / nom / source | `06 00 00 01 | 00` | GET VALIDÉ — PRESET, USER, USB1 observés |
+| Chemin / nom / source | `06 00 00 01 | 00` | GET VALIDÉ — PRESET/USER/USB1 |
 | Volume global | `0C 00 00 01 | 51` | VALIDÉE |
 | Mute 8 parties | `F0 43 73 01 51 05 00 00 08 ... F7` | VALIDÉE |
 | Start / Stop | `06 00 03 01 | 00` | VALIDÉE |
-| Sync Start | `06 00 07 01 | 00` | VALIDÉE GET/SET — `00=OFF`, `01=ON` |
+| Sync Start | `06 00 07 01 | 00` | VALIDÉE GET/SET |
 | Intro 1/2/3 | Section Control `00/01/02` | VALIDÉE |
 | Main A/B/C/D | Section Control `08..0B` | VALIDÉE |
 | Fill A/B/C/D | Section Control `10..13` | VALIDÉE |
 | Break | Section Control `18` | VALIDÉE |
 | Ending 1/2/3 | Section Control `20..22` | VALIDÉE |
+| Sélection directe Style | — | NON RÉSOLUE sur CVP ; VALIDÉE sur Genos uniquement |
 
-Exemples de chemin Style réellement observés :
+Chemins observés :
 
 ```text
 PRESET:/STYLE/Pop&Rock/Pop/Cool 8Beat.T308.prs
@@ -123,34 +115,30 @@ USER:/STYLE/80sMajestyRock.T548.prs
 USB1:/training.T310.sty
 ```
 
-La propriété `06 00 00 01 | 00` peut servir directement à l'accessibilité pour annoncer le nom et la source du Style.
-
 Section Control :
 
 ```text
 F0 43 7E 00 ss 7F F7
 ```
 
-### Style — fonctions recherchées mais non résolues
+## Style — fonctions fermées / ouvertes
 
-| Fonction | Statut | Zones déjà testées |
+| Fonction | Statut | Remarque |
 |---|---|---|
-| ACMP | NON RÉSOLUE | plusieurs zones CSP `06`, dont tous indexes sur `06 00 00..7F 01` |
-| Auto Fill In | NON RÉSOLUE | `06 00..0F 00..7F 01 | 00` |
-| Synchro Stop | NON RÉSOLUE | même zone, test effectué en mode Fingered |
-| OTS Link | NON RÉSOLUE | `06 00..0F 00..7F 01 | 00` |
+| ACMP | CLÔTURÉE DIRECT | workaround Registration validé |
+| Auto Fill In | CLÔTURÉE DIRECT | documentation panel-only + scan négatif |
+| Synchro Stop | CLÔTURÉE DIRECT | documentation panel-only + scan négatif |
+| OTS Link | NON RÉSOLUE | zone CSP `06` déjà négative |
 
-Détails ACMP déjà testés :
+Scans ACMP déjà terminés :
 
 ```text
-06 00..0F 00..7F 01 | index 00       -> 0 changement
-wide 00..0F/00..03/00..1F | index 00 -> 0 changement
-06 00 00..7F 01 | index 00..7F       -> 0 changement
+06 00..0F 00..7F 01 | index 00
+wide 00..0F/00..03/00..1F | index 00
+06 00 00..7F 01 | index 00..7F
 ```
 
-Ne pas répéter ces scans à l'identique.
-
-Sync Start ne doit pas être confondu avec ACMP : un SET Sync Start ON n'active pas ACMP.
+Ne pas les répéter.
 
 ## Registration Memory
 
@@ -161,13 +149,47 @@ F0 43 73 01 52 25 11 00 02 00 XX F7
 XX = 00..07
 ```
 
-Notification observée :
+Notification :
 
 ```text
 F0 43 73 01 52 25 00 01 01 00 01 XX F7
 ```
 
-Le Fingering Type est présent dans les données Registration lorsque la catégorie Style est mémorisée, mais sa commande MIDI directe reste non résolue.
+### ACMP dans `.rgt` — VALIDÉ
+
+```text
+GPm07 payload[2]
+
+00 = ACMP OFF
+7F = ACMP ON
+```
+
+Un Registration minimal identique sauf ACMP a restauré correctement ON/OFF sans changement de Style, Fingering ou Voice.
+
+### Fingering dans `.rgt` — VALIDÉ
+
+```text
+GPm07 payload[8]
+
+03 = AI Fingered
+04 = Fingered
+0C = AI Full Keyboard
+```
+
+### Parties Style dans `.rgt` — VALIDÉ
+
+```text
+GPm08 data[7]
+
+bit0 Rhythm1
+bit1 Rhythm2
+bit2 Bass
+bit3 Chord1
+bit4 Chord2
+bit5 Pad
+bit6 Phrase1
+bit7 Phrase2
+```
 
 ## Split Point / Fingering Type
 
@@ -183,41 +205,23 @@ Left Split Point VALIDÉ :
 F0 43 73 01 51 00 00 00 03 10 01 dd F7
 ```
 
-`10 02` testé comme Fingering direct : **négatif**. Ne pas retester comme commande directe.
+`10 02` testé comme Fingering direct : **NÉGATIF**.
 
-Valeurs de stockage `.rgt/.ssu` :
+Commande MIDI Fingering directe : **CLÔTURÉE pour la recherche actuelle**.
 
-```text
-03 AI Fingered
-04 Fingered
-0C AI Full Keyboard
-```
+Workaround : Registration Memory.
 
-Commande MIDI Fingering directe : **NON RÉSOLUE**.
-
-### Campagnes Fingering terminées
-
-Deep Weekend CSP GET-only :
+### Campagnes Fingering épuisées
 
 ```text
-Blocs             : 1024/1024
-Clés uniques      : 13 074 432
-GET A+B           : 26 148 864
-Candidats A/B     : 6
-Confirmés A/B/A/B : 0
-Exact 0C/03       : 0
-```
-
-Autres espaces épuisés :
-
-```text
-CSP EVENTS : 26 624 propriétés, 63 abonnements, aucun signal exploitable
-XG         : 9 137 adresses, 1 936 réponses, aucun candidat reproductible
-Sniff      : aucun SysEx Split/Fingering exploitable
+CSP Deep Weekend : 13 074 432 clés, aucun A/B/A/B stable
+CSP EVENTS       : 26 624 propriétés, aucun signal exploitable
+XG               : 9 137 adresses, 1 936 réponses, aucun candidat
+Sniff passif     : aucun SysEx exploitable
 Special Operator : ignoré
 ```
 
-Ne pas répéter ces campagnes sans nouvelle hypothèse.
+Ne pas répéter sans nouvelle preuve indépendante.
 
 ## Guide Yamaha
 
@@ -225,8 +229,6 @@ Ne pas répéter ces campagnes sans nouvelle hypothèse.
 |---|---|---|
 | Guide ON/OFF | `04 03 00 01 | 00` | VALIDÉE GET/SET |
 | Guide Type | `04 03 01 01 | 00` | VALIDÉE GET/SET sur valeurs testées |
-
-Ce Guide est la fonction pédagogique Yamaha, pas le Voice Guide d'accessibilité.
 
 ## Piano Room / piano
 
@@ -249,30 +251,131 @@ Ce Guide est la fonction pédagogique Yamaha, pas le Voice Guide d'accessibilit�
 | Fonction | Signature | Statut |
 |---|---|---|
 | Stream Lights ON/OFF | `04 02 00 01 | 00` | VALIDÉE GET/SET |
-| Stream Speed | `04 02 02 01 | 00` | NON APPLICABLE / SET naïf -> `0x31` |
+| Stream Speed | `04 02 02 01 | 00` | NON APPLICABLE — SET naïf -> `0x31` |
 
 ## Réverb globale
 
-`0C 01 00 01 | 00` : GET VALIDÉ dynamiquement. SET non testé.
+```text
+0C 01 00 01 | 00
+```
 
-## EVENTS / XG / sniff — conclusions de recherche
+GET VALIDÉ dynamiquement. SET non testé.
 
-- CSP EVENTS : fonctionnel sur plusieurs propriétés connues, mais pas de signal Fingering exploitable après rappel Registration.
-- XG documenté : 9 137 adresses testées, 1 936 répondantes, aucun candidat Fingering.
-- Sniff passif panneau : pas de SysEx exploitable pour Split/Fingering.
-- Sniff ACMP pendant Style : aucune trame ACMP identifiable.
-- Special Operator Fingering historique : ignoré par CVP-905.
+# Genos 1 — pont de recherche
 
-Ne pas répéter ces campagnes sans nouvelle hypothèse.
+**Tout ce bloc est VALIDÉ GENOS / NON TESTÉ CVP sauf indication contraire.**
+
+## Liaison XG
+
+Universal Device Inquiry et XG Master Volume ont confirmé la liaison SysEx bidirectionnelle.
+
+Le CSP moderne CVP `F0 43 73 01 52 25 26 ...` ne répond pas sur Genos 1.
+
+## Voice XG — GET + SET VALIDÉS Genos
+
+Mapping :
+
+```text
+Right1 -> 08 01
+Right2 -> 08 02
+Right3 -> 08 03
+Left   -> 08 04
+```
+
+Paramètres :
+
+```text
+08 nn 01 = Bank Select MSB
+08 nn 02 = Bank Select LSB
+08 nn 03 = Program Number
+```
+
+GET :
+
+```text
+F0 43 30 4C 08 nn pp F7
+```
+
+SET :
+
+```text
+F0 43 10 4C 08 nn 01 MSB F7
+F0 43 10 4C 08 nn 02 LSB F7
+F0 43 10 4C 08 nn 03 PC  F7
+```
+
+Les quatre parties ont été validées par différentiel puis restauration/relecture.
+
+Exemples :
+
+```text
+Right1  104/21/1  CFX ConcertGrand
+Right2    8/47/50 KinoStrings
+Right3    8/49/2  SteelAcousticFinger
+Left      8/41/21 70sSuitcaseClean
+```
+
+## Style direct select — VALIDÉ Genos
+
+```text
+F0 43 73 01 51 05 00 03 04 00 00 HH LL F7
+```
+
+Encodage :
+
+```text
+HH = StyleNumber // 128
+LL = StyleNumber % 128
+```
+
+Validations matérielles :
+
+```text
+00 00 -> Party Polka
+10 11 -> Viennese Waltz
+1C 71 -> AcousticBlues
+```
+
+Lecture directe du Style courant : **NON RÉSOLUE sur Genos**.
+
+## External Controller Genos
+
+Validé :
+
+```text
+Canal 16 CC#0 -> Style Start/Stop
+BF 00 7F / BF 00 00
+
+Canal 16 CC#5 -> Fingered/Fingered On Bass
+BF 05 7F / BF 05 00
+```
+
+Valeurs internes observées :
+
+```text
+External Controller:
+0x17 = Sync Stop
+0x27 = Fingered/Fingered On Bass
+
+Assignable/.ssu:
+0x28 = Fingered
+0x8E = ACMP
+```
+
+L'extrapolation `0x8D = ACMP External Controller` a produit un `.msu` rejeté : **hypothèse invalide**.
+
+ACMP n'est pas exposé dans External Controller Genos 1.
+
+Voir `docs/GENOS1_MIDI_CHECKPOINT_2026-08-29.md`.
 
 ## Règle `0x31`
 
-Toute lecture `0x31` apparue après un SET supposé bool/u7 doit être considérée comme un **signal d'arrêt** et non comme une valeur valide.
+Toute lecture `0x31` apparue après un SET supposé bool/u7 doit être traitée comme **signal d'arrêt**.
 
 ## Règle de recherche
 
 - scan large inconnu : GET-only ;
 - jamais de brute-force SET ;
-- SET ciblé uniquement après preuve suffisante ;
+- SET ciblé uniquement avec preuve suffisante ;
 - restaurer l'état après validation ;
-- consulter ce catalogue et le checkpoint RC4 avant de relancer un espace déjà testé.
+- ne jamais promouvoir un résultat Genos au statut CVP sans test CVP.
