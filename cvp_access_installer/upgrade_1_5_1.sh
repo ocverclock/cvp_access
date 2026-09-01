@@ -109,36 +109,16 @@ path = Path(sys.argv[1])
 text = path.read_text(encoding="utf-8")
 
 bindings = {
-    "CAPS+F1": "announce_style_name",
-    "CAPS+F2": "announce_song_name",
-    "CAPS+F3": "announce_song_length",
-    "CAPS+F4": "sync_start_toggle",
-    "CAPS+F5": "guide_toggle",
-    "CAPS+F6": "stream_lights_toggle",
-    "CAPS+F7": "metronome_toggle",
-    "CAPS+TOP1": "style_intro:1",
-    "CAPS+TOP2": "style_intro:2",
-    "CAPS+TOP3": "style_intro:3",
-    "CAPS+TOP4": "style_main:1",
-    "CAPS+TOP5": "style_main:2",
-    "CAPS+TOP6": "style_main:3",
-    "CAPS+TOP7": "style_main:4",
-    "CAPS+TOP8": "style_break",
-    "CAPS+A": "style_fill:1",
-    "CAPS+Z": "style_fill:2",
-    "CAPS+E": "style_fill:3",
-    "CAPS+R": "style_fill:4",
-    "CAPS+T": "style_ending:1",
-    "CAPS+Y": "style_ending:2",
-    "CAPS+U": "style_ending:3",
-    "CAPS+Q": "registration_recall:1",
-    "CAPS+S": "registration_recall:2",
-    "CAPS+D": "registration_recall:3",
-    "CAPS+F": "registration_recall:4",
-    "CAPS+G": "registration_recall:5",
-    "CAPS+H": "registration_recall:6",
-    "CAPS+J": "registration_recall:7",
-    "CAPS+K": "registration_recall:8",
+    "W": "announce_style_name",
+    "X": "announce_song_name",
+    "C": "announce_song_length",
+    "V": "sync_start_toggle",
+    "B": "guide_toggle",
+    "F7": "metronome_toggle",
+    "PAGEUP": "style_volume_change:1",
+    "SHIFT+PAGEUP": "style_volume_change:5",
+    "PAGEDOWN": "style_volume_change:-1",
+    "SHIFT+PAGEDOWN": "style_volume_change:-5",
 }
 
 lines = text.splitlines()
@@ -175,7 +155,7 @@ for combo, action in bindings.items():
 if to_add:
     block = [
         "",
-        "# CVP Access 1.5.1 - couche CAPS ajoutée automatiquement",
+        "# CVP Access 1.5.1 - layout accessibilité ajouté automatiquement",
         *to_add,
     ]
     lines[keys_end:keys_end] = block
