@@ -67,6 +67,13 @@ class SpeechManager:
         )
         self.speech_thread.start()
 
+        # CVP Access : précharge Piper au démarrage.
+        # Évite que la première annonce dynamique fasse attendre
+        # l'utilisateur pendant le chargement du modèle.
+        if self.config.mode in {"hybrid", "runtime"}:
+            print("Préchargement Piper...")
+            self._ensure_worker()
+
         atexit.register(self.close)
 
     def _check_static_profile(self):
@@ -531,7 +538,7 @@ def install_speech_hooks(core, speech_config):
     def announce_volume():
         value = core.voice_volume
         return manager.speak(
-            f"Volume de la voix {value} pour cent.",
+            f"Volume guide vocal {value} pour cent.",
             voice_dir / "volume" / f"volume_{value:03d}.wav",
             replace_key="voice_volume",
         )
@@ -629,7 +636,7 @@ def install_speech_hooks(core, speech_config):
 
     def announce_no_song():
         return manager.speak(
-            "Aucun Song chargé.",
+            "Pas de Song chargé.",
             voice_dir / "song" / "no_song.wav",
         )
 

@@ -6,7 +6,7 @@ Consolidation progressive :
 - branche l'API MIDI et les contrôleurs 1.5.1 ;
 - corrige le nom Song ;
 - expose les informations Style/Song validées ;
-- expose Sync Start, Guide, Stream Lights et Métronome ;
+- expose Syncro Start, Guide, Stream Lights et Métronome ;
 - garde les résultats Genos verrouillés hors runtime CVP.
 """
 
@@ -76,8 +76,11 @@ NEW_ACTION_SPECS = {
     "announce_song_length": ActionSpec(
         description="Annonce la longueur du Song"
     ),
+    "style_volume_change": ActionSpec(
+        True, -5, 5, "Modifie le volume Style"
+    ),
     "sync_start_toggle": ActionSpec(
-        description="Active ou désactive Sync Start"
+        description="Active ou désactive Syncro Start"
     ),
     "metronome_toggle": ActionSpec(
         description="Active ou désactive le métronome"
@@ -159,6 +162,7 @@ class CVPActions151(legacy.CVPActions):
             "announce_style_name": self.announce_style_name,
             "announce_song_name": self.announce_song_name,
             "announce_song_length": self.announce_song_length,
+            "style_volume_change": self.style_volume_change,
             "sync_start_toggle": self.sync_start_toggle,
             "metronome_toggle": self.metronome_toggle,
             "guide_toggle": self.guide_toggle,
@@ -220,6 +224,16 @@ class CVPActions151(legacy.CVPActions):
         )
 
     def announce_song_name(self):
+        loaded = self.song.is_loaded()
+        if loaded is False:
+            print("Pas de Song chargé.")
+            self.core.announce_no_song()
+            return
+        if loaded is None:
+            print("Impossible de vérifier le Song.")
+            self.core.announce_song_detection_error()
+            return
+
         raw = self.song.get_name()
 
         if raw is None:
@@ -252,6 +266,16 @@ class CVPActions151(legacy.CVPActions):
         )
 
     def announce_song_length(self):
+        loaded = self.song.is_loaded()
+        if loaded is False:
+            print("Pas de Song chargé.")
+            self.core.announce_no_song()
+            return
+        if loaded is None:
+            print("Impossible de vérifier le Song.")
+            self.core.announce_song_detection_error()
+            return
+
         length = self.song.get_length()
 
         if length is None:
@@ -273,6 +297,9 @@ class CVPActions151(legacy.CVPActions):
         self.core.announce_song_length(
             measures
         )
+
+    def style_volume_change(self, delta):
+        self._change_style_volume(delta)
 
     # ----------------------------------------------------------
     # Booléens CVP validés
@@ -361,7 +388,7 @@ class CVPActions151(legacy.CVPActions):
     def sync_start_toggle(self):
         self._toggle_bool_property(
             [0x06, 0x00, 0x07, 0x01],
-            label="Sync Start",
+            label="Syncro Start",
             stem="sync_start",
         )
 

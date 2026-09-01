@@ -188,6 +188,32 @@ ACTION_SPECS = {
         description="Démarre ou arrête le Style"
     ),
 
+    # CVP Access 1.5.1 — actions accessibilité
+    "announce_style_name": ActionSpec(
+        description="Annonce le Style actuellement sélectionné"
+    ),
+    "announce_song_name": ActionSpec(
+        description="Annonce le Song actuellement chargé"
+    ),
+    "announce_song_length": ActionSpec(
+        description="Annonce la longueur du Song"
+    ),
+    "sync_start_toggle": ActionSpec(
+        description="Active ou désactive Syncro Start"
+    ),
+    "guide_toggle": ActionSpec(
+        description="Active ou désactive Guide"
+    ),
+    "stream_lights_toggle": ActionSpec(
+        description="Active ou désactive Stream Lights"
+    ),
+    "metronome_toggle": ActionSpec(
+        description="Active ou désactive le métronome"
+    ),
+    "style_volume_change": ActionSpec(
+        True, -5, 5, "Modifie le volume Style"
+    ),
+
     # RC4 — Yamaha Section Control
     "style_intro": ActionSpec(
         True, 1, 3, "Sélectionne une Intro Style"
@@ -214,8 +240,8 @@ ACTION_SPECS = {
     "main_volume_change": ActionSpec(
         True, -5, 5, "Modifie le volume Main"
     ),
-    "voice_volume_up": ActionSpec(description="Augmente le volume vocal"),
-    "voice_volume_down": ActionSpec(description="Diminue le volume vocal"),
+    "voice_volume_up": ActionSpec(description="Augmente le volume du guide vocal"),
+    "voice_volume_down": ActionSpec(description="Diminue le volume du guide vocal"),
     "style_volume_up": ActionSpec(description="Augmente le volume Style"),
     "style_volume_down": ActionSpec(description="Diminue le volume Style"),
     "restart": ActionSpec(
@@ -256,6 +282,11 @@ def describe_invocation(invocation: ActionInvocation) -> str:
         if parameter is not None and parameter > 0:
             return f"Augmenter le volume Main de {parameter}."
         return f"Diminuer le volume Main de {abs(parameter or 0)}."
+
+    if name == "style_volume_change":
+        if parameter is not None and parameter > 0:
+            return f"Augmenter le volume Style de {parameter}."
+        return f"Diminuer le volume Style de {abs(parameter or 0)}."
 
     if name == "style_intro":
         return f"Intro {parameter}."
