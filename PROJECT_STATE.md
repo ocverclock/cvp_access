@@ -1,8 +1,12 @@
 # CVP Access — état de référence du projet
 
-Dernière consolidation : **29 août 2026**.
+Dernière consolidation : **1 septembre 2026**.
 
-## Matériel de référence CVP
+Version de référence : **CVP Access 1.5.1-RC2**.
+
+---
+
+## 1. Matériel de référence
 
 Toutes les validations CVP de ce projet doivent être interprétées comme réalisées sur :
 
@@ -12,58 +16,373 @@ Firmware 1.03
 Raspberry Pi / Debian 13 arm64
 Interface MIDI DIN Prodipe
 USB Audio du CVP pour les annonces vocales
+Clavier Apple Extended USB
 ```
 
 Les anciennes mentions de **CVP-909** sont historiques et ne doivent plus être utilisées comme preuve de validation.
 
-## Banc de recherche secondaire : Genos 1
+---
 
-Depuis le 29 août 2026, un **Yamaha Genos 1** est utilisé comme banc de recherche Yamaha complémentaire.
-
-Règle absolue :
-
-> Une commande validée sur Genos n'est pas considérée comme validée sur CVP-905 tant qu'elle n'a pas été testée physiquement sur le CVP.
-
-Les résultats Genos sont consolidés séparément dans :
+## 2. État logiciel validé
 
 ```text
-docs/GENOS1_MIDI_CHECKPOINT_2026-08-29.md
+Runtime          : CVP Access 1.5.1-RC2
+Service          : cvp-access.service
+Runtime installé : /opt/cvp-access
+Configuration    : /etc/cvp-access/keyboard.toml
+Map clavier      : /etc/cvp-access/keyboard-map.html
+Voix             : Piper fr_FR-siwis-medium
+Mode vocal       : hybrid
+Génération WAV   : configured
+Cache dynamique  : activé
 ```
 
-## Sources de vérité — ordre de priorité
-
-En cas de contradiction, utiliser cet ordre :
-
-1. `PROJECT_STATE.md` — matériel, version, décisions et hiérarchie documentaire.
-2. `CVP905_PROTOCOL_CHECKPOINT_RC4.md` — reverse engineering CVP-905.
-3. `docs/FUNCTION_CATALOG.md` — catalogue maître des fonctions et statuts.
-4. `docs/GENOS1_MIDI_CHECKPOINT_2026-08-29.md` — résultats Genos 1, séparés des validations CVP.
-5. `docs/KEY_ACTIONS.md` — actions réellement exposées dans `keyboard.toml`.
-6. `cvp_access_v1.5.py` + modules runtime — implémentation.
-7. Documents de recherche datés — preuves/historique.
-8. `CVP905_PROTOCOL_CHECKPOINT_RC3.md` — historique uniquement.
-
-Un script de recherche n'est jamais une source de vérité à lui seul : un résultat doit être reporté dans le checkpoint ou le catalogue.
-
-## Version actuelle
+Le runtime 1.5.1 est fourni par :
 
 ```text
-Runtime : CVP Access 1.5-RC4-dev
-Installer / updater : 0.3.2
-Moteur SysEx conservé : cvp_access_v1.4.1.py
+cvp_access_1_5_1.py
 ```
 
-`cvp_access_v1.4.1.py` ne doit pas être supprimé : le runtime v1.5 l'importe comme moteur Yamaha validé.
+et installé sous :
 
-## CSP moderne CVP — rappel
+```text
+/opt/cvp-access/cvp_access.py
+```
 
-Header :
+Le moteur historique reste nécessaire :
+
+```text
+cvp_access_v1.5.py
+cvp_access_v1.4.1.py
+```
+
+Ne pas supprimer `cvp_access_v1.4.1.py` tant que l'architecture transitoire n'a pas été remplacée.
+
+---
+
+## 3. Validation de reproductibilité RC2
+
+Le **1 septembre 2026**, le dépôt courant a été renommé puis un clone GitHub neuf a été créé.
+
+Procédure validée :
+
+```bash
+mv ~/CVP_access ~/CVP_access_RC2_working
+git clone https://github.com/ocverclock/cvp_access.git ~/CVP_access
+cd ~/CVP_access
+python3 VERIFY_PACKAGE_151.py
+sudo bash cvp_access_installer/upgrade_1_5_1.sh
+```
+
+Résultat :
+
+```text
+service : active
+VERSION = "1.5.1-RC2"
+
+CVP Access Doctor 1.5.1
+========================================================================
+OK    Runtime 1.5.1             modules complets
+OK    Version runtime           1.5.1-RC2
+OK    Layout accessibilité      présente
+OK    WAV états 1.5.1           8 présents
+========================================================================
+```
+
+Le démarrage complet depuis le clone GitHub neuf a également été validé :
+
+```text
+CVP ACCESS V1.5.1-RC2
+Affectations : 61
+Voix Piper : fr_FR-siwis-medium
+Mode vocal : hybrid
+Génération WAV : configured
+Préchargement Piper...
+Piper runtime chargé : fr_FR-siwis-medium
+MIDI : Prodipe
+Audio : Clavinova USB
+Clavier configurable prêt.
+```
+
+**Conclusion : la RC2 est reproductible depuis GitHub par l'upgrade 1.5.1.**
+
+Une installation réellement vierge depuis une nouvelle carte Raspberry Pi OS reste un test futur intéressant mais n'est plus bloquante pour la RC2.
+
+---
+
+## 4. Principes d'accessibilité RC2
+
+Le clavier est une interface d'accessibilité complémentaire au panneau physique du CVP.
+
+Décision UX :
+
+- privilégier les fonctions réellement utiles à un utilisateur non voyant ;
+- ne pas dupliquer sans raison les boutons déjà accessibles physiquement ;
+- conserver dans le catalogue les fonctions validées mais non attribuées ;
+- afficher les actions disponibles mais non attribuées sous la map clavier.
+
+### Aide CTRL
+
+```text
+CTRL + touche
+```
+
+annonce la fonction de la touche **sans exécuter l'action**.
+
+La couche `Caps Lock` utilisée dans la RC1 a été abandonnée.
+
+---
+
+## 5. Layout clavier RC2
+
+### Parties Style
+
+```text
+1 = Rythme 1
+2 = Rythme 2
+3 = Basse
+4 = Accord 1
+5 = Accord 2
+6 = Pad
+7 = Phrase 1
+8 = Phrase 2
+9 = Layer / Dual
+0 = Left
+```
+
+### Pistes Song
+
+```text
+A Z E R T Y U I = pistes 1..8
+Q S D F G H J K = pistes 9..16
+```
+
+### Informations / accessibilité
+
+```text
+W  = annonce nom Style
+X  = annonce nom Song
+C  = annonce longueur Song
+V  = Syncro Start ON/OFF
+B  = Guide ON/OFF
+F7 = Métronome ON/OFF
+```
+
+Si aucun Song n'est chargé, `X` et `C` annoncent :
+
+```text
+Pas de Song chargé.
+```
+
+### Song
+
+```text
+Espace       = lecture / pause
+Entrée       = stop
+P            = annonce position
+← / →        = mesure -1 / +1
+Maj + ← / →  = mesure -5 / +5
+F3           = aller à une mesure
+F4           = point A
+F5           = point B
+F6           = boucle A/B
+```
+
+### Volumes
+
+```text
+↑ / ↓                  = Vol. guide vocal + / -
+Page ↑ / Page ↓        = Volume Style +1 / -1
+Maj + Page ↑ / Page ↓  = Volume Style +5 / -5
+Origine / Fin          = Volume Song +1 / -1
+Maj + Origine / Fin    = Volume Song +5 / -5
+Inser / Suppr          = Volume Main +1 / -1
+Maj + Inser / Suppr    = Volume Main +5 / -5
+```
+
+### Actions implémentées mais volontairement non attribuées
+
+```text
+Intro Style 1..3
+Main Style A..D
+Fill Style A..D
+Break Style
+Ending Style 1..3
+Registration Memory 1..8
+Stream Lights ON/OFF
+```
+
+Elles doivent apparaître dans la section :
+
+```text
+Actions disponibles mais non attribuées
+```
+
+de la map clavier.
+
+---
+
+## 6. Synthèse vocale RC2
+
+Le mode vocal est :
+
+```text
+hybrid
+```
+
+Politique :
+
+1. utiliser un WAV pré-généré s'il existe ;
+2. sinon réutiliser un WAV dynamique déjà présent dans le cache ;
+3. sinon synthétiser avec Piper ;
+4. conserver le résultat dynamique dans le cache.
+
+Le cache dynamique est situé dans :
+
+```text
+~/.cache/cvp-access/tts/
+```
+
+### Préchargement Piper
+
+Piper est désormais préchargé au démarrage du service.
+
+Objectif :
+
+> déplacer le temps de chargement du modèle au démarrage du service afin que la première commande dynamique de l'utilisateur ne présente plus un délai anormal.
+
+Le worker Piper reste résident pendant le fonctionnement du service.
+
+### Terminologie utilisateur
+
+Utiliser :
+
+```text
+Vol. guide vocal
+Syncro Start
+Pas de Song chargé.
+```
+
+Important :
+
+- le nom utilisateur est **Syncro Start** ;
+- l'identifiant interne reste `sync_start_toggle` ;
+- les documents protocole Yamaha conservent le nom officiel **Sync Start**.
+
+---
+
+## 7. Map clavier
+
+Générateur :
+
+```text
+cvp_keyboard_map.py
+```
+
+Sortie runtime :
+
+```text
+/etc/cvp-access/keyboard-map.html
+```
+
+La map est générée depuis la configuration réellement active et doit afficher :
+
+- CTRL = aide vocale ;
+- toutes les affectations actives ;
+- Maj quand une variante ±5 existe ;
+- Vol. guide vocal ;
+- Syncro Start ;
+- actions disponibles mais non attribuées ;
+- format A4 paysage.
+
+---
+
+## 8. Installateur / upgrade
+
+Upgrade RC2 :
+
+```bash
+sudo bash cvp_access_installer/upgrade_1_5_1.sh
+```
+
+L'upgrade :
+
+- copie le runtime 1.5.1 ;
+- copie les modules nécessaires ;
+- installe le générateur de map ;
+- installe les générateurs vocaux ;
+- migre l'ancien layout RC1 CAPS uniquement lorsque les anciennes affectations correspondent exactement au profil officiel ;
+- préserve les personnalisations utilisateur ;
+- migre l'ancien PageUp/PageDown vers le volume Style ±1 ;
+- ajoute les nouvelles affectations RC2 manquantes ;
+- génère la map après migration ;
+- génère les WAV configurés ;
+- lance le Doctor ;
+- redémarre le service.
+
+Vérificateur du paquet :
+
+```bash
+python3 VERIFY_PACKAGE_151.py
+```
+
+Résultat attendu :
+
+```text
+CVP Access 1.5.1 RC2 package: OK
+```
+
+---
+
+## 9. Architecture transitoire
+
+```text
+cvp_access_1_5_1.py
+        |
+        +-- cvp_access_v1.5.py
+        |       |
+        |       `-- cvp_access_v1.4.1.py
+        |
+        +-- cvp_midi.py
+        +-- cvp_song_151.py
+        +-- cvp_speech_151.py
+        +-- cvp_style.py
+        +-- cvp_voice.py
+        +-- cvp_registration.py
+        +-- cvp_keyboard.py
+        +-- cvp_keyboard_map.py
+        `-- cvp_yamaha.py
+```
+
+---
+
+## 10. Sources de vérité — ordre de priorité
+
+En cas de contradiction :
+
+1. `PROJECT_STATE.md`
+2. `docs/CVP_ACCESS_1_5_1.md`
+3. `docs/KEY_ACTIONS_1_5_1.md`
+4. `CVP905_PROTOCOL_CHECKPOINT_RC4.md`
+5. `docs/FUNCTION_CATALOG.md`
+6. `docs/GENOS1_MIDI_CHECKPOINT_2026-08-29.md`
+7. runtime 1.5.1 et modules
+8. documents de recherche datés
+9. anciens documents RC1 / RC3 uniquement comme historique
+
+Un script de recherche n'est jamais une source de vérité à lui seul.
+
+---
+
+## 11. Protocole CVP-905 — éléments validés utiles au runtime
+
+Header CSP moderne :
 
 ```text
 F0 43 73 01 52 25 26
 ```
 
-Actions observées :
+Actions :
 
 ```text
 GET    01 00
@@ -72,81 +391,38 @@ INFO   00 00
 EVENTS 02 00
 ```
 
-## Découvertes CVP stabilisées
-
-### Song — chemin / nom
-
-Propriété :
+### Song
 
 ```text
-04 00 01 01 | 00
+Nom/path      : 04 00 01 01 | 00
+Position      : 04 00 0A 01 | 00
+Longueur      : 04 00 1B 01 | 00
+Loop A/B      : 04 00 0D 01 | 00
+Tracks        : 04 01 00 01 | 10..1F
+Métronome     : 07 00 00 01 | 00
 ```
 
-GET matériellement validé.
-
-Exemple :
-
-```text
-PRESET:/SONG/60 Popular/Pop/Shallow.S000.mid
-```
-
-Le CVP renvoie le chemin complet.
-
-Format texte observé :
+Décodage texte Yamaha validé :
 
 ```text
 1 octet masque des bits hauts + jusqu'à 7 octets de données
 ```
 
-L'ancienne hypothèse d'une longueur 14-bit en tête est fausse pour ces réponses.
+L'ancienne hypothèse d'une longueur 14-bit au début du texte est invalide pour ces réponses.
 
-`cvp_song.py` doit encore être corrigé pour utiliser ce décodage.
-
-### Style — chemin / nom / source
-
-Propriété :
+### Style
 
 ```text
-06 00 00 01 | 00
+Nom/path/source : 06 00 00 01 | 00
+Start/Stop      : 06 00 03 01 | 00
+Sync Start      : 06 00 07 01 | 00
 ```
-
-GET matériellement validé sur plusieurs sources :
-
-```text
-PRESET:/STYLE/Pop&Rock/Pop/Cool 8Beat.T308.prs
-PRESET:/STYLE/Pop&Rock/Pop/80s 8Beat.T308.prs
-PRESET:/STYLE/Pop&Rock/Pop/Up-tempo 8Beat.T308.prs
-USER:/STYLE/80sMajestyRock.T548.prs
-USB1:/training.T310.sty
-```
-
-Cette propriété permet d'extraire le nom, la source, la catégorie et l'extension.
-
-### Style — commandes CVP validées
-
-```text
-06 00 03 01 | 00 = Style Start/Stop
-06 00 07 01 | 00 = Sync Start
-```
-
-Sync Start :
-
-```text
-00 = OFF
-01 = ON
-```
-
-GET et SET validés.
 
 Section Control :
 
 ```text
 F0 43 7E 00 ss 7F F7
-```
 
-Valeurs validées :
-
-```text
 00..02 = Intro 1..3
 08..0B = Main A..D
 10..13 = Fill A..D
@@ -162,59 +438,45 @@ Rhy1 Rhy2 Bass Chd1 Chd2 Pad Phr1 Phr2
 F7
 ```
 
-`00=OFF`, `01=ON`.
+### Guide
 
-### Registration Memory — rappel externe
+```text
+04 03 00 01 | 00
+```
+
+GET/SET bool validé.
+
+### Registration
 
 ```text
 F0 43 73 01 52 25 11 00 02 00 XX F7
 ```
 
-`XX=00..07` pour Registration 1..8.
+`XX=00..07`.
 
-Notification observée :
+---
 
-```text
-F0 43 73 01 52 25 00 01 01 00 01 XX F7
-```
+## 12. Recherches directes clôturées
 
-## ACMP — recherche directe clôturée
+Ne pas relancer de scans massifs sans nouvelle preuve indépendante.
 
-La recherche d'une commande MIDI directe ACMP sur CVP-905 est **clôturée pour le projet actuel**.
+### ACMP direct
 
-Espaces déjà testés sans résultat :
+Recherche directe clôturée.
 
-```text
-06 00..0F 00..7F 01 | index 00
-wide 00..0F / 00..03 / 00..1F | index 00
-06 00 00..7F 01 | index 00..7F
-```
-
-Le dernier test représente 16 384 GET ciblés.
-
-Sniff MIDI OUT : aucune trame ACMP identifiable.
-
-La documentation CVP consultée indique également ACMP ON/OFF comme fonction de panneau.
-
-### Workaround Registration validé
-
-Dans le bloc `.rgt` étudié :
+Workaround validé via Registration :
 
 ```text
 GPm07 payload[2]
-00 = ACMP OFF
-7F = ACMP ON
+00 = OFF
+7F = ON
 ```
 
-Un Registration minimal identique sauf ACMP a été validé physiquement : rappel ON/OFF correct, sans modifier Style, Fingering ou Voice.
+### Fingering direct
 
-Décision projet :
+Recherche directe clôturée.
 
-> Pour ACMP, utiliser Registration si nécessaire. Ne pas relancer une recherche directe sans nouvelle preuve de protocole.
-
-## Fingering Type — recherche directe clôturée
-
-Valeurs confirmées dans `.rgt` :
+Valeurs Registration validées :
 
 ```text
 GPm07 payload[8]
@@ -224,102 +486,88 @@ GPm07 payload[8]
 0C = AI Full Keyboard
 ```
 
-Le rappel Registration restaure correctement le Fingering Type lorsque la catégorie Style est mémorisée.
+### Auto Fill In
 
-Campagnes directes terminées sans candidat exploitable :
+Recherche directe clôturée.
 
-```text
-CSP Deep Weekend
-CSP EVENTS
-XG documenté
-sniff passif
-famille 51 / 10 02
-Special Operator historique
-```
+### Synchro Stop
 
-Deep Weekend :
+Recherche directe clôturée.
 
-```text
-Blocs             : 1024/1024
-Clés uniques      : 13 074 432
-GET A+B           : 26 148 864
-Candidats A/B     : 6
-Confirmés A/B/A/B : 0
-Exact 0C/03       : 0
-```
+### OTS Link
 
-Décision projet :
+Non résolu.
 
-> Pour Fingering Type, utiliser Registration si nécessaire. Ne pas relancer les campagnes massives sans nouvelle preuve indépendante.
+---
 
-## Parties Style dans Registration
+## 13. Genos 1 — laboratoire secondaire
 
-Le différentiel `.rgt` a identifié :
+Le Genos 1 reste un banc Yamaha complémentaire.
+
+Règle absolue :
+
+> Une commande validée sur Genos n'est jamais considérée comme validée sur CVP-905 avant test physique sur le CVP.
+
+Résultats Genos utiles mais non validés CVP :
+
+- XG Voice Right1/2/3/Left GET/SET ;
+- sélection directe Style famille Yamaha 51 ;
+- CSP moderne CVP : négatif sur Genos.
+
+Voir :
 
 ```text
-GPm08 data[7]
-
-bit0 Rhythm1
-bit1 Rhythm2
-bit2 Bass
-bit3 Chord1
-bit4 Chord2
-bit5 Pad
-bit6 Phrase1
-bit7 Phrase2
+docs/GENOS1_MIDI_CHECKPOINT_2026-08-29.md
 ```
 
-## Auto Fill In / Synchro Stop / OTS Link
+---
 
-Scans CSP `06 00..0F 00..7F 01 | 00` :
+## 14. Points futurs possibles
 
-```text
-Auto Fill In : 0 changement
-Synchro Stop : 0 changement (CVP placé en Fingered)
-OTS Link     : 0 changement
+La RC2 est figée. Les développements futurs doivent partir de cette base.
+
+Pistes raisonnables :
+
+1. test d'installation réellement vierge sur une nouvelle carte Raspberry Pi OS ;
+2. amélioration éventuelle de l'arrêt du worker Piper si le `SIGKILL` systemd observé devient systématique ;
+3. fonctions d'accessibilité supplémentaires sur les touches encore libres (`N`, `,`, `;`) seulement si elles apportent une vraie valeur ;
+4. poursuite de la séparation propre du moteur historique ;
+5. tests CVP ciblés de commandes Genos uniquement si l'intérêt utilisateur est réel.
+
+Ne pas rouvrir les recherches massives ACMP/Fingering sans nouvelle preuve.
+
+---
+
+## 15. Rollback
+
+Retour au runtime v1.5 historique :
+
+```bash
+sudo cp /opt/cvp-access/cvp_access_v1.5.py /opt/cvp-access/cvp_access.py
+sudo systemctl restart cvp-access
 ```
 
-La documentation CVP consultée indique Auto Fill In et Synchro Stop comme fonctions de panneau.
+---
 
-Décision :
+## 16. État final RC2
 
-```text
-Auto Fill In : recherche directe clôturée
-Synchro Stop : recherche directe clôturée
-OTS Link     : NON RÉSOLU
-```
+**CVP Access 1.5.1-RC2 est le point de référence validé au 1 septembre 2026.**
 
-## Résultats Genos 1 du 29 août — NON VALIDÉS CVP
+Validé :
 
-Les résultats suivants sont validés **uniquement sur Genos 1** :
-
-```text
-SysEx bidirectionnel / XG Parameter Request : VALIDÉ
-CSP moderne CVP sur Genos                   : NÉGATIF
-Voice Right1 GET/SET XG                     : VALIDÉ
-Voice Right2 GET/SET XG                     : VALIDÉ
-Voice Right3 GET/SET XG                     : VALIDÉ
-Voice Left GET/SET XG                       : VALIDÉ
-Style direct select famille Yamaha 51       : VALIDÉ
-Style identité courante GET                 : NON RÉSOLU
-```
-
-Détails dans `docs/GENOS1_MIDI_CHECKPOINT_2026-08-29.md`.
-
-## Pistes prioritaires suivantes
-
-1. Tester sur CVP-905 le mécanisme XG Voice validé sur Genos, en lecture d'abord.
-2. Tester sur CVP-905 la commande de sélection Style famille `51`, avec état restaurable.
-3. Sur Genos, chercher un GET ciblé de l'identité du Style autour de `51 05 00 03`.
-4. Rechercher les commandes directes encore utiles : sélection Song, chargement de banque Registration, OTS Link.
-5. Ne rouvrir ACMP/Fingering direct qu'en présence d'une nouvelle preuve.
-
-## Règles de sécurité reverse engineering
-
-- scan large inconnu : **GET uniquement** ;
-- jamais de brute-force SET ;
-- SET ciblé seulement avec hypothèse solide et état restaurable ;
-- validation : `GET -> SET -> GET -> restauration -> GET` ;
-- toute valeur anormale type `0x31` après un SET supposé bool/u7 = arrêt ;
-- arrêter `cvp-access` et libérer `amidi` avant les probes bruts ;
-- consulter les zones négatives avant toute nouvelle campagne.
+- fonctionnement physique sur CVP-905 ;
+- nouveau layout accessibilité ;
+- aide CTRL ;
+- informations Style/Song ;
+- Syncro Start ;
+- Guide ;
+- Métronome ;
+- volume Style ±1/±5 ;
+- terminologie vocale ;
+- préchargement Piper ;
+- cache dynamique ;
+- map A4 ;
+- upgrade RC2 ;
+- Doctor ;
+- vérification paquet ;
+- réinstallation depuis un clone GitHub neuf.
