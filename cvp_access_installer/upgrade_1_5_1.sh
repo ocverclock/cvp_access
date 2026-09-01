@@ -21,13 +21,13 @@ PIPER_DIR="$CVP_HOME/.local/share/cvp-access/piper-env"
 PIPER_MODEL_DIR="$CVP_HOME/piper-voices"
 
 echo
-echo "[CVP Access] Upgrade runtime -> 1.5.1-RC2"
+echo "[CVP Access] Upgrade runtime -> 1.5.1-RC3"
 
 required=(
     cvp_access_1_5_1.py cvp_access_v1.5.py cvp_access_v1.4.1.py
     cvp_keyboard.py cvp_keyboard_map.py cvp_song.py cvp_song_151.py
     cvp_speech.py cvp_speech_151.py cvp_piper_worker.py cvp_midi.py
-    cvp_yamaha.py cvp_registration.py cvp_style.py cvp_voice.py
+    cvp_yamaha.py cvp_registration.py cvp_style.py cvp_voice.py cvp_voice_names.py
     config/default-1.5.1.toml
     cvp_access_installer/tools/generate_configured_voices.py
     cvp_access_installer/tools/generate_151_voices.py
@@ -40,7 +40,7 @@ done
 systemctl stop cvp-access.service 2>/dev/null || true
 install -d -m 0755 "$RUNTIME_DIR"
 install -m 0755 "$REPO_DIR/cvp_access_1_5_1.py" "$RUNTIME_DIR/cvp_access.py"
-for item in cvp_access_v1.5.py cvp_access_v1.4.1.py cvp_keyboard.py cvp_song.py cvp_song_151.py cvp_speech.py cvp_speech_151.py cvp_piper_worker.py cvp_midi.py cvp_yamaha.py cvp_registration.py cvp_style.py cvp_voice.py; do
+for item in cvp_access_v1.5.py cvp_access_v1.4.1.py cvp_keyboard.py cvp_song.py cvp_song_151.py cvp_speech.py cvp_speech_151.py cvp_piper_worker.py cvp_midi.py cvp_yamaha.py cvp_registration.py cvp_style.py cvp_voice.py cvp_voice_names.py; do
     install -m 0644 "$REPO_DIR/$item" "$RUNTIME_DIR/$item"
 done
 install -m 0755 "$REPO_DIR/cvp_keyboard_map.py" "$RUNTIME_DIR/cvp_keyboard_map.py"
@@ -107,6 +107,9 @@ bindings = {
     "W": "announce_style_name", "X": "announce_song_name",
     "C": "announce_song_length", "V": "sync_start_toggle",
     "B": "guide_toggle", "F7": "metronome_toggle",
+    "N": "announce_main_voice_name",
+    "COMMA": "announce_layer_voice_name",
+    "SEMICOLON": "announce_left_voice_name",
     "PAGEUP": "style_volume_change:1", "SHIFT+PAGEUP": "style_volume_change:5",
     "PAGEDOWN": "style_volume_change:-1", "SHIFT+PAGEDOWN": "style_volume_change:-5",
 }
@@ -141,7 +144,7 @@ PY
     chown "$CVP_USER:$CVP_USER" "$CONFIG_FILE"
 fi
 
-python3 -m py_compile "$RUNTIME_DIR/cvp_access.py" "$RUNTIME_DIR/cvp_access_v1.5.py" "$RUNTIME_DIR/cvp_access_v1.4.1.py" "$RUNTIME_DIR/cvp_keyboard.py" "$RUNTIME_DIR/cvp_keyboard_map.py" "$RUNTIME_DIR/cvp_song.py" "$RUNTIME_DIR/cvp_song_151.py" "$RUNTIME_DIR/cvp_speech.py" "$RUNTIME_DIR/cvp_speech_151.py" "$RUNTIME_DIR/cvp_midi.py" "$RUNTIME_DIR/cvp_yamaha.py" "$RUNTIME_DIR/cvp_registration.py" "$RUNTIME_DIR/cvp_style.py" "$RUNTIME_DIR/cvp_voice.py"
+python3 -m py_compile "$RUNTIME_DIR/cvp_access.py" "$RUNTIME_DIR/cvp_access_v1.5.py" "$RUNTIME_DIR/cvp_access_v1.4.1.py" "$RUNTIME_DIR/cvp_keyboard.py" "$RUNTIME_DIR/cvp_keyboard_map.py" "$RUNTIME_DIR/cvp_song.py" "$RUNTIME_DIR/cvp_song_151.py" "$RUNTIME_DIR/cvp_speech.py" "$RUNTIME_DIR/cvp_speech_151.py" "$RUNTIME_DIR/cvp_midi.py" "$RUNTIME_DIR/cvp_yamaha.py" "$RUNTIME_DIR/cvp_registration.py" "$RUNTIME_DIR/cvp_style.py" "$RUNTIME_DIR/cvp_voice.py" "$RUNTIME_DIR/cvp_voice_names.py"
 
 install -d -o "$CVP_USER" -g "$CVP_USER" -m 0770 "$CONFIG_DIR"
 runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" python3 "$RUNTIME_DIR/cvp_keyboard_map.py" --config "$CONFIG_FILE" --output "$CONFIG_DIR/keyboard-map.html" || echo "WARNING: keyboard map generation failed; upgrade continues." >&2
@@ -165,5 +168,5 @@ runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" CVP_RUNTIME_DIR="$RUNTIME_DIR" CV
 systemctl restart cvp-access.service
 
 echo
-echo "[CVP Access] 1.5.1-RC2 installed."
+echo "[CVP Access] 1.5.1-RC3 installed."
 echo "Rollback: sudo cp /opt/cvp-access/cvp_access_v1.5.py /opt/cvp-access/cvp_access.py && sudo systemctl restart cvp-access"
