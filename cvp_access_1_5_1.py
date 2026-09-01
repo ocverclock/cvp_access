@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import importlib.util
 import re
+import signal
 import time
 from pathlib import Path
 
@@ -26,10 +27,11 @@ from cvp_song_151 import SongController
 from cvp_speech_151 import install_speech_hooks
 from cvp_style import StyleController
 from cvp_voice import VoiceController
+from cvp_voice_names import decode_cvp_voice, resolve_voice_name
 from cvp_yamaha import parse_yamaha_path
 
 
-VERSION = "1.5.1-RC2"
+VERSION = "1.5.1-RC3"
 LEGACY_FILENAME = "cvp_access_v1.5.py"
 
 PROP_GUIDE = [0x04, 0x03, 0x00, 0x01]
@@ -75,6 +77,15 @@ NEW_ACTION_SPECS = {
     ),
     "announce_song_length": ActionSpec(
         description="Annonce la longueur du Song"
+    ),
+    "announce_main_voice_name": ActionSpec(
+        description="Annonce le nom du son Main"
+    ),
+    "announce_layer_voice_name": ActionSpec(
+        description="Annonce le nom du son Layer"
+    ),
+    "announce_left_voice_name": ActionSpec(
+        description="Annonce le nom du son Left"
     ),
     "style_volume_change": ActionSpec(
         True, -5, 5, "Modifie le volume Style"
@@ -162,6 +173,9 @@ class CVPActions151(legacy.CVPActions):
             "announce_style_name": self.announce_style_name,
             "announce_song_name": self.announce_song_name,
             "announce_song_length": self.announce_song_length,
+            "announce_main_voice_name": self.announce_main_voice_name,
+            "announce_layer_voice_name": self.announce_layer_voice_name,
+            "announce_left_voice_name": self.announce_left_voice_name,
             "style_volume_change": self.style_volume_change,
             "sync_start_toggle": self.sync_start_toggle,
             "metronome_toggle": self.metronome_toggle,
@@ -296,6 +310,58 @@ class CVPActions151(legacy.CVPActions):
         )
         self.core.announce_song_length(
             measures
+        )
+
+    def _announce_voice_name(self, index, label):
+        raw = self.voice.get_cvp_midi_raw(index)
+        voice_id = decode_cvp_voice(raw)
+
+        if voice_id is None:
+            print(f"Impossible de lire le son {label}.")
+            self.core.announce_action_help(
+                f"Impossible de lire le son {label}"
+            )
+            return
+
+        name = resolve_voice_name(voice_id)
+
+        if name is None:
+            print(
+                f"{label} : Voice non référencée "
+                f"{voice_id.msb}/{voice_id.lsb}/{voice_id.program}"
+            )
+            self.core.announce_action_help(
+                f"{label}, son non référencé, "
+                f"banque {voice_id.msb}, {voice_id.lsb}, "
+                f"programme {voice_id.program}"
+            )
+            return
+
+        print(
+            f"{label} : {name} "
+            f"({voice_id.msb}/{voice_id.lsb}/{voice_id.program})"
+        )
+        self.core.announce_value(
+            name,
+            key=f"voice_{label.lower()}",
+        )
+
+    def announce_main_voice_name(self):
+        self._announce_voice_name(
+            0x00,
+            "Main",
+        )
+
+    def announce_layer_voice_name(self):
+        self._announce_voice_name(
+            0x01,
+            "Layer",
+        )
+
+    def announce_left_voice_name(self):
+        self._announce_voice_name(
+            0x02,
+            "Left",
         )
 
     def style_volume_change(self, delta):
@@ -491,7 +557,20 @@ legacy.install_speech_hooks = install_speech_hooks
 legacy.default_config_path = default_config_path
 
 
+def _handle_shutdown_signal(signum, _frame):
+    print(f"Arrêt propre demandé (signal {signum}).")
+    raise SystemExit(0)
+
+
 def main():
+    signal.signal(
+        signal.SIGTERM,
+        _handle_shutdown_signal,
+    )
+    signal.signal(
+        signal.SIGINT,
+        _handle_shutdown_signal,
+    )
     return legacy.main()
 
 

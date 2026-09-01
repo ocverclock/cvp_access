@@ -198,6 +198,15 @@ ACTION_SPECS = {
     "announce_song_length": ActionSpec(
         description="Annonce la longueur du Song"
     ),
+    "announce_main_voice_name": ActionSpec(
+        description="Annonce le nom du son Main"
+    ),
+    "announce_layer_voice_name": ActionSpec(
+        description="Annonce le nom du son Layer"
+    ),
+    "announce_left_voice_name": ActionSpec(
+        description="Annonce le nom du son Left"
+    ),
     "sync_start_toggle": ActionSpec(
         description="Active ou désactive Syncro Start"
     ),

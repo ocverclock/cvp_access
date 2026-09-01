@@ -64,6 +64,12 @@ def install_speech_hooks(core, speech_config):
             replace_key=f"named_{label}",
         )
 
+    def announce_value(value, *, key="value"):
+        return manager.speak(
+            f"{value}.",
+            replace_key=f"value_{key}",
+        )
+
     def announce_song_length(measures):
         return manager.speak(
             f"Longueur du Song, {measures} mesures.",
@@ -73,6 +79,7 @@ def install_speech_hooks(core, speech_config):
     core.announce_action_help = announce_action_help
     core.announce_boolean_state = announce_boolean_state
     core.announce_named_value = announce_named_value
+    core.announce_value = announce_value
     core.announce_song_length = announce_song_length
 
     return manager

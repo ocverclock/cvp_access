@@ -12,6 +12,7 @@ for rel in [
     "cvp_song_151.py",
     "cvp_speech.py",
     "cvp_speech_151.py",
+    "cvp_voice_names.py",
     "cvp_access_installer/tools/generate_configured_voices.py",
     "cvp_access_installer/tools/generate_151_voices.py",
     "cvp_access_installer/tools/cvp_doctor_151.py",
@@ -33,6 +34,9 @@ expected = {
     "C": "announce_song_length",
     "V": "sync_start_toggle",
     "B": "guide_toggle",
+    "N": "announce_main_voice_name",
+    "COMMA": "announce_layer_voice_name",
+    "SEMICOLON": "announce_left_voice_name",
     "F7": "metronome_toggle",
     "PAGEUP": "style_volume_change:1",
     "SHIFT+PAGEUP": "style_volume_change:5",
@@ -60,4 +64,18 @@ for action in (
 ):
     assert action not in assigned_actions
 
-print("CVP Access 1.5.1 RC2 package: OK")
+from cvp_voice_names import (
+    CVPVoiceId,
+    decode_cvp_voice,
+    resolve_voice_name,
+)
+
+assert decode_cvp_voice(bytes([0x03, 0x30, 0x00, 0x00])) == CVPVoiceId(108, 0, 1)
+assert decode_cvp_voice(bytes([0x00, 0x20, 0x42, 0x31])) == CVPVoiceId(8, 33, 50)
+assert decode_cvp_voice(bytes([0x03, 0x20, 0x0E, 0x04])) == CVPVoiceId(104, 7, 5)
+
+assert resolve_voice_name(CVPVoiceId(108, 0, 1)) == "CFX Concert Grand"
+assert resolve_voice_name(CVPVoiceId(8, 33, 50)) == "Seattle Strings"
+assert resolve_voice_name(CVPVoiceId(104, 7, 5)) == "Suitcase Soft"
+
+print("CVP Access 1.5.1 RC3 package: OK")

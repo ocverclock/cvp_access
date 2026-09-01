@@ -67,14 +67,16 @@ class SpeechManager:
         )
         self.speech_thread.start()
 
+        # Le signal d'arrêt peut arriver pendant le préchargement Piper.
+        # Le nettoyage doit donc être enregistré avant de lancer le worker.
+        atexit.register(self.close)
+
         # CVP Access : précharge Piper au démarrage.
         # Évite que la première annonce dynamique fasse attendre
         # l'utilisateur pendant le chargement du modèle.
         if self.config.mode in {"hybrid", "runtime"}:
             print("Préchargement Piper...")
             self._ensure_worker()
-
-        atexit.register(self.close)
 
     def _check_static_profile(self):
         if self.voice_metadata.is_file():
