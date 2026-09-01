@@ -183,7 +183,7 @@ def main():
             for volume in range(10, 101, 10):
                 add(
                     f"volume/volume_{volume:03d}.wav",
-                    f"Volume de la voix {volume} pour cent.",
+                    f"Volume guide vocal {volume} pour cent.",
                 )
 
         elif name in {"style_volume_up", "style_volume_down"}:
@@ -212,7 +212,7 @@ def main():
             add("style_transport/stop.wav", "Style arrêté.")
 
         elif name == "song_goto_measure":
-            add("song/no_song.wav", "Aucun Song chargé.")
+            add("song/no_song.wav", "Pas de Song chargé.")
             add("song/detection_error.wav", "Impossible de vérifier le Song.")
             add("song/goto_prompt.wav", "Saisir le numéro de mesure puis Entrée.")
             add("song/goto_cancelled.wav", "Saisie mesure annulée.")

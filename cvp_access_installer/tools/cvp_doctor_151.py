@@ -135,13 +135,16 @@ def main():
         keys = {}
 
     expected_caps = {
-        "CAPS+F1": "announce_style_name",
-        "CAPS+F2": "announce_song_name",
-        "CAPS+F3": "announce_song_length",
-        "CAPS+F4": "sync_start_toggle",
-        "CAPS+F5": "guide_toggle",
-        "CAPS+F6": "stream_lights_toggle",
-        "CAPS+F7": "metronome_toggle",
+        "W": "announce_style_name",
+        "X": "announce_song_name",
+        "C": "announce_song_length",
+        "V": "sync_start_toggle",
+        "B": "guide_toggle",
+        "F7": "metronome_toggle",
+        "PAGEUP": "style_volume_change:1",
+        "SHIFT+PAGEUP": "style_volume_change:5",
+        "PAGEDOWN": "style_volume_change:-1",
+        "SHIFT+PAGEDOWN": "style_volume_change:-5",
     }
 
     missing_caps = [
@@ -152,7 +155,7 @@ def main():
     ]
 
     add(
-        "Couche CAPS info",
+        "Layout accessibilité",
         OK if not missing_caps else WARN,
         (
             "présente"

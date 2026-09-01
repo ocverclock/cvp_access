@@ -12,6 +12,15 @@ from pathlib import Path
 
 from piper import PiperVoice, SynthesisConfig
 
+# Le générateur tourne dans le venv Piper.
+# evdev est fourni par Debian au Python système.
+SYSTEM_DIST_PACKAGES = Path("/usr/lib/python3/dist-packages")
+if (
+    SYSTEM_DIST_PACKAGES.is_dir()
+    and str(SYSTEM_DIST_PACKAGES) not in sys.path
+):
+    sys.path.append(str(SYSTEM_DIST_PACKAGES))
+
 # Runtime 1.5.1 copied beside this tool when installed.
 runtime_dir = Path(
     os.environ.get(
@@ -186,7 +195,7 @@ def main():
             )
 
     states = {
-        "sync_start": "Sync Start",
+        "sync_start": "Syncro Start",
         "guide": "Guide",
         "stream_lights": "Stream Lights",
         "metronome": "Métronome",
