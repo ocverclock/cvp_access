@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CVP Access v1.5.1-RC1-dev.
+"""CVP Access v1.5.1-RC2.
 
 Consolidation progressive :
 - conserve v1.5 + moteur v1.4.1 comme base éprouvée ;
@@ -29,7 +29,7 @@ from cvp_voice import VoiceController
 from cvp_yamaha import parse_yamaha_path
 
 
-VERSION = "1.5.1-RC1-dev"
+VERSION = "1.5.1-RC2"
 LEGACY_FILENAME = "cvp_access_v1.5.py"
 
 PROP_GUIDE = [0x04, 0x03, 0x00, 0x01]

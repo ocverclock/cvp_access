@@ -304,7 +304,7 @@ h1{margin:0;font-size:22px}
 <body>
 <div class="header"><div><h1>CVP Access — Carte des commandes</h1>
 <div class="subtitle">Générée depuis {html.escape(str(config_path))}</div></div>
-<div class="stats">{mapped} affectation(s)<br>Layout accessibilité 1.5.1 RC1-v2</div></div>
+<div class="stats">{mapped} affectation(s)<br>Layout accessibilité 1.5.1 RC2</div></div>
 
 <div class="help-banner"><strong>CTRL = AIDE VOCALE.</strong>
 Maintenir CTRL puis appuyer sur une touche attribuée :
