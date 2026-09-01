@@ -186,7 +186,7 @@ def main():
                     f"Volume guide vocal {volume} pour cent.",
                 )
 
-        elif name in {"style_volume_up", "style_volume_down"}:
+        elif name in {"style_volume_up", "style_volume_down", "style_volume_change"}:
             for volume in range(0, 128):
                 add(
                     f"style_volume/style_volume_{volume:03d}.wav",
