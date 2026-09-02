@@ -1,23 +1,17 @@
 # CVP Access
 
-**Interface d’accessibilité pour pianos Yamaha Clavinova CVP, basée sur Raspberry Pi, MIDI SysEx et retour vocal.**
+**Interface d’accessibilité pour Yamaha Clavinova CVP, basée sur Raspberry Pi, MIDI SysEx, clavier USB et retour vocal Piper.**
 
-CVP Access permet de piloter des fonctions importantes d’un Yamaha CVP depuis un clavier USB AZERTY, avec annonces vocales dans les haut-parleurs du piano. Le projet vise en priorité l’utilisation sans écran tactile.
+CVP Access permet de piloter et d’interroger des fonctions importantes d’un Yamaha CVP depuis un clavier USB AZERTY, avec annonces vocales dans les haut-parleurs du piano. Le projet vise en priorité une utilisation sans écran tactile.
 
 > Projet non officiel. CVP Access n’est ni affilié à Yamaha Corporation, ni approuvé par Yamaha.
 
 ## État du projet
 
-Version application de référence :
+Version de référence :
 
 ```text
-CVP Access 1.5-RC4-dev
-```
-
-Version installateur / updater :
-
-```text
-0.3.2
+CVP Access 1.5.1-RC3
 ```
 
 Validation matérielle principale :
@@ -27,43 +21,122 @@ Yamaha CVP-905
 Firmware 1.03
 Raspberry Pi / Debian 13 arm64
 Interface MIDI DIN Prodipe
-USB Audio du CVP pour le retour vocal
+USB Audio du CVP
+Clavier Apple Extended USB
+Piper fr_FR-siwis-medium
 ```
 
-Le fichier `cvp_access_v1.4.1.py` reste volontairement présent : la v1.5 l’utilise comme moteur Yamaha SysEx validé.
+Le runtime 1.5.1 reste construit au-dessus du moteur historique validé :
 
-## Fonctions disponibles
+```text
+cvp_access_1_5_1.py
+  -> cvp_access_v1.5.py
+      -> cvp_access_v1.4.1.py
+```
+
+Ne pas supprimer les fichiers historiques tant que cette architecture transitoire n’a pas été remplacée.
+
+## Nouveautés 1.5.1-RC3
+
+### Arrêt Piper propre
+
+La RC3 corrige le worker Piper qui pouvait rester vivant lors d’un arrêt systemd et finir par recevoir un `SIGKILL`.
+
+Le runtime intercepte désormais `SIGTERM` et `SIGINT`, provoque une sortie Python normale et laisse `atexit` fermer le worker Piper.
+
+Le nettoyage est enregistré **avant le préchargement Piper**.
+
+Validé physiquement :
+
+```text
+arrêt après préchargement Piper : aucun SIGKILL
+arrêt pendant préchargement     : aucun SIGKILL
+```
+
+### Lecture des Voices Main / Layer / Left
+
+Propriété CSP validée :
+
+```text
+02 00 01 01
+```
+
+Indexes :
+
+```text
+00 = Main
+01 = Layer
+02 = Left
+```
+
+Le CVP renvoie quatre groupes de 7 bits. CVP Access reconstruit une valeur 24 bits puis extrait :
+
+```text
+MSB / LSB / PC#
+```
+
+Exemples physiquement validés :
+
+```text
+108 / 0  / 1  = CFX Concert Grand
+8   / 33 / 50 = Seattle Strings
+104 / 7  / 5  = Suitcase Soft
+```
+
+Touches :
+
+```text
+N = nom Voice Main
+, = nom Voice Layer
+; = nom Voice Left
+```
+
+La synthèse prononce uniquement le nom du son.
+
+La table locale `cvp_voice_names.py` est encore partielle en RC3 : elle contient les trois Voices physiquement identifiées pendant la validation. Une Voice inconnue utilise un fallback numérique MSB / LSB / Program.
+
+Voir :
+
+```text
+docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md
+```
+
+## Fonctions principales
 
 ### Song MIDI
 
 - mute/unmute réel des 16 pistes ;
-- synchronisation des pistes au démarrage ;
-- tempo ;
-- transpose ;
-- Play / Pause / Stop ;
-- annonce de la position mesure/temps ;
+- lecture / pause / stop ;
+- annonce de la position ;
 - mesure précédente / suivante ;
 - déplacement de 5 mesures ;
-- accès direct à une mesure avec F3 ;
-- points A/B et activation de boucle ;
-- conservation automatique du métronome lors d’un déplacement vers l’arrière.
+- accès direct à une mesure ;
+- boucle A/B ;
+- annonce du nom du Song ;
+- annonce de sa longueur ;
+- métronome ;
+- volume Song ;
+- tempo ;
+- transpose.
 
 ### Style
 
-- mute/unmute des 8 parties Style ;
-- volume global Style ;
-- Start / Stop du Style avec F13 ;
+- mute/unmute des 8 parties ;
+- volume global Style ±1 / ±5 ;
+- Start / Stop ;
+- Syncro Start ;
+- annonce du nom du Style ;
 - Intro 1 / 2 / 3 ;
 - Main A / B / C / D ;
 - Fill A / B / C / D ;
 - Break ;
 - Ending 1 / 2 / 3.
 
-Les sections Style RC4 sont disponibles comme actions TOML configurables. Aucune nouvelle touche n’est imposée dans la configuration par défaut.
+Les sections Style restent disponibles comme actions configurables même lorsqu’elles ne sont pas affectées au layout par défaut.
 
 ### Registration Memory
 
-Rappel direct des Registration Memory 1 à 8 via action TOML :
+Rappel direct disponible :
 
 ```text
 registration_recall:1
@@ -75,182 +148,100 @@ registration_recall:8
 
 - Layer / Dual ON/OFF ;
 - Left ON/OFF ;
-- volume Main global de 0 à 127.
-
-### Volume Song
-
-Le volume global Song / MidiMaster est contrôlé directement de 0 à 127.
+- volume Main ;
+- lecture du nom des Voices Main / Layer / Left.
 
 ### Accessibilité
 
 - clavier USB AZERTY configurable par TOML ;
+- `CTRL + touche` = aide vocale sans exécution ;
+- Caps Lock abandonné dans le layout 1.5.1 ;
 - retour vocal Piper en français ;
-- Piper asynchrone : le clavier n’attend pas la synthèse vocale ;
-- mode `hybrid` avec WAV pré-générés + génération à la demande ;
-- cache des phrases Piper ;
-- remplacement des anciennes annonces de volume en attente par la valeur la plus récente ;
-- `CTRL + touche` annonce la fonction affectée **sans l’exécuter** ;
-- Caps Lock peut fournir une seconde couche de commandes ;
-- carte clavier HTML générée depuis `keyboard.toml`.
+- mode `hybrid` ;
+- WAV pré-générés ;
+- cache dynamique ;
+- worker Piper préchargé ;
+- carte clavier HTML générée depuis la configuration active.
 
-## Commandes clavier par défaut
-
-### Pistes Song
-
-```text
-A Z E R T Y U I   -> pistes 1 à 8
-Q S D F G H J K   -> pistes 9 à 16
-```
+## Layout clavier 1.5.1-RC3
 
 ### Parties Style / clavier
 
 ```text
-&    Rhythm 1
-é    Rhythm 2
-"    Bass
-'    Chord 1
-(    Chord 2
--    Pad
-è    Phrase 1
-_    Phrase 2
-ç    Layer / Dual
-à    Left
+1 = Rythme 1
+2 = Rythme 2
+3 = Basse
+4 = Accord 1
+5 = Accord 2
+6 = Pad
+7 = Phrase 1
+8 = Phrase 2
+9 = Layer / Dual
+0 = Left
 ```
 
-### Informations, transport et boucle
+### Pistes Song
 
 ```text
-F1              annoncer le tempo
-F2              annoncer le transpose
-F3              aller à une mesure
-F4              définir le point A
-F5              définir le point B
-F6              activer / désactiver la boucle A/B
-F13             Style Start / Stop
+A Z E R T Y U I = pistes 1..8
+Q S D F G H J K = pistes 9..16
+```
 
-Espace          Play / Pause Song
-Entrée          Stop Song
-P               annoncer mesure / temps
+### Informations
 
-←               mesure -1
-→               mesure +1
-Maj + ←         mesure -5
-Maj + →         mesure +5
+```text
+W  = nom Style
+X  = nom Song
+C  = longueur Song
+V  = Syncro Start
+B  = Guide
+N  = nom Voice Main
+,  = nom Voice Layer
+;  = nom Voice Left
+F7 = Métronome
+```
+
+### Song
+
+```text
+Espace       = Play / Pause
+Entrée       = Stop
+P            = position
+← / →        = mesure -1 / +1
+Maj + ← / →  = mesure -5 / +5
+F3           = aller à une mesure
+F4           = point A
+F5           = point B
+F6           = boucle A/B
 ```
 
 ### Volumes
 
 ```text
-↑               volume voix +
-↓               volume voix -
-
-Page Up         volume Style +5
-Page Down       volume Style -5
-
-Home            volume Song +1
-Maj + Home      volume Song +5
-End             volume Song -1
-Maj + End       volume Song -5
-
-Insert          volume Main +1
-Maj + Insert    volume Main +5
-Delete          volume Main -1
-Maj + Delete    volume Main -5
+↑ / ↓                  = Vol. guide vocal + / -
+Page ↑ / Page ↓        = Style +1 / -1
+Maj + Page ↑ / Page ↓  = Style +5 / -5
+Origine / Fin          = Song +1 / -1
+Maj + Origine / Fin    = Song +5 / -5
+Inser / Suppr          = Main +1 / -1
+Maj + Inser / Suppr    = Main +5 / -5
 ```
 
-### Aide vocale
+## Aide vocale CTRL
 
 `CTRL` est réservé à l’aide.
 
-Exemples :
-
-```text
-CTRL + A
--> annonce la fonction de A
--> ne change pas l’état de la piste
-
-CTRL + Maj + ←
--> annonce "Recule le Song de cinq mesures"
--> ne déplace pas le Song
-```
-
-### Système
-
-```text
-ESC             quitte CVP Access
-                systemd peut ensuite le relancer
-```
-
-## Actions RC4-dev disponibles
-
-Les nouvelles actions peuvent être affectées librement dans `[keys]` :
-
-```text
-style_intro:1..3
-style_main:1..4
-style_fill:1..4
-style_break
-style_ending:1..3
-registration_recall:1..8
-```
-
 Exemple :
 
-```toml
-F7 = "style_main:1"
-F8 = "style_main:2"
-F9 = "style_main:3"
-F10 = "style_main:4"
-
-"SHIFT+F7" = "style_intro:1"
-"SHIFT+F8" = "style_intro:2"
-"SHIFT+F9" = "style_intro:3"
-
-"ALT+F7" = "style_ending:1"
-"ALT+F8" = "style_ending:2"
-"ALT+F9" = "style_ending:3"
-
-F11 = "style_break"
-F12 = "registration_recall:1"
-```
-
-Ces affectations sont uniquement des exemples ; `config/default.toml` reste inchangé.
-
-## Configuration clavier
-
-Configuration client active :
-
 ```text
-/etc/cvp-access/keyboard.toml
+CTRL + N
+-> annonce la fonction affectée à N
+-> n'interroge pas la Voice
 ```
 
-Configuration de référence dans le dépôt :
+## Synthèse vocale
 
-```text
-config/default.toml
-```
-
-Validation :
-
-```bash
-python3 cvp_keyboard.py --check /etc/cvp-access/keyboard.toml
-```
-
-## Carte visuelle du clavier
-
-Génération manuelle :
-
-```bash
-python3 cvp_keyboard_map.py \
-    --config /etc/cvp-access/keyboard.toml \
-    --output /etc/cvp-access/keyboard-map.html
-```
-
-L’installateur et l’updater essaient également de générer cette carte. Un échec de génération de la carte ne bloque pas l’installation du runtime.
-
-## Retour vocal Piper
-
-Configuration par défaut :
+Configuration de référence :
 
 ```toml
 [speech]
@@ -261,14 +252,61 @@ voice = "fr_FR-siwis-medium"
 length_scale = 0.85
 ```
 
-En mode `hybrid` :
+Politique :
 
-1. un WAV pré-généré est utilisé s’il existe ;
-2. sinon Piper synthétise la phrase ;
-3. la phrase peut être conservée dans le cache ;
-4. la synthèse est traitée dans un thread séparé afin de ne pas bloquer les commandes clavier.
+```text
+WAV pré-généré
+-> cache dynamique
+-> Piper
+-> stockage dans le cache
+```
 
-Les fichiers WAV utilisateur sont stockés hors du dépôt, dans `~/cvp_voice`.
+Cache :
+
+```text
+~/.cache/cvp-access/tts/
+```
+
+Terminologie utilisateur :
+
+```text
+Vol. guide vocal
+Syncro Start
+Pas de Song chargé.
+```
+
+## Vérification du paquet 1.5.1
+
+```bash
+python3 VERIFY_PACKAGE_151.py
+```
+
+Résultat attendu :
+
+```text
+CVP Access 1.5.1 RC3 package: OK
+```
+
+## Upgrade vers 1.5.1-RC3
+
+Sur une installation CVP Access existante :
+
+```bash
+cd ~/CVP_access
+sudo bash cvp_access_installer/upgrade_1_5_1.sh
+```
+
+Attendu :
+
+```text
+[CVP Access] Upgrade runtime -> 1.5.1-RC3
+...
+[CVP Access] 1.5.1-RC3 installed.
+```
+
+Le test de reproductibilité depuis un clone GitHub neuf doit être refait après consolidation finale de la RC3.
+
+Une installation 1.5.1-RC3 réellement vierge depuis une nouvelle carte Raspberry Pi OS reste un test futur.
 
 ## Architecture matérielle
 
@@ -289,105 +327,36 @@ Raspberry Pi
                Yamaha CVP
 ```
 
-Les commandes Yamaha SysEx de ce projet ont été validées via MIDI DIN externe. L’USB Audio du CVP est utilisé pour les annonces vocales.
+Les commandes SysEx CVP du projet ont été validées via MIDI DIN externe.
 
-## Installation
+## Documentation de reprise
 
-Système visé :
-
-```text
-Raspberry Pi OS Lite 64-bit
-Debian 13 / Trixie
-ARM64
-```
-
-Installation depuis une image propre :
-
-```bash
-git clone https://github.com/ocverclock/cvp_access.git CVP_access
-cd CVP_access
-
-sudo bash cvp_access_installer/install.sh
-```
-
-L’installateur 0.3.2 :
-
-- vérifie Debian/Trixie et ARM64 ;
-- installe les dépendances ;
-- installe Piper dans un environnement Python isolé ;
-- installe `cvp_access_v1.5.py` comme runtime ;
-- conserve `cvp_access_v1.4.1.py` comme moteur SysEx ;
-- installe `cvp_keyboard.py`, `cvp_song.py`, `cvp_speech.py` et `cvp_piper_worker.py` ;
-- installe le générateur de carte clavier s’il est présent ;
-- crée la configuration client si elle n’existe pas ;
-- conserve une configuration client existante ;
-- prépare les annonces Piper nécessaires ;
-- configure systemd, Samba, SSH et Avahi.
-
-## Mise à jour
-
-```bash
-cd ~/CVP_access
-sudo bash cvp_access_installer/update.sh
-```
-
-L’updater 0.3.2 préserve `/etc/cvp-access/keyboard.toml` lorsqu’il existe.
-
-## Protocole Yamaha validé
-
-Les détails RC3 sont conservés dans `CVP905_PROTOCOL_CHECKPOINT_RC3.md`.
-
-Les nouvelles validations RC4 sont conservées dans :
+Lire dans cet ordre :
 
 ```text
+PROJECT_STATE.md
+AI_HANDOFF.md
+docs/CVP_ACCESS_1_5_1.md
+docs/KEY_ACTIONS_1_5_1.md
+docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md
 CVP905_PROTOCOL_CHECKPOINT_RC4.md
+docs/FUNCTION_CATALOG.md
 ```
 
-Principales nouveautés RC4 :
+## Recherche protocole
+
+Les recherches directes suivantes sont clôturées sauf nouvelle preuve :
 
 ```text
-Section Control
-F0 43 7E 00 ss 7F F7
-
-Registration Recall
-F0 43 73 01 52 25 11 00 02 00 XX F7
-
-Style Split Point
-F0 43 73 01 51 00 00 00 03 10 00 dd F7
-
-Left Split Point
-F0 43 73 01 51 00 00 00 03 10 01 dd F7
+ACMP
+Fingering
+Auto Fill In
+Synchro Stop
 ```
 
-## Recherche Fingering Type
+OTS Link reste non résolu.
 
-Le codage du Fingering Type est maintenant confirmé dans les fichiers `.rgt` / `.ssu` :
-
-```text
-03 = AI Fingered
-04 = Fingered
-0C = AI Full Keyboard
-```
-
-La commande MIDI directe reste inconnue.
-
-Les pistes suivantes ont déjà été explorées :
-
-- ancien Special Operator Fingering ;
-- CSP EVENTS ;
-- zones XG documentées ;
-- sniff passif du panneau ;
-- candidat famille `51` / `10 02`.
-
-Un scan GET read-only des indexes CSP `20..7F` est en cours.
-
-## Documentation
-
-- `RC3_NOTES.md` : synthèse RC3 ;
-- `CVP905_PROTOCOL_CHECKPOINT_RC3.md` : checkpoint RC3 ;
-- `CVP905_PROTOCOL_CHECKPOINT_RC4.md` : nouvelles validations RC4 ;
-- `versions.md` : historique des versions ;
-- `docs/` : documentation et outils de recherche protocole.
+Les résultats Genos constituent un laboratoire secondaire et ne doivent jamais être présentés comme une validation CVP sans test physique sur CVP-905.
 
 ## Licence
 
