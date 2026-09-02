@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CVP Access v1.5.1-RC2.
+"""CVP Access v1.5.1-RC3.
 
 Consolidation progressive :
 - conserve v1.5 + moteur v1.4.1 comme base éprouvée ;
