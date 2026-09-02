@@ -1,24 +1,36 @@
-# CVP Access 1.5.1 — actions clavier RC2
+# CVP Access 1.5.1 — actions clavier RC3
 
 ## Principe
 
-Le clavier est une interface d'accessibilité complémentaire au CVP-905. Les commandes déjà facilement accessibles sur le panneau du CVP ne sont pas dupliquées sans raison. Les fonctions de protocole validées peuvent rester disponibles dans le catalogue sans être attribuées au clavier.
+Le clavier est une interface d’accessibilité complémentaire au Yamaha CVP-905.
+
+Les fonctions de protocole validées peuvent rester disponibles dans le catalogue sans être attribuées au clavier.
 
 ## Aide vocale CTRL
 
-`CTRL + touche` annonce la fonction de la touche **sans l'exécuter**.
+```text
+CTRL + touche
+```
+
+annonce la fonction de la touche **sans exécuter l’action**.
 
 Exemples :
 
-- `CTRL + W` : annonce « Nom du Style » ;
-- `CTRL + V` : annonce « Active ou désactive Syncro Start » ;
-- `CTRL + Page ↑` : annonce « Augmenter le volume Style de 1 ».
+```text
+CTRL + W
+-> annonce l'aide du nom Style
+-> ne lit pas le Style
 
-La couche `Caps Lock` n'est plus utilisée dans le layout RC2.
+CTRL + N
+-> annonce l'aide du nom Voice Main
+-> ne lit pas la Voice
+```
+
+La couche Caps Lock expérimentale de RC1 n’est plus utilisée dans le layout 1.5.1.
 
 ## Layout principal
 
-### Parties Style
+### Parties Style / clavier
 
 | Touche | Action |
 |---|---|
@@ -49,11 +61,67 @@ La couche `Caps Lock` n'est plus utilisée dans le layout RC2.
 | C | annonce la longueur du Song |
 | V | Syncro Start ON/OFF |
 | B | Guide ON/OFF |
+| N | annonce le nom de la Voice Main |
+| , | annonce le nom de la Voice Layer |
+| ; | annonce le nom de la Voice Left |
 | F7 | Métronome ON/OFF |
 
-Si aucun Song n'est chargé, `X` et `C` annoncent **« Pas de Song chargé. »**
+Sans Song chargé, `X` et `C` annoncent :
 
-### Song
+```text
+Pas de Song chargé.
+```
+
+## Voice Main / Layer / Left
+
+Propriété :
+
+```text
+02 00 01 01
+```
+
+Indexes :
+
+```text
+00 = Main
+01 = Layer
+02 = Left
+```
+
+Affectations TOML :
+
+```toml
+"N" = "announce_main_voice_name"
+"COMMA" = "announce_layer_voice_name"
+"SEMICOLON" = "announce_left_voice_name"
+```
+
+La synthèse prononce uniquement le nom du son.
+
+Exemple :
+
+```text
+N
+-> CFX Concert Grand
+```
+
+et non :
+
+```text
+Main CFX Concert Grand
+```
+
+Voices de validation RC3 :
+
+```text
+108/0/1   = CFX Concert Grand
+8/33/50   = Seattle Strings
+104/7/5   = Suitcase Soft
+```
+
+La table locale des noms reste partielle en RC3.
+
+## Song
 
 | Touche | Action |
 |---|---|
@@ -67,7 +135,7 @@ Si aucun Song n'est chargé, `X` et `C` annoncent **« Pas de Song chargé. »**
 | F5 | point de boucle B |
 | F6 | boucle A/B |
 
-### Volumes
+## Volumes
 
 | Touche | Action |
 |---|---|
@@ -81,39 +149,78 @@ Si aucun Song n'est chargé, `X` et `C` annoncent **« Pas de Song chargé. »**
 
 ## Actions disponibles mais non attribuées
 
-Ces actions restent implémentées et documentées mais ne sont volontairement pas affectées au clavier RC2 :
+Ces actions restent implémentées et documentées sans affectation par défaut :
 
-- Intro Style 1..3 ;
-- Main Style A..D ;
-- Fill Style A..D ;
-- Break Style ;
-- Ending Style 1..3 ;
-- Registration Memory 1..8 ;
-- Stream Lights ON/OFF.
+```text
+Intro Style 1..3
+Main Style A..D
+Fill Style A..D
+Break Style
+Ending Style 1..3
+Registration Memory 1..8
+Stream Lights ON/OFF
+```
 
-Elles apparaissent dans la section **« Actions disponibles mais non attribuées »** de la map clavier.
+Elles doivent apparaître dans la section :
+
+```text
+Actions disponibles mais non attribuées
+```
+
+de la map clavier.
 
 ## Synthèse vocale
 
-Le mode par défaut reste `hybrid`.
+Mode :
 
-- les WAV pré-générés sont joués immédiatement ;
-- les phrases dynamiques sont mises en cache ;
-- Piper est préchargé au démarrage afin d'éviter le délai important de la première synthèse ;
-- les noms de Style et de Song déjà rencontrés sont réutilisés depuis le cache.
+```text
+hybrid
+```
 
-Le terme utilisateur est **« Syncro Start »**. L'identifiant interne reste `sync_start_toggle`. La documentation protocole Yamaha conserve le nom officiel **Sync Start**.
+Politique :
+
+```text
+WAV pré-généré
+-> cache dynamique
+-> Piper
+-> cache
+```
+
+Piper est préchargé au démarrage.
+
+La RC3 corrige également l’arrêt du worker Piper afin qu’un arrêt systemd normal, y compris pendant le préchargement, ne nécessite plus de SIGKILL.
+
+## Terminologie utilisateur
+
+```text
+Syncro Start
+Vol. guide vocal
+Pas de Song chargé.
+```
+
+Identifiant interne conservé :
+
+```text
+sync_start_toggle
+```
+
+Les documents protocole peuvent conserver le terme Yamaha officiel `Sync Start`.
 
 ## Règle de sécurité
 
-Une signature de protocole connue n'est pas automatiquement une commande utilisateur sûre.
+Une signature de protocole connue n’est pas automatiquement une commande utilisateur sûre.
 
 Restent notamment hors attribution directe :
 
-- Guide Type ;
-- Piano Lid / Environment / VRM / Resonance lorsque la sémantique utilisateur n'est pas suffisamment consolidée ;
-- Stream Lights Speed ;
-- global Reverb : GET seulement ;
-- Voice Name CVP : identité lisible non résolue ;
-- sélection directe Style : validée Genos uniquement ;
-- ACMP et Fingering direct : recherches clôturées, workaround Registration.
+```text
+Guide Type
+Stream Lights Speed
+Global Reverb SET
+sélection directe Style CVP
+ACMP direct
+Fingering direct
+```
+
+ACMP et Fingering utilisent les mécanismes Registration déjà validés.
+
+Les résultats Genos ne sont jamais considérés comme validés CVP sans test physique sur CVP-905.

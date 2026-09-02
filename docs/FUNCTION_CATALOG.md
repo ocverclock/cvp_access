@@ -2,7 +2,7 @@
 
 Matériel de référence principal : **Yamaha CVP-905, firmware 1.03**.
 
-Dernière consolidation : **29 août 2026**.
+Dernière consolidation : **1 septembre 2026 — CVP Access 1.5.1-RC3**.
 
 Les résultats Genos 1 sont explicitement marqués et ne constituent pas une validation CVP.
 
@@ -20,8 +20,8 @@ Les résultats Genos 1 sont explicitement marqués et ne constituent pas une val
 
 | Fonction | Signature | Statut |
 |---|---|---|
-| Modèle | `0F 01 18 01 | 00` | GET VALIDÉ — CVP-905 |
-| Firmware | `0F 01 0B 01 | 00` | GET VALIDÉ — 1.03 |
+| Modèle | `0F 01 18 01 \| 00` | GET VALIDÉ — CVP-905 |
+| Firmware | `0F 01 0B 01 \| 00` | GET VALIDÉ — 1.03 |
 
 Format texte Yamaha observé sur Song/Style :
 
@@ -29,30 +29,32 @@ Format texte Yamaha observé sur Song/Style :
 1 octet masque + jusqu'à 7 octets de données
 ```
 
-L'ancienne hypothèse d'une longueur 14-bit en tête ne doit plus être utilisée pour ces propriétés.
+L’ancienne hypothèse d’une longueur 14-bit en tête ne doit plus être utilisée pour ces propriétés.
 
 ## Song
 
 | Fonction | Signature | Statut |
 |---|---|---|
-| Play / Pause / Stop | `04 00 05 01 | 00` | VALIDÉE — `00/01/02` |
-| Position mesure/temps | `04 00 0A 01 | 00` | VALIDÉE |
-| Longueur | `04 00 1B 01 | 00` | GET VALIDÉ |
-| Chemin / nom du Song | `04 00 01 01 | 00` | GET VALIDÉ |
-| Boucle A/B | `04 00 0D 01 | 00` | VALIDÉE GET/SET |
-| Présence pistes | `04 01 00 01 | 10..1F` | GET VALIDÉ |
-| Parties pédagogiques | `04 00 0E 01 | 00..02` | VALIDÉE GET/SET |
-| Partie index `03` | `04 00 0E 01 | 03` | NON APPLICABLE — SET naïf -> `0x31` |
-| Affectation auto | `04 00 10 01 | 00` | VALIDÉE GET/SET |
+| Play / Pause / Stop | `04 00 05 01 \| 00` | VALIDÉE — `00/01/02` |
+| Position mesure/temps | `04 00 0A 01 \| 00` | VALIDÉE |
+| Longueur | `04 00 1B 01 \| 00` | GET VALIDÉ |
+| Chemin / nom du Song | `04 00 01 01 \| 00` | GET VALIDÉ |
+| Boucle A/B | `04 00 0D 01 \| 00` | VALIDÉE GET/SET |
+| Présence pistes | `04 01 00 01 \| 10..1F` | GET VALIDÉ |
+| Parties pédagogiques | `04 00 0E 01 \| 00..02` | VALIDÉE GET/SET |
+| Partie index `03` | `04 00 0E 01 \| 03` | NON APPLICABLE — SET naïf -> `0x31` |
+| Affectation auto | `04 00 10 01 \| 00` | VALIDÉE GET/SET |
 | Sélection directe Song | — | NON RÉSOLUE |
 
-Exemple observé :
+Exemple :
 
 ```text
 PRESET:/SONG/60 Popular/Pop/Shallow.S000.mid
 ```
 
-`cvp_song.py` contient encore l'ancien décodeur 14-bit et doit être corrigé.
+Le runtime 1.5.1 utilise `cvp_song_151.py` pour le décodage corrigé.
+
+Le fichier historique `cvp_song.py` peut encore contenir l’ancien décodeur et ne doit pas être pris comme source de vérité pour ce point.
 
 ## Mixer / parties clavier CVP
 
@@ -77,27 +79,83 @@ Indexes principaux connus :
 | Volume | `0C 00 00 01` | VALIDÉ sur principaux indexes |
 | Pan | `0C 00 03 01` | VALIDÉ sur principaux indexes |
 | Reverb send | `0C 00 04 01` | VALIDÉ sur principaux indexes |
-| Voice MIDI | `02 00 01 01` | GET VALIDÉ dynamiquement |
+| Voice MIDI / identité | `02 00 01 01` | GET VALIDÉ — Main/Layer/Left ; décodage 4×7 bits validé |
 | Voice preset/path | `02 00 00 01` | GET EMPTY sur CVP-905 |
 
-Active Wave `44` n'est pas un booléen simple : SET naïf -> `0x31`.
+Active Wave `44` n’est pas un booléen simple : SET naïf -> `0x31`.
+
+## Voice Name CVP-905 — VALIDÉ RC3
+
+Propriété :
+
+```text
+02 00 01 01
+```
+
+Indexes :
+
+```text
+00 = Main
+01 = Layer
+02 = Left
+```
+
+Réponses physiquement observées :
+
+```text
+Main  : 03 30 00 00
+Layer : 00 20 42 31
+Left  : 03 20 0E 04
+```
+
+Décodage :
+
+```python
+packed = (b0 << 21) | (b1 << 14) | (b2 << 7) | b3
+msb = (packed >> 16) & 0xFF
+lsb = (packed >> 8) & 0xFF
+program = (packed & 0xFF) + 1
+```
+
+Correspondances validées :
+
+```text
+108 / 0  / 1  = CFX Concert Grand
+8   / 33 / 50 = Seattle Strings
+104 / 7  / 5  = Suitcase Soft
+```
+
+Statut :
+
+```text
+lecture CSP             : VALIDÉE
+indexes Main/Layer/Left : VALIDÉS
+décodage 4 × 7 bits     : VALIDÉ
+table complète Yamaha   : À FAIRE
+```
+
+Voir :
+
+```text
+docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md
+```
 
 ## Tempo / transpose
 
 | Fonction | Signature | Statut |
 |---|---|---|
-| Tempo | `08 00 00 01 | 00` | VALIDÉE |
-| Transpose | `0A 00 00 01 | 02` | VALIDÉE |
+| Tempo | `08 00 00 01 \| 00` | VALIDÉE |
+| Transpose | `0A 00 00 01 \| 02` | VALIDÉE |
 
 ## Style — CVP runtime
 
 | Fonction | Mécanisme | Statut |
 |---|---|---|
-| Chemin / nom / source | `06 00 00 01 | 00` | GET VALIDÉ — PRESET/USER/USB1 |
-| Volume global | `0C 00 00 01 | 51` | VALIDÉE |
+| Chemin / nom / source | `06 00 00 01 \| 00` | GET VALIDÉ — PRESET/USER/USB1 |
+| Volume global | `0C 00 00 01 \| 51` | VALIDÉE |
 | Mute 8 parties | `F0 43 73 01 51 05 00 00 08 ... F7` | VALIDÉE |
-| Start / Stop | `06 00 03 01 | 00` | VALIDÉE |
-| Sync Start | `06 00 07 01 | 00` | VALIDÉE GET/SET |
+| Start / Stop | `06 00 03 01 \| 00` | VALIDÉE |
+| Sync Start | `06 00 07 01 \| 00` | VALIDÉE GET/SET |
 | Intro 1/2/3 | Section Control `00/01/02` | VALIDÉE |
 | Main A/B/C/D | Section Control `08..0B` | VALIDÉE |
 | Fill A/B/C/D | Section Control `10..13` | VALIDÉE |
@@ -227,8 +285,8 @@ Ne pas répéter sans nouvelle preuve indépendante.
 
 | Fonction | Signature | Statut |
 |---|---|---|
-| Guide ON/OFF | `04 03 00 01 | 00` | VALIDÉE GET/SET |
-| Guide Type | `04 03 01 01 | 00` | VALIDÉE GET/SET sur valeurs testées |
+| Guide ON/OFF | `04 03 00 01 \| 00` | VALIDÉE GET/SET |
+| Guide Type | `04 03 01 01 \| 00` | VALIDÉE GET/SET sur valeurs testées |
 
 ## Piano Room / piano
 
@@ -250,8 +308,8 @@ Ne pas répéter sans nouvelle preuve indépendante.
 
 | Fonction | Signature | Statut |
 |---|---|---|
-| Stream Lights ON/OFF | `04 02 00 01 | 00` | VALIDÉE GET/SET |
-| Stream Speed | `04 02 02 01 | 00` | NON APPLICABLE — SET naïf -> `0x31` |
+| Stream Lights ON/OFF | `04 02 00 01 \| 00` | VALIDÉE GET/SET |
+| Stream Speed | `04 02 02 01 \| 00` | NON APPLICABLE — SET naïf -> `0x31` |
 
 ## Réverb globale
 
@@ -362,20 +420,20 @@ Assignable/.ssu:
 0x8E = ACMP
 ```
 
-L'extrapolation `0x8D = ACMP External Controller` a produit un `.msu` rejeté : **hypothèse invalide**.
+L’extrapolation `0x8D = ACMP External Controller` a produit un `.msu` rejeté : **hypothèse invalide**.
 
-ACMP n'est pas exposé dans External Controller Genos 1.
+ACMP n’est pas exposé dans External Controller Genos 1.
 
 Voir `docs/GENOS1_MIDI_CHECKPOINT_2026-08-29.md`.
 
 ## Règle `0x31`
 
-Toute lecture `0x31` apparue après un SET supposé bool/u7 doit être traitée comme **signal d'arrêt**.
+Toute lecture `0x31` apparue après un SET supposé bool/u7 doit être traitée comme **signal d’arrêt**.
 
 ## Règle de recherche
 
 - scan large inconnu : GET-only ;
 - jamais de brute-force SET ;
 - SET ciblé uniquement avec preuve suffisante ;
-- restaurer l'état après validation ;
+- restaurer l’état après validation ;
 - ne jamais promouvoir un résultat Genos au statut CVP sans test CVP.
