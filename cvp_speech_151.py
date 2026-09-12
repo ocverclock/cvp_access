@@ -6,7 +6,8 @@ Réutilise le gestionnaire hybride existant et ajoute :
 - annonces booléennes communes ;
 - annonces de valeurs/noms dynamiques ;
 - annonces Song prévisibles composées depuis des WAV pré-générés ;
-- lecture audio sérialisée pour éviter les coupures/craquements entre annonces.
+- lecture audio sérialisée pour éviter les coupures/craquements entre annonces ;
+- mute logiciel du guide vocal, indépendant de son volume.
 """
 
 from __future__ import annotations
@@ -62,6 +63,80 @@ def install_speech_hooks(core, speech_config):
 
         core.start_audio = start_audio_serialized
         core._cvp_audio_serialized = True
+
+    # Mute logiciel : le niveau voice_volume reste inchangé. Les annonces sont
+    # simplement bloquées pendant le mute, puis reprennent au même volume.
+    manager._cvp_voice_guide_muted = False
+    original_speak = manager.speak
+    original_speak_sequence = manager.speak_sequence
+    original_speak_now = manager._speak_now
+    original_speak_sequence_now = manager._speak_sequence_now
+
+    def is_voice_guide_muted():
+        return bool(manager._cvp_voice_guide_muted)
+
+    def set_voice_guide_muted(muted):
+        muted = bool(muted)
+        manager._cvp_voice_guide_muted = muted
+
+        if muted:
+            current = getattr(core, "audio_process", None)
+            if current is not None and current.poll() is None:
+                try:
+                    current.terminate()
+                except Exception:
+                    pass
+
+        return muted
+
+    def speak_guarded(
+        text,
+        wav_path=None,
+        replace_key=None,
+    ):
+        if manager._cvp_voice_guide_muted:
+            return False
+        return original_speak(
+            text,
+            wav_path,
+            replace_key,
+        )
+
+    def speak_sequence_guarded(
+        text,
+        files,
+        replace_key=None,
+    ):
+        if manager._cvp_voice_guide_muted:
+            return False
+        return original_speak_sequence(
+            text,
+            files,
+            replace_key,
+        )
+
+    def speak_now_guarded(text, wav_path=None):
+        if manager._cvp_voice_guide_muted:
+            return False
+        return original_speak_now(
+            text,
+            wav_path,
+        )
+
+    def speak_sequence_now_guarded(text, files):
+        if manager._cvp_voice_guide_muted:
+            return False
+        return original_speak_sequence_now(
+            text,
+            files,
+        )
+
+    manager.speak = speak_guarded
+    manager.speak_sequence = speak_sequence_guarded
+    manager._speak_now = speak_now_guarded
+    manager._speak_sequence_now = speak_sequence_now_guarded
+    core.is_voice_guide_muted = is_voice_guide_muted
+    core.set_voice_guide_muted = set_voice_guide_muted
 
     def number_file(value):
         value = int(value)
