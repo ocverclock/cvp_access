@@ -45,6 +45,9 @@ from cvp_speech_151 import (  # noqa: E402
 )
 
 
+MAX_PREGENERATED_NUMBER = 999
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -106,6 +109,27 @@ def main():
             text
         )
 
+    def add_raw(path, text):
+        # Fragments destinés à être concaténés : ne pas ajouter de point,
+        # sinon Piper insère une pause audible au milieu de la phrase.
+        prompts[
+            base / path
+        ] = str(text).strip()
+
+    song_numeric_actions = {
+        "song_position",
+        "song_measure_previous",
+        "song_measure_next",
+        "song_measure_previous_5",
+        "song_measure_next_5",
+        "song_goto_measure",
+        "song_loop_point_a",
+        "song_loop_point_b",
+        "song_loop_toggle",
+        "announce_song_length",
+    }
+    needs_song_numbers = False
+
     # CTRL + touche : toutes les actions configurées.
     for raw in keys.values():
         if not isinstance(
@@ -138,6 +162,9 @@ def main():
         # Annonces d'exécution des Section Control / Registration.
         name = invocation.name
         parameter = invocation.parameter
+
+        if name in song_numeric_actions:
+            needs_song_numbers = True
 
         if name == "style_intro":
             add(
@@ -212,6 +239,41 @@ def main():
             / "state"
             / f"{stem}_off.wav"
         ] = f"{label} désactivé."
+
+    # Les annonces Song prévisibles sont composées de fragments WAV.
+    # Cela supprime la synthèse Piper à la volée pour la navigation courante
+    # et garantit une réponse homogène même lors d'appuis rapides.
+    if needs_song_numbers:
+        for number in range(
+            0,
+            MAX_PREGENERATED_NUMBER + 1,
+        ):
+            add_raw(
+                f"numbers/number_{number:03d}.wav",
+                str(number),
+            )
+
+        fragments = {
+            "words/mesure.wav": "mesure",
+            "words/temps.wav": "temps",
+            "words/point_a_mesure.wav": "Point A mesure",
+            "words/point_b_mesure.wav": "Point B mesure",
+            "words/boucle_de_mesure.wav": "Boucle activée de la mesure",
+            "words/a_mesure.wav": "à la mesure",
+            "words/longueur_song.wav": "Longueur du Song",
+            "words/mesures.wav": "mesures",
+        }
+
+        for path, text in fragments.items():
+            add_raw(
+                path,
+                text,
+            )
+
+        add(
+            "song/loop_off.wav",
+            "Boucle désactivée.",
+        )
 
     if not prompts:
         print(
