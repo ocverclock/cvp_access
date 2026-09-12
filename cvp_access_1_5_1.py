@@ -194,15 +194,59 @@ class CVPActions151(legacy.CVPActions):
         return True
 
     def song_play_pause(self):
-        """PLAY/PAUSE sans laisser le transport couper le métronome."""
+        """PLAY/PAUSE en conservant un métronome déjà actif."""
+        if not self._require_song():
+            return
+
+        current_state = self.core.get_song_play_state(
+            self.port
+        )
+
+        if current_state is None:
+            print("Impossible de lire l'état du Song.")
+            return
+
+        if current_state == self.core.SONG_PLAY:
+            target_state = self.core.SONG_PAUSE
+        else:
+            target_state = self.core.SONG_PLAY
+
         metronome_was_on = self.song.get_metronome() is True
 
-        try:
-            return super().song_play_pause()
-        finally:
-            self._restore_metronome_after_song_transport(
-                metronome_was_on
+        if not self.core.set_song_play_state(
+            self.port,
+            target_state,
+        ):
+            print("Impossible de modifier l'état du Song.")
+            return
+
+        # Le CVP-905 peut couper le métronome lors du changement de transport.
+        # Le restaurer immédiatement, avant les vérifications et annonces.
+        self._restore_metronome_after_song_transport(
+            metronome_was_on
+        )
+
+        verified_state = self.core.verify_song_play_state(
+            self.port,
+            target_state,
+        )
+
+        if verified_state is None:
+            print(
+                "Transport Song modifié, "
+                "mais vérification impossible."
             )
+            return
+
+        print(
+            "Song ->",
+            {
+                self.core.SONG_STOP: "STOP",
+                self.core.SONG_PLAY: "PLAY",
+                self.core.SONG_PAUSE: "PAUSE",
+            }[verified_state],
+        )
+        self.core.announce_song_state(verified_state)
 
     # ----------------------------------------------------------
     # Nouveau dispatch ; les actions v1.5 restent intactes.
