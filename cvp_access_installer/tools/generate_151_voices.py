@@ -45,7 +45,7 @@ from cvp_speech_151 import (  # noqa: E402
 )
 
 
-MAX_PREGENERATED_NUMBER = 999
+MAX_PREGENERATED_NUMBER = 150
 
 
 def main():
@@ -241,8 +241,7 @@ def main():
         ] = f"{label} désactivé."
 
     # Les annonces Song prévisibles sont composées de fragments WAV.
-    # Cela supprime la synthèse Piper à la volée pour la navigation courante
-    # et garantit une réponse homogène même lors d'appuis rapides.
+    # Les mesures sont limitées à 150 dans CVP Access.
     if needs_song_numbers:
         for number in range(
             0,
