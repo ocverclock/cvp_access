@@ -70,11 +70,7 @@ Le wrapper courant ajoute les commandes globales L / RPAREN et le Solo Maj. La b
 ) / ° = toutes les parties Style ON
 ```
 
-Nom interne de `) / °` :
-
-```text
-RPAREN
-```
+Nom interne de `) / °` : `RPAREN`.
 
 Terminologie Style :
 
@@ -113,6 +109,8 @@ Maj+K = Solo piste 16
 ```
 
 Le Solo active d'abord la piste choisie, coupe les quinze autres, relit les seize états puis annonce `Solo piste N`. L remet les seize pistes sur ON.
+
+**Le Solo Maj est validé matériellement sur CVP-905 firmware 1.03.** La confirmation utilisateur du 12 septembre 2026 valide le comportement : piste choisie ON, 15 autres OFF.
 
 ### Informations / accessibilité
 
@@ -240,7 +238,7 @@ L'upgrade :
 
 ## 9. Doctor — checkpoint confirmé le 12 septembre 2026
 
-Résultat observé sur le Raspberry de référence avant la correction ALT -> Maj :
+Résultat observé sur le Raspberry de référence après migration ALT -> Maj :
 
 ```text
 OK    Runtime 1.5.1             modules complets
@@ -251,7 +249,12 @@ OK    WAV mute Style            8 présents
 OK    WAV Solo Song             16 présents
 ```
 
-Les banques WAV Solo ne changent pas avec le changement de modificateur. Après upgrade, le Doctor doit confirmer le nouveau layout SHIFT.
+Les banques vocales étaient complètes :
+
+```text
+Generated: 0; already present: 863
+Generated: 0; existing: 262
+```
 
 ## 10. Validation matérielle
 
@@ -265,6 +268,7 @@ Play/Pause
 restauration métronome
 arrêt Piper propre
 lecture de plusieurs noms de Voice
+Maj+... = Solo Song
 ```
 
 ### À tester fonctionnellement sur le CVP-905
@@ -274,10 +278,7 @@ M       = mute/réactivation guide vocal
 libellés Style Mute ...
 L       = toutes pistes Song ON
 ) / °   = toutes parties Style ON
-Maj+... = Solo Song
 ```
-
-Ne les marquer validés matériellement qu'après confirmation explicite de l'utilisateur.
 
 ## 11. Actions non attribuées par défaut
 
@@ -308,16 +309,13 @@ ACMP et Fingering disposent de workarounds Registration validés.
 
 ## 13. Priorités suivantes
 
-1. appliquer l'upgrade de migration ALT -> Maj ;
-2. vérifier le Doctor avec les bindings SHIFT ;
-3. test matériel M ;
-4. test matériel libellés Style `Mute ...` ;
-5. test matériel L ;
-6. test matériel `) / °` ;
-7. test matériel Solo Maj ;
-8. si la latence vocale reste sensible alors que les WAV sont complets, identifier les annonces encore dynamiques et mesurer le chemin audio ;
-9. compléter `cvp_voice_names.py` ;
-10. refaire un clone GitHub neuf + upgrade.
+1. test matériel M ;
+2. test matériel libellés Style `Mute ...` ;
+3. test matériel L ;
+4. test matériel `) / °` ;
+5. si la latence vocale reste sensible alors que les WAV sont complets, identifier les annonces encore dynamiques et mesurer le chemin audio ;
+6. compléter `cvp_voice_names.py` ;
+7. refaire un clone GitHub neuf + upgrade.
 
 ## 14. Rollback
 
@@ -328,4 +326,4 @@ sudo systemctl restart cvp-access
 
 ## 15. Règle de reprise
 
-**Le point de départ obligatoire est le HEAD `main` consolidé au 12 septembre 2026, basé sur CVP Access 1.5.1-RC3.**
+**Le point de départ obligatoire est le HEAD `main` consolidé au 12 septembre 2026, basé sur CVP Access 1.5.1-RC3, avec Solo Song Maj validé matériellement.**
