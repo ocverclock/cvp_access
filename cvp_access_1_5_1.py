@@ -5,7 +5,7 @@ Conserve intégralement la runtime 1.5.1 précédente dans
 cvp_access_1_5_1_base.py et ajoute :
 - L : toutes les pistes Song ON ;
 - RPAREN, touche ) / ° à droite du 0 : toutes les parties Style ON ;
-- ALT + touche piste Song : piste sélectionnée ON, les 15 autres OFF.
+- SHIFT + touche piste Song : piste sélectionnée ON, les 15 autres OFF.
 """
 
 from __future__ import annotations
