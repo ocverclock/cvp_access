@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Extension CVP Access 1.5.1 : commandes globales de réactivation.
+"""Extension CVP Access 1.5.1 : commandes globales et Solo Song.
 
 Conserve intégralement la runtime 1.5.1 précédente dans
-cvp_access_1_5_1_base.py et ajoute deux actions :
+cvp_access_1_5_1_base.py et ajoute :
 - L : toutes les pistes Song ON ;
-- RPAREN, touche ) / ° à droite du 0 : toutes les parties Style ON.
+- RPAREN, touche ) / ° à droite du 0 : toutes les parties Style ON ;
+- ALT + touche piste Song : piste sélectionnée ON, les 15 autres OFF.
 """
 
 from __future__ import annotations
@@ -24,23 +25,32 @@ NEW_ACTION_SPECS = {
     "style_all_parts_on": ActionSpec(
         description="Toutes les parties Style activées"
     ),
+    "song_track_solo": ActionSpec(
+        True,
+        1,
+        16,
+        "Solo d'une piste Song",
+    ),
 }
 
 cvp_keyboard.ACTION_SPECS.update(NEW_ACTION_SPECS)
 
 
 class CVPActions151(base.CVPActions151):
-    """Ajoute les commandes globales sans modifier les toggles individuels."""
+    """Ajoute les commandes globales et le Solo sans modifier les toggles."""
 
     def dispatch(self, invocation):
         handlers = {
             "song_all_tracks_on": self.song_all_tracks_on,
             "style_all_parts_on": self.style_all_parts_on,
+            "song_track_solo": self.song_track_solo,
         }
 
         handler = handlers.get(invocation.name)
         if handler is not None:
-            return handler()
+            if invocation.parameter is None:
+                return handler()
+            return handler(invocation.parameter)
 
         return super().dispatch(invocation)
 
@@ -96,6 +106,81 @@ class CVPActions151(base.CVPActions151):
         print("Pistes Song : toutes actives")
         self.core.announce_action_help(
             "Toutes les pistes Song activées"
+        )
+
+    def song_track_solo(self, selected_track):
+        """Active une seule piste Song et coupe les quinze autres."""
+        if not self._require_song():
+            return
+
+        if not 1 <= selected_track <= 16:
+            print("Piste Solo invalide :", selected_track)
+            return
+
+        # Activer d'abord la nouvelle piste Solo. En passant d'un Solo à un
+        # autre, cela évite un bref trou de son avant de couper l'ancienne.
+        if not self.core.set_track_state(
+            self.port,
+            selected_track,
+            True,
+        ):
+            self.core.tracks[selected_track] = None
+            print(
+                f"Impossible d'activer la piste Solo {selected_track}."
+            )
+            self.core.announce_action_help(
+                f"Impossible d'activer le Solo piste {selected_track}"
+            )
+            return
+
+        send_failures = []
+
+        for track in range(1, 17):
+            if track == selected_track:
+                continue
+
+            if not self.core.set_track_state(
+                self.port,
+                track,
+                False,
+            ):
+                self.core.tracks[track] = None
+                send_failures.append(track)
+
+        verify_failures = []
+
+        for track in range(1, 17):
+            expected = track == selected_track
+            verified = self.core.verify_track_state(
+                self.port,
+                track,
+                expected,
+            )
+
+            if verified is not expected:
+                self.core.tracks[track] = None
+                verify_failures.append(track)
+                continue
+
+            self.core.tracks[track] = expected
+
+        failures = sorted(
+            set(send_failures + verify_failures)
+        )
+
+        if failures:
+            print(
+                f"Solo piste {selected_track} : vérification incomplète ->",
+                ", ".join(str(track) for track in failures),
+            )
+            self.core.announce_action_help(
+                f"Solo piste {selected_track} incomplet"
+            )
+            return
+
+        print(f"Solo piste {selected_track} -> ON")
+        self.core.announce_action_help(
+            f"Solo piste {selected_track}"
         )
 
     def style_all_parts_on(self):
