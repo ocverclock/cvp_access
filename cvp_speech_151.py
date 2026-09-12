@@ -7,7 +7,8 @@ Réutilise le gestionnaire hybride existant et ajoute :
 - annonces de valeurs/noms dynamiques ;
 - annonces Song prévisibles composées depuis des WAV pré-générés ;
 - lecture audio sérialisée pour éviter les coupures/craquements entre annonces ;
-- mute logiciel du guide vocal, indépendant de son volume.
+- mute logiciel du guide vocal, indépendant de son volume ;
+- annonces explicites des mutes de parties Style.
 """
 
 from __future__ import annotations
@@ -181,6 +182,23 @@ def install_speech_hooks(core, speech_config):
             replace_key=f"state_{stem}",
         )
 
+    def announce_style_part(part, active):
+        label = legacy_speech.STYLE_LABELS[part]
+        stem = core.STYLE_PART_NAMES[part]
+
+        if active:
+            text = f"{label} activé."
+            filename = f"{stem}_on.wav"
+        else:
+            text = f"Mute {label}."
+            filename = f"{stem}_mute.wav"
+
+        return manager.speak(
+            text,
+            voice_dir / "style_part" / filename,
+            replace_key=f"style_part_{stem}",
+        )
+
     def announce_named_value(label, value):
         # Les noms de Song/Style/Voice sont dynamiques : Piper reste nécessaire
         # la première fois, puis le cache TTS est réutilisé.
@@ -288,6 +306,7 @@ def install_speech_hooks(core, speech_config):
 
     core.announce_action_help = announce_action_help
     core.announce_boolean_state = announce_boolean_state
+    core.announce_style_part = announce_style_part
     core.announce_named_value = announce_named_value
     core.announce_value = announce_value
     core.announce_song_state = announce_song_state
