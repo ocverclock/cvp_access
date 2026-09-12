@@ -66,7 +66,7 @@ song_keys = [
 
 for track, key in enumerate(song_keys, start=1):
     expected[key] = f"song_track_toggle:{track}"
-    expected[f"ALT+{key}"] = f"song_track_solo:{track}"
+    expected[f"SHIFT+{key}"] = f"song_track_solo:{track}"
 
 for combo, action in expected.items():
     assert keys.get(combo) == action, (
@@ -74,6 +74,11 @@ for combo, action in expected.items():
     )
 
 assert not any(str(combo).upper().startswith("CAPS+") for combo in keys)
+assert not any(
+    str(combo).upper().startswith("ALT+")
+    and str(value).startswith("song_track_solo:")
+    for combo, value in keys.items()
+)
 
 assigned_actions = {
     str(value).split(":", 1)[0]
