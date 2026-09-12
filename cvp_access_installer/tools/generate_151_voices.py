@@ -170,7 +170,7 @@ def main():
             canonical,
         )
 
-        # Annonces d'exécution des Section Control / Registration.
+        # Annonces d'exécution des Section Control / Registration / Solo.
         name = invocation.name
         parameter = invocation.parameter
 
@@ -230,6 +230,15 @@ def main():
                     f"Registration {parameter}."
                 ),
                 f"Registration {parameter}.",
+            )
+        elif (
+            name == "song_track_solo"
+            and parameter is not None
+            and 1 <= parameter <= 16
+        ):
+            add(
+                f"song_solo/solo_{parameter:02d}.wav",
+                f"Solo piste {parameter}.",
             )
 
     states = {
