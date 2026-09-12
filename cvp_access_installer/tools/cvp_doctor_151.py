@@ -155,7 +155,7 @@ def main():
         "Q", "S", "D", "F", "G", "H", "J", "K",
     )
     for track, key in enumerate(song_keys, start=1):
-        expected_caps[f"ALT+{key}"] = f"song_track_solo:{track}"
+        expected_caps[f"SHIFT+{key}"] = f"song_track_solo:{track}"
 
     missing_caps = [
         key
