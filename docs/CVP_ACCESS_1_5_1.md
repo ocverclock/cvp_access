@@ -109,22 +109,22 @@ Les touches simples restent des toggles ON/OFF individuels.
 ### Solo Song
 
 ```text
-ALT + A = Solo piste 1
-ALT + Z = Solo piste 2
-ALT + E = Solo piste 3
-ALT + R = Solo piste 4
-ALT + T = Solo piste 5
-ALT + Y = Solo piste 6
-ALT + U = Solo piste 7
-ALT + I = Solo piste 8
-ALT + Q = Solo piste 9
-ALT + S = Solo piste 10
-ALT + D = Solo piste 11
-ALT + F = Solo piste 12
-ALT + G = Solo piste 13
-ALT + H = Solo piste 14
-ALT + J = Solo piste 15
-ALT + K = Solo piste 16
+Maj + A = Solo piste 1
+Maj + Z = Solo piste 2
+Maj + E = Solo piste 3
+Maj + R = Solo piste 4
+Maj + T = Solo piste 5
+Maj + Y = Solo piste 6
+Maj + U = Solo piste 7
+Maj + I = Solo piste 8
+Maj + Q = Solo piste 9
+Maj + S = Solo piste 10
+Maj + D = Solo piste 11
+Maj + F = Solo piste 12
+Maj + G = Solo piste 13
+Maj + H = Solo piste 14
+Maj + J = Solo piste 15
+Maj + K = Solo piste 16
 ```
 
 Le Solo :
@@ -196,7 +196,7 @@ annonce la fonction sans exécuter l'action.
 Exemple :
 
 ```text
-CTRL + ALT + E
+CTRL + Maj + E
 -> annonce l'aide du Solo piste 3
 -> ne modifie aucune piste
 ```
@@ -361,7 +361,9 @@ sudo bash cvp_access_installer/upgrade_1_5_1.sh
 L'upgrade :
 
 - conserve les personnalisations existantes ;
-- ajoute M, L, RPAREN et les 16 ALT+touches uniquement si les combinaisons sont libres ;
+- retire les anciens bindings Solo ALT uniquement s'ils correspondent exactement au profil officiel ;
+- ajoute les 16 bindings `SHIFT+...` pour le Solo lorsque les combinaisons sont libres ;
+- ajoute/conserve M, L et RPAREN ;
 - copie le wrapper et sa base ;
 - compile les modules ;
 - génère la map clavier ;
@@ -375,14 +377,16 @@ L'upgrade :
 python3 VERIFY_PACKAGE_151.py
 ```
 
-Le vérificateur compile maintenant le wrapper, sa base et les modules principaux, puis contrôle notamment :
+Le vérificateur compile le wrapper, sa base et les modules principaux, puis contrôle notamment :
 
 ```text
 M
 L
 RPAREN
-ALT+A .. ALT+K
+SHIFT+A .. SHIFT+K
 ```
+
+Il vérifie également qu'aucun ancien binding `ALT+... = song_track_solo:*` ne subsiste dans le layout officiel.
 
 Résultat attendu :
 
@@ -392,18 +396,9 @@ CVP Access 1.5.1 RC3 package: OK
 
 ## 10. Doctor — état confirmé le 12 septembre 2026
 
-Sur le Raspberry de référence, le Doctor a été exécuté après déploiement du layout courant et a renvoyé :
+Avant la correction du modificateur ALT -> Maj, le Doctor du Raspberry de référence avait confirmé les banques WAV complètes. Les WAV Solo restent valides car leur contenu ne dépend pas du modificateur clavier.
 
-```text
-OK Runtime 1.5.1             modules complets
-OK Version runtime           1.5.1-RC3
-OK Layout accessibilité      présente
-OK WAV états 1.5.1           10 présents
-OK WAV mute Style            8 présents
-OK WAV Solo Song             16 présents
-```
-
-Cela valide la cohérence de l'installation, du layout et des banques WAV. Ce résultat ne remplace pas un test fonctionnel matériel de chaque nouvelle commande sur le CVP-905.
+Après application de cette correction, le Doctor doit confirmer le nouveau layout `SHIFT+...`.
 
 ## 11. État de validation matérielle
 
@@ -419,14 +414,14 @@ arrêt Piper propre
 lecture de plusieurs noms de Voice
 ```
 
-Implémenté, installé et contrôlé par le Doctor, mais encore à confirmer fonctionnellement sur le CVP-905 avant de le marquer validé matériellement :
+Implémenté et intégré, mais encore à confirmer fonctionnellement sur le CVP-905 avant de le marquer validé matériellement :
 
 ```text
 M       = mute/réactivation guide vocal
 libellés Style « Mute ... »
 L       = toutes pistes Song ON
 ) / °   = toutes parties Style ON
-ALT+... = Solo Song
+Maj+... = Solo Song
 ```
 
 ## 12. Actions disponibles mais non attribuées
