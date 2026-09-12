@@ -1,6 +1,6 @@
 # CVP Access — état de référence du projet
 
-Dernière consolidation : **1 septembre 2026**.
+Dernière consolidation : **12 septembre 2026**.
 
 Version de référence : **CVP Access 1.5.1-RC3**.
 
@@ -247,12 +247,21 @@ docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md
 0 = Left
 ```
 
+Les annonces des parties Style doivent rester distinctes des pistes Song :
+
+```text
+OFF -> « Mute Rythme 1 », « Mute Basse », etc.
+ON  -> « Rythme 1 activé », « Basse activée », etc.
+```
+
 ### Pistes Song
 
 ```text
 A Z E R T Y U I = pistes 1..8
 Q S D F G H J K = pistes 9..16
 ```
+
+Les pistes Song continuent d'être annoncées comme `Piste 1` à `Piste 16`.
 
 ### Informations / accessibilité
 
@@ -261,12 +270,21 @@ W  = annonce nom Style
 X  = annonce nom Song
 C  = annonce longueur Song
 V  = Syncro Start ON/OFF
-B  = Guide ON/OFF
+B  = Guide Yamaha ON/OFF
+M  = mute / réactivation du guide vocal CVP Access
 N  = annonce nom Voice Main
 ,  = annonce nom Voice Layer
 ;  = annonce nom Voice Left
 F7 = Métronome ON/OFF
 ```
+
+Important :
+
+```text
+Guide Yamaha (B) != guide vocal CVP Access (M)
+```
+
+La touche M agit uniquement sur les annonces produites par CVP Access (WAV pré-générés et Piper). Elle ne modifie ni le Guide Yamaha, ni le Song, ni le Style, ni le métronome, ni le son du clavier. Le volume du guide vocal est conservé pendant le mute et restauré à l'identique lors de la réactivation.
 
 Si aucun Song n'est chargé :
 
@@ -347,6 +365,10 @@ WAV pré-généré
 
 Le worker Piper est préchargé au démarrage et reste résident pendant le fonctionnement du service.
 
+Les annonces Song prévisibles utilisent des fragments WAV. La banque numérique destinée aux mesures est limitée à `0..150`.
+
+Le mute du guide vocal est logiciel et s'applique à toute la sortie vocale CVP Access : WAV et Piper. À l'entrée en mute, une annonce éventuellement en cours peut être interrompue afin d'obtenir le silence immédiatement. À la sortie du mute, `Guide vocal activé` est annoncé.
+
 Cache :
 
 ```text
@@ -357,11 +379,26 @@ Terminologie utilisateur :
 
 ```text
 Vol. guide vocal
+Guide vocal
 Syncro Start
+Mute Rythme 1
+Mute Rythme 2
+Mute Basse
+Mute Accord 1
+Mute Accord 2
+Mute Pad
+Mute Phrase 1
+Mute Phrase 2
 Pas de Song chargé.
 ```
 
 Pour les actions Voice, prononcer uniquement le nom du son.
+
+### État de validation au 12 septembre 2026
+
+Déplacement Song, F3 aller à la mesure, boucles et transport ont été testés physiquement sur le CVP-905 après déploiement du commit `39d92f8`.
+
+Le mute M du guide vocal et les nouveaux libellés `Mute ...` des parties Style sont implémentés et intégrés à l'upgrade, mais restent à confirmer physiquement sur le CVP-905 avant d'être marqués validés matériellement.
 
 ## 9. Installation / upgrade RC3
 
@@ -371,6 +408,12 @@ Commande :
 cd ~/CVP_access
 python3 VERIFY_PACKAGE_151.py
 sudo bash cvp_access_installer/upgrade_1_5_1.sh
+```
+
+L'upgrade conserve les personnalisations existantes. Si la touche `M` est libre, il ajoute automatiquement :
+
+```toml
+"M" = "voice_guide_mute_toggle"
 ```
 
 Résultat paquet attendu :
@@ -392,7 +435,8 @@ Doctor attendu :
 OK    Runtime 1.5.1             modules complets
 OK    Version runtime           1.5.1-RC3
 OK    Layout accessibilité      présente
-OK    WAV états 1.5.1           8 présents
+OK    WAV états 1.5.1           10 présents
+OK    WAV mute Style            8 présents
 ```
 
 ## 10. Reproductibilité
@@ -478,11 +522,13 @@ F0 43 7E 00 ss 7F F7
 20..22 = Ending 1..3
 ```
 
-### Guide
+### Guide Yamaha
 
 ```text
 04 03 00 01 | 00
 ```
+
+Le mute du guide vocal CVP Access n'utilise aucune propriété Yamaha : c'est un état logiciel local à `cvp_speech_151.py`.
 
 ### Voice
 
@@ -543,11 +589,12 @@ Règle absolue :
 
 Priorités raisonnables :
 
-1. compléter `cvp_voice_names.py` avec la table Yamaha CVP-905 ;
-2. pousser la RC3 sur GitHub ;
-3. refaire un clone GitHub neuf + upgrade RC3 ;
-4. installation future sur carte Raspberry Pi réellement vierge ;
-5. poursuivre progressivement la séparation du moteur historique.
+1. valider physiquement M (mute/réactivation du guide vocal) sur le CVP-905 ;
+2. valider les nouvelles annonces `Mute Rythme 1`, etc. sur le CVP-905 ;
+3. compléter `cvp_voice_names.py` avec la table Yamaha CVP-905 ;
+4. refaire un clone GitHub neuf + upgrade RC3 ;
+5. installation future sur carte Raspberry Pi réellement vierge ;
+6. poursuivre progressivement la séparation du moteur historique.
 
 Ne pas relancer de scan massif de protocole sans nouvelle hypothèse.
 
@@ -562,4 +609,4 @@ sudo systemctl restart cvp-access
 
 ## 17. Checkpoint
 
-**CVP Access 1.5.1-RC3 est le point de référence au 1 septembre 2026.**
+**CVP Access 1.5.1-RC3 est le point de référence au 12 septembre 2026.**
