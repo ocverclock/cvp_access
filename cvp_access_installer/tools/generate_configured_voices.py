@@ -135,6 +135,7 @@ def main():
             ("voice_volume_down", None),
             ("style_volume_up", None),
             ("style_volume_down", None),
+            ("voice_guide_mute_toggle", None),
         })
 
     prompts: dict[Path, str] = {}
@@ -150,7 +151,7 @@ def main():
         elif name == "style_part_toggle" and parameter and 1 <= parameter <= 8:
             stem, label = STYLE_PARTS[parameter - 1]
             add(f"style_part/{stem}_on.wav", f"{label} activé.")
-            add(f"style_part/{stem}_off.wav", f"{label} désactivé.")
+            add(f"style_part/{stem}_mute.wav", f"Mute {label}.")
 
         elif name == "layer_toggle":
             add("voice_part/layer_on.wav", "Dual activé.")
