@@ -43,7 +43,7 @@ Ne pas supprimer ces fichiers tant que cette architecture n’a pas été rempla
 ### Song MIDI
 
 - mute/unmute réel des 16 pistes ;
-- **ALT + touche piste = Solo** : la piste sélectionnée reste ON, les 15 autres passent OFF ;
+- **Maj + touche piste = Solo** : la piste sélectionnée reste ON, les 15 autres passent OFF ;
 - **L = toutes les pistes Song ON** ;
 - lecture / pause / stop ;
 - annonce de la position ;
@@ -120,18 +120,18 @@ Les annonces Song prévisibles sont composées de WAV. La banque de nombres dest
 A Z E R T Y U I = pistes 1..8
 Q S D F G H J K = pistes 9..16
 
-ALT + A..K = Solo de la piste correspondante
+Maj + A..K = Solo de la piste correspondante
 L          = toutes les pistes Song ON
 ```
 
 Exemples :
 
 ```text
-ALT + A = Solo piste 1
-ALT + Z = Solo piste 2
-ALT + E = Solo piste 3
+Maj + A = Solo piste 1
+Maj + Z = Solo piste 2
+Maj + E = Solo piste 3
 ...
-ALT + K = Solo piste 16
+Maj + K = Solo piste 16
 ```
 
 ### Informations / accessibilité
@@ -180,7 +180,7 @@ Maj + Inser / Suppr    = Main +5 / -5
 `CTRL` est réservé à l’aide. Exemple :
 
 ```text
-CTRL + ALT + E
+CTRL + Maj + E
 -> annonce la fonction Solo piste 3
 -> n’exécute pas le Solo
 ```
@@ -256,7 +256,7 @@ Implémenté et intégré à l’upgrade, mais à confirmer physiquement avant d
 - nouveaux libellés `Mute ...` des parties Style ;
 - L : toutes les pistes Song ON ;
 - `) / °` : toutes les parties Style ON ;
-- ALT + piste : Solo Song.
+- Maj + piste : Solo Song.
 
 ## Documentation de reprise
 
