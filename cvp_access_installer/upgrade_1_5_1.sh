@@ -23,6 +23,7 @@ install -m 0644 \
 if [[ -f "$CONFIG_FILE" ]]; then
     python3 - "$CONFIG_FILE" <<'PY'
 from pathlib import Path
+import re
 import sys
 import tomllib
 
@@ -33,26 +34,30 @@ with path.open("rb") as handle:
     data = tomllib.load(handle)
 
 keys = data.get("keys", {})
+song_keys = [
+    "A", "Z", "E", "R", "T", "Y", "U", "I",
+    "Q", "S", "D", "F", "G", "H", "J", "K",
+]
+
+# Ancien profil officiel Solo ALT -> nouveau profil Solo SHIFT.
+# On retire uniquement les anciennes affectations exactes créées par CVP Access.
+for track, key in enumerate(song_keys, start=1):
+    combo = f"ALT+{key}"
+    action = f"song_track_solo:{track}"
+    if keys.get(combo) == action:
+        pattern = re.compile(
+            rf'^\s*"{re.escape(combo)}"\s*=\s*"{re.escape(action)}"\s*\n?',
+            re.MULTILINE,
+        )
+        text = pattern.sub("", text)
+        print(f"Migration clavier : suppression {combo} -> {action}")
+
 bindings = {
     "L": "song_all_tracks_on",
     "RPAREN": "style_all_parts_on",
-    "ALT+A": "song_track_solo:1",
-    "ALT+Z": "song_track_solo:2",
-    "ALT+E": "song_track_solo:3",
-    "ALT+R": "song_track_solo:4",
-    "ALT+T": "song_track_solo:5",
-    "ALT+Y": "song_track_solo:6",
-    "ALT+U": "song_track_solo:7",
-    "ALT+I": "song_track_solo:8",
-    "ALT+Q": "song_track_solo:9",
-    "ALT+S": "song_track_solo:10",
-    "ALT+D": "song_track_solo:11",
-    "ALT+F": "song_track_solo:12",
-    "ALT+G": "song_track_solo:13",
-    "ALT+H": "song_track_solo:14",
-    "ALT+J": "song_track_solo:15",
-    "ALT+K": "song_track_solo:16",
 }
+for track, key in enumerate(song_keys, start=1):
+    bindings[f"SHIFT+{key}"] = f"song_track_solo:{track}"
 
 lines = text.splitlines()
 keys_start = next(
