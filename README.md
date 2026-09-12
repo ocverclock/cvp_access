@@ -12,6 +12,7 @@ Version de référence :
 
 ```text
 CVP Access 1.5.1-RC3
+Consolidation : 12 septembre 2026
 ```
 
 Validation matérielle principale :
@@ -26,94 +27,31 @@ Clavier Apple Extended USB
 Piper fr_FR-siwis-medium
 ```
 
-Le runtime 1.5.1 reste construit au-dessus du moteur historique validé :
+Le runtime reste construit au-dessus du moteur historique validé. La couche actuelle est transitoire :
 
 ```text
 cvp_access_1_5_1.py
-  -> cvp_access_v1.5.py
-      -> cvp_access_v1.4.1.py
+  -> cvp_access_1_5_1_base.py
+      -> cvp_access_v1.5.py
+          -> cvp_access_v1.4.1.py
 ```
 
-Ne pas supprimer les fichiers historiques tant que cette architecture transitoire n’a pas été remplacée.
-
-## Nouveautés 1.5.1-RC3
-
-### Arrêt Piper propre
-
-La RC3 corrige le worker Piper qui pouvait rester vivant lors d’un arrêt systemd et finir par recevoir un `SIGKILL`.
-
-Le runtime intercepte désormais `SIGTERM` et `SIGINT`, provoque une sortie Python normale et laisse `atexit` fermer le worker Piper.
-
-Le nettoyage est enregistré **avant le préchargement Piper**.
-
-Validé physiquement :
-
-```text
-arrêt après préchargement Piper : aucun SIGKILL
-arrêt pendant préchargement     : aucun SIGKILL
-```
-
-### Lecture des Voices Main / Layer / Left
-
-Propriété CSP validée :
-
-```text
-02 00 01 01
-```
-
-Indexes :
-
-```text
-00 = Main
-01 = Layer
-02 = Left
-```
-
-Le CVP renvoie quatre groupes de 7 bits. CVP Access reconstruit une valeur 24 bits puis extrait :
-
-```text
-MSB / LSB / PC#
-```
-
-Exemples physiquement validés :
-
-```text
-108 / 0  / 1  = CFX Concert Grand
-8   / 33 / 50 = Seattle Strings
-104 / 7  / 5  = Suitcase Soft
-```
-
-Touches :
-
-```text
-N = nom Voice Main
-, = nom Voice Layer
-; = nom Voice Left
-```
-
-La synthèse prononce uniquement le nom du son.
-
-La table locale `cvp_voice_names.py` est encore partielle en RC3 : elle contient les trois Voices physiquement identifiées pendant la validation. Une Voice inconnue utilise un fallback numérique MSB / LSB / Program.
-
-Voir :
-
-```text
-docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md
-```
+Ne pas supprimer ces fichiers tant que cette architecture n’a pas été remplacée.
 
 ## Fonctions principales
 
 ### Song MIDI
 
 - mute/unmute réel des 16 pistes ;
+- **ALT + touche piste = Solo** : la piste sélectionnée reste ON, les 15 autres passent OFF ;
+- **L = toutes les pistes Song ON** ;
 - lecture / pause / stop ;
 - annonce de la position ;
 - mesure précédente / suivante ;
 - déplacement de 5 mesures ;
 - accès direct à une mesure ;
 - boucle A/B ;
-- annonce du nom du Song ;
-- annonce de sa longueur ;
+- annonce du nom et de la longueur du Song ;
 - métronome ;
 - volume Song ;
 - tempo ;
@@ -122,6 +60,8 @@ docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md
 ### Style
 
 - mute/unmute des 8 parties ;
+- annonces distinctes des pistes Song : `Mute Rythme 1`, `Mute Basse`, etc. ;
+- **`) / °` = toutes les parties Style ON** ;
 - volume global Style ±1 / ±5 ;
 - Start / Stop ;
 - Syncro Start ;
@@ -134,16 +74,6 @@ docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md
 
 Les sections Style restent disponibles comme actions configurables même lorsqu’elles ne sont pas affectées au layout par défaut.
 
-### Registration Memory
-
-Rappel direct disponible :
-
-```text
-registration_recall:1
-...
-registration_recall:8
-```
-
 ### Parties clavier
 
 - Layer / Dual ON/OFF ;
@@ -151,17 +81,20 @@ registration_recall:8
 - volume Main ;
 - lecture du nom des Voices Main / Layer / Left.
 
-### Accessibilité
+### Accessibilité et voix
 
 - clavier USB AZERTY configurable par TOML ;
 - `CTRL + touche` = aide vocale sans exécution ;
-- Caps Lock abandonné dans le layout 1.5.1 ;
+- **M = mute/réactivation du guide vocal CVP Access** ;
+- M agit uniquement sur nos WAV + Piper, pas sur le Guide Yamaha ;
 - retour vocal Piper en français ;
 - mode `hybrid` ;
 - WAV pré-générés ;
 - cache dynamique ;
 - worker Piper préchargé ;
 - carte clavier HTML générée depuis la configuration active.
+
+Les annonces Song prévisibles sont composées de WAV. La banque de nombres destinée aux mesures est limitée à `0..150`. Les 16 annonces `Solo piste N` sont pré-générées.
 
 ## Layout clavier 1.5.1-RC3
 
@@ -178,6 +111,7 @@ registration_recall:8
 8 = Phrase 2
 9 = Layer / Dual
 0 = Left
+) / ° = toutes les parties Style ON
 ```
 
 ### Pistes Song
@@ -185,16 +119,30 @@ registration_recall:8
 ```text
 A Z E R T Y U I = pistes 1..8
 Q S D F G H J K = pistes 9..16
+
+ALT + A..K = Solo de la piste correspondante
+L          = toutes les pistes Song ON
 ```
 
-### Informations
+Exemples :
+
+```text
+ALT + A = Solo piste 1
+ALT + Z = Solo piste 2
+ALT + E = Solo piste 3
+...
+ALT + K = Solo piste 16
+```
+
+### Informations / accessibilité
 
 ```text
 W  = nom Style
 X  = nom Song
 C  = longueur Song
 V  = Syncro Start
-B  = Guide
+B  = Guide Yamaha ON/OFF
+M  = mute/réactivation du guide vocal CVP Access
 N  = nom Voice Main
 ,  = nom Voice Layer
 ;  = nom Voice Left
@@ -229,14 +177,12 @@ Maj + Inser / Suppr    = Main +5 / -5
 
 ## Aide vocale CTRL
 
-`CTRL` est réservé à l’aide.
-
-Exemple :
+`CTRL` est réservé à l’aide. Exemple :
 
 ```text
-CTRL + N
--> annonce la fonction affectée à N
--> n'interroge pas la Voice
+CTRL + ALT + E
+-> annonce la fonction Solo piste 3
+-> n’exécute pas le Solo
 ```
 
 ## Synthèse vocale
@@ -270,64 +216,47 @@ Cache :
 Terminologie utilisateur :
 
 ```text
+Guide Yamaha
+Guide vocal
 Vol. guide vocal
 Syncro Start
+Mute Rythme 1
+Solo piste 1
 Pas de Song chargé.
 ```
 
-## Vérification du paquet 1.5.1
-
-```bash
-python3 VERIFY_PACKAGE_151.py
-```
-
-Résultat attendu :
-
-```text
-CVP Access 1.5.1 RC3 package: OK
-```
-
-## Upgrade vers 1.5.1-RC3
-
-Sur une installation CVP Access existante :
+## Installation / upgrade
 
 ```bash
 cd ~/CVP_access
+git pull --ff-only origin main
+python3 VERIFY_PACKAGE_151.py
 sudo bash cvp_access_installer/upgrade_1_5_1.sh
 ```
 
-Attendu :
+L’upgrade conserve les personnalisations existantes et n’ajoute les nouveaux raccourcis que si les combinaisons sont libres.
 
-```text
-[CVP Access] Upgrade runtime -> 1.5.1-RC3
-...
-[CVP Access] 1.5.1-RC3 installed.
-```
+Le Doctor vérifie notamment le runtime, le layout, les WAV d’états, les WAV de mute Style, les 16 bindings Solo et les 16 WAV Solo.
 
-Le test de reproductibilité depuis un clone GitHub neuf doit être refait après consolidation finale de la RC3.
+## État de validation matérielle
 
-Une installation 1.5.1-RC3 réellement vierge depuis une nouvelle carte Raspberry Pi OS reste un test futur.
+Validé physiquement sur CVP-905 :
 
-## Architecture matérielle
+- déplacement Song par mesures ;
+- F3 aller à une mesure ;
+- boucles A/B ;
+- transport Play/Pause ;
+- restauration du métronome lors du transport ;
+- arrêt propre du worker Piper ;
+- lecture de plusieurs noms de Voices.
 
-```text
-Clavier USB
-    |
-    v
-Raspberry Pi
-    | \
-    |  \ USB Audio -> haut-parleurs CVP
-    |
-    +---- USB -> interface MIDI Prodipe
-                   |
-                   v
-                MIDI DIN
-                   |
-                   v
-               Yamaha CVP
-```
+Implémenté et intégré à l’upgrade, mais à confirmer physiquement avant de le marquer validé matériellement :
 
-Les commandes SysEx CVP du projet ont été validées via MIDI DIN externe.
+- M : mute/réactivation du guide vocal CVP Access ;
+- nouveaux libellés `Mute ...` des parties Style ;
+- L : toutes les pistes Song ON ;
+- `) / °` : toutes les parties Style ON ;
+- ALT + piste : Solo Song.
 
 ## Documentation de reprise
 
@@ -343,7 +272,7 @@ CVP905_PROTOCOL_CHECKPOINT_RC4.md
 docs/FUNCTION_CATALOG.md
 ```
 
-## Recherche protocole
+## Règles de protocole
 
 Les recherches directes suivantes sont clôturées sauf nouvelle preuve :
 
@@ -354,9 +283,7 @@ Auto Fill In
 Synchro Stop
 ```
 
-OTS Link reste non résolu.
-
-Les résultats Genos constituent un laboratoire secondaire et ne doivent jamais être présentés comme une validation CVP sans test physique sur CVP-905.
+OTS Link reste non résolu. Les résultats Genos constituent un laboratoire secondaire et ne doivent jamais être présentés comme une validation CVP sans test physique sur CVP-905.
 
 ## Licence
 
