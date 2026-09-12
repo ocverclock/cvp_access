@@ -47,6 +47,17 @@ from cvp_speech_151 import (  # noqa: E402
 
 MAX_PREGENERATED_NUMBER = 150
 
+STYLE_MUTE_PROMPTS = {
+    "rhythm_1": "Mute Rythme 1.",
+    "rhythm_2": "Mute Rythme 2.",
+    "bass": "Mute Basse.",
+    "chord_1": "Mute Accord 1.",
+    "chord_2": "Mute Accord 2.",
+    "pad": "Mute Pad.",
+    "phrase_1": "Mute Phrase 1.",
+    "phrase_2": "Mute Phrase 2.",
+}
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -240,6 +251,14 @@ def main():
             / "state"
             / f"{stem}_off.wav"
         ] = f"{label} désactivé."
+
+    # Les parties Style ont un vocabulaire distinct des pistes Song.
+    # Exemple : "Mute Rythme 1" et non "Piste 1".
+    for stem, text in STYLE_MUTE_PROMPTS.items():
+        add(
+            f"style_part/{stem}_mute.wav",
+            text,
+        )
 
     # Les annonces Song prévisibles sont composées de fragments WAV.
     # Les mesures sont limitées à 150 dans CVP Access.
