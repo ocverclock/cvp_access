@@ -17,7 +17,7 @@ from pathlib import Path
 import cvp_speech as legacy_speech
 
 
-MAX_PREGENERATED_NUMBER = 999
+MAX_PREGENERATED_NUMBER = 150
 
 
 def canonical_help(text: str) -> str:
