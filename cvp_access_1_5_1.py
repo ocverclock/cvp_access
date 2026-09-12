@@ -7,6 +7,7 @@ Consolidation progressive :
 - corrige le nom Song ;
 - expose les informations Style/Song validées ;
 - expose Syncro Start, Guide, Stream Lights et Métronome ;
+- ajoute le mute logiciel du guide vocal ;
 - garde les résultats Genos verrouillés hors runtime CVP.
 """
 
@@ -101,6 +102,9 @@ NEW_ACTION_SPECS = {
     ),
     "stream_lights_toggle": ActionSpec(
         description="Active ou désactive Stream Lights"
+    ),
+    "voice_guide_mute_toggle": ActionSpec(
+        description="Coupe ou réactive le guide vocal"
     ),
 }
 
@@ -265,6 +269,7 @@ class CVPActions151(legacy.CVPActions):
             "metronome_toggle": self.metronome_toggle,
             "guide_toggle": self.guide_toggle,
             "stream_lights_toggle": self.stream_lights_toggle,
+            "voice_guide_mute_toggle": self.voice_guide_mute_toggle,
         }
 
         handler = handlers.get(
@@ -450,6 +455,30 @@ class CVPActions151(legacy.CVPActions):
 
     def style_volume_change(self, delta):
         self._change_style_volume(delta)
+
+    def voice_guide_mute_toggle(self):
+        muted = bool(
+            self.core.is_voice_guide_muted()
+        )
+        target = not muted
+
+        self.core.set_voice_guide_muted(
+            target
+        )
+
+        print(
+            "Guide vocal ->",
+            "OFF" if target else "ON",
+        )
+
+        # En sortie de mute, confirmer vocalement que le guide est revenu.
+        # À l'entrée en mute, le silence immédiat constitue la confirmation.
+        if not target:
+            self.core.announce_boolean_state(
+                "Guide vocal",
+                True,
+                "voice_guide",
+            )
 
     # ----------------------------------------------------------
     # Booléens CVP validés
