@@ -141,12 +141,21 @@ def main():
         "V": "sync_start_toggle",
         "B": "guide_toggle",
         "M": "voice_guide_mute_toggle",
+        "L": "song_all_tracks_on",
+        "RPAREN": "style_all_parts_on",
         "F7": "metronome_toggle",
         "PAGEUP": "style_volume_change:1",
         "SHIFT+PAGEUP": "style_volume_change:5",
         "PAGEDOWN": "style_volume_change:-1",
         "SHIFT+PAGEDOWN": "style_volume_change:-5",
     }
+
+    song_keys = (
+        "A", "Z", "E", "R", "T", "Y", "U", "I",
+        "Q", "S", "D", "F", "G", "H", "J", "K",
+    )
+    for track, key in enumerate(song_keys, start=1):
+        expected_caps[f"ALT+{key}"] = f"song_track_solo:{track}"
 
     missing_caps = [
         key
@@ -234,6 +243,26 @@ def main():
             "8 présents"
             if not missing_style_mutes
             else f"{len(missing_style_mutes)} absents"
+        ),
+    )
+
+    solo_files = [
+        voices / "song_solo" / f"solo_{track:02d}.wav"
+        for track in range(1, 17)
+    ]
+    missing_solo = [
+        p
+        for p in solo_files
+        if not p.is_file()
+    ]
+
+    add(
+        "WAV Solo Song",
+        OK if not missing_solo else WARN,
+        (
+            "16 présents"
+            if not missing_solo
+            else f"{len(missing_solo)} absents"
         ),
     )
 
