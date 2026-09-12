@@ -179,9 +179,7 @@ class CVPActions151(base.CVPActions151):
             return
 
         print(f"Solo piste {selected_track} -> ON")
-        self.core.announce_action_help(
-            f"Solo piste {selected_track}"
-        )
+        self.core.announce_song_solo(selected_track)
 
     def style_all_parts_on(self):
         """Force les 8 parties Style à ON avec la commande globale validée."""
