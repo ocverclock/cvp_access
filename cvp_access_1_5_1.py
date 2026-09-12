@@ -164,6 +164,46 @@ class CVPActions151(legacy.CVPActions):
             self.midi
         )
 
+    def _restore_metronome_after_song_transport(self, was_on):
+        """Conserve un métronome déjà actif pendant PLAY/PAUSE Song."""
+        if not was_on:
+            return True
+
+        current = self.song.get_metronome()
+
+        if current is True:
+            return True
+
+        if not self.song.set_metronome(True):
+            print(
+                "Transport Song modifié, mais impossible "
+                "de restaurer le métronome."
+            )
+            return False
+
+        verified = self.song.verify_metronome(True)
+
+        if verified is not True:
+            print(
+                "Transport Song modifié, mais la restauration "
+                "du métronome n'a pas pu être confirmée."
+            )
+            return False
+
+        print("Métronome restauré -> ON (transport Song)")
+        return True
+
+    def song_play_pause(self):
+        """PLAY/PAUSE sans laisser le transport couper le métronome."""
+        metronome_was_on = self.song.get_metronome() is True
+
+        try:
+            return super().song_play_pause()
+        finally:
+            self._restore_metronome_after_song_transport(
+                metronome_was_on
+            )
+
     # ----------------------------------------------------------
     # Nouveau dispatch ; les actions v1.5 restent intactes.
     # ----------------------------------------------------------
