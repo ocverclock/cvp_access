@@ -106,7 +106,8 @@ keys = data.get("keys", {})
 bindings = {
     "W": "announce_style_name", "X": "announce_song_name",
     "C": "announce_song_length", "V": "sync_start_toggle",
-    "B": "guide_toggle", "F7": "metronome_toggle",
+    "B": "guide_toggle", "M": "voice_guide_mute_toggle",
+    "F7": "metronome_toggle",
     "N": "announce_main_voice_name",
     "COMMA": "announce_layer_voice_name",
     "SEMICOLON": "announce_left_voice_name",
