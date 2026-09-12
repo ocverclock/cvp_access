@@ -18,7 +18,7 @@ Clavier Apple Extended USB
 Piper fr_FR-siwis-medium
 ```
 
-Toutes les validations CVP revendiquées comme matérielles doivent provenir de ce CVP-905 ou être explicitement requalifiées. Les résultats Genos restent secondaires et ne deviennent jamais automatiquement des validations CVP.
+Toute validation dite matérielle doit provenir du CVP-905 de référence ou être explicitement requalifiée. Les résultats Genos restent secondaires.
 
 ## 2. Runtime courant
 
@@ -44,9 +44,7 @@ cvp_access_1_5_1.py
             -> cvp_access_v1.4.1.py
 ```
 
-Le wrapper courant ajoute les commandes globales et le Solo Song. La base conserve les correctifs Song, Piper, Voice Name, Guide Yamaha, métronome et autres fonctions 1.5.1.
-
-Ne pas supprimer les moteurs historiques avant refactorisation complète.
+Le wrapper courant ajoute les commandes globales et le Solo Song. La base conserve les correctifs Song, Piper, Voice Name, Guide Yamaha, métronome et les fonctions 1.5.1.
 
 ## 3. Layout clavier consolidé
 
@@ -66,13 +64,9 @@ Ne pas supprimer les moteurs historiques avant refactorisation complète.
 ) / ° = toutes les parties Style ON
 ```
 
-Nom interne de la touche `) / °` :
+Nom interne de `) / °` : `RPAREN`.
 
-```text
-RPAREN
-```
-
-Les annonces des parties Style doivent rester distinctes des pistes Song :
+Terminologie vocale Style :
 
 ```text
 OFF -> « Mute Rythme 1 », « Mute Basse », etc.
@@ -89,27 +83,35 @@ Q S D F G H J K = pistes 9..16
 L               = toutes les pistes Song ON
 ```
 
-Les touches simples A..K restent des toggles individuels ON/OFF.
+Les touches simples restent des toggles individuels ON/OFF.
 
-### 3.3 Solo Song
+### 3.3 Solo Song — modificateur Maj
+
+Le Solo utilise désormais **Maj**, pas Alt.
 
 ```text
-ALT + A = Solo piste 1
-ALT + Z = Solo piste 2
-ALT + E = Solo piste 3
-ALT + R = Solo piste 4
-ALT + T = Solo piste 5
-ALT + Y = Solo piste 6
-ALT + U = Solo piste 7
-ALT + I = Solo piste 8
-ALT + Q = Solo piste 9
-ALT + S = Solo piste 10
-ALT + D = Solo piste 11
-ALT + F = Solo piste 12
-ALT + G = Solo piste 13
-ALT + H = Solo piste 14
-ALT + J = Solo piste 15
-ALT + K = Solo piste 16
+Maj + A = Solo piste 1
+Maj + Z = Solo piste 2
+Maj + E = Solo piste 3
+Maj + R = Solo piste 4
+Maj + T = Solo piste 5
+Maj + Y = Solo piste 6
+Maj + U = Solo piste 7
+Maj + I = Solo piste 8
+Maj + Q = Solo piste 9
+Maj + S = Solo piste 10
+Maj + D = Solo piste 11
+Maj + F = Solo piste 12
+Maj + G = Solo piste 13
+Maj + H = Solo piste 14
+Maj + J = Solo piste 15
+Maj + K = Solo piste 16
+```
+
+Affectations techniques :
+
+```text
+SHIFT+A .. SHIFT+K = song_track_solo:1 .. song_track_solo:16
 ```
 
 Comportement :
@@ -120,6 +122,8 @@ Comportement :
 4. une seule annonce `Solo piste N` est prononcée.
 
 `L` remet les seize pistes Song sur ON et sert de sortie rapide du Solo.
+
+L'ancien profil `ALT+...` est migré automatiquement lors de l'upgrade : une ancienne affectation ALT n'est supprimée que si elle correspond exactement au Solo officiel. Les personnalisations différentes sont conservées.
 
 ### 3.4 Informations / accessibilité
 
@@ -142,7 +146,7 @@ Important :
 Guide Yamaha (B) != guide vocal CVP Access (M)
 ```
 
-M agit uniquement sur les annonces produites par CVP Access : WAV + Piper. Il ne modifie ni le Guide Yamaha, ni le Song, ni le Style, ni le métronome, ni le son du clavier. Le niveau du guide vocal reste mémorisé pendant le mute.
+M agit uniquement sur les annonces CVP Access : WAV + Piper. Il ne modifie ni le Guide Yamaha, ni le Song, ni le Style, ni le métronome, ni le son du clavier. Le niveau du guide vocal reste mémorisé.
 
 ### 3.5 Song navigation / transport
 
@@ -172,15 +176,13 @@ Maj + Inser / Suppr    = Main +5 / -5
 
 ### 3.7 Aide CTRL
 
-```text
-CTRL + touche
-```
+`CTRL + touche` annonce la fonction sans l'exécuter. Exemple : `CTRL + Maj + E` annonce l'aide du Solo piste 3 sans modifier les pistes.
 
-annonce la fonction sans l'exécuter. La couche Caps Lock expérimentale de RC1 est abandonnée.
+La couche Caps Lock expérimentale de RC1 est abandonnée.
 
 ## 4. Speech / Piper
 
-Configuration de référence :
+Configuration :
 
 ```toml
 [speech]
@@ -200,45 +202,35 @@ WAV pré-généré
 -> cache du résultat
 ```
 
-Cache :
-
-```text
-~/.cache/cvp-access/tts/
-```
+Cache : `~/.cache/cvp-access/tts/`.
 
 Piper est préchargé au démarrage et reste résident.
 
 ### 4.1 WAV pré-générés
 
-Les annonces prévisibles doivent utiliser des WAV plutôt que Piper dynamique.
+Banque numérique destinée aux mesures : `0..150`.
 
-Banque numérique destinée aux mesures :
-
-```text
-0..150
-```
-
-Les annonces suivantes sont notamment pré-générées :
+Sont notamment pré-générés :
 
 ```text
 états 1.5.1 ON/OFF
 mutes des 8 parties Style
 Solo piste 1..16
 transport Song
-fragments de mesure / temps / boucle / longueur Song
+fragments mesure / temps / boucle / longueur Song
 ```
+
+Les WAV Solo ne dépendent pas du modificateur clavier : le passage Alt -> Maj ne nécessite pas de nouvelle synthèse de ces 16 fichiers.
 
 ### 4.2 Lecture audio sérialisée
 
-L'ancien moteur interrompait brutalement `aplay` à chaque nouvelle annonce, ce qui pouvait produire des coupures/craquements. Le frontend 1.5.1 sérialise désormais la lecture. Les `replace_key` éliminent les annonces devenues obsolètes avant lecture.
+L'ancien moteur interrompait brutalement `aplay` à chaque nouvelle annonce. Le frontend 1.5.1 laisse l'annonce active se terminer et les `replace_key` éliminent les annonces obsolètes avant lecture.
 
 ### 4.3 Mute du guide vocal
 
 Le mute M est logiciel et s'applique à toute la sortie vocale CVP Access : WAV et Piper. À l'entrée en mute, une annonce en cours peut être interrompue pour obtenir le silence immédiatement. À la sortie, `Guide vocal activé` est annoncé.
 
 ## 5. Arrêt Piper propre — VALIDÉ MATÉRIELLEMENT
-
-Le problème SIGKILL de RC2 est corrigé.
 
 ```text
 SIGTERM / SIGINT
@@ -248,20 +240,11 @@ SIGTERM / SIGINT
 -> arrêt Piper
 ```
 
-Validations :
-
-```text
-arrêt après préchargement : aucun SIGKILL
-arrêt pendant preload     : aucun SIGKILL
-```
+Validations : arrêt après préchargement et arrêt pendant preload sans SIGKILL.
 
 ## 6. Voice Name — VALIDÉ PARTIELLEMENT
 
-Propriété :
-
-```text
-02 00 01 01
-```
+Propriété : `02 00 01 01`.
 
 Indexes :
 
@@ -269,15 +252,6 @@ Indexes :
 00 = Main
 01 = Layer
 02 = Left
-```
-
-Décodage :
-
-```python
-packed = (b0 << 21) | (b1 << 14) | (b2 << 7) | b3
-msb = (packed >> 16) & 0xFF
-lsb = (packed >> 8) & 0xFF
-program = (packed & 0xFF) + 1
 ```
 
 Correspondances physiquement validées :
@@ -302,9 +276,7 @@ Tracks active : 0C 00 01 01 | 10..1F
 Métronome     : 07 00 00 01 | 00
 ```
 
-Le déplacement par mesure, F3, la boucle A/B et le transport ont été testés physiquement sur le CVP-905.
-
-La navigation arrière peut couper le métronome côté CVP ; CVP Access le restaure lorsqu'il était actif. Même principe appliqué au transport Play/Pause.
+Le déplacement par mesure, F3, la boucle A/B et le transport ont été testés physiquement sur le CVP-905. Le métronome est restauré par CVP Access lorsqu'un transport ou une navigation le coupe alors qu'il était actif.
 
 ## 8. Style — protocole utile
 
@@ -320,25 +292,9 @@ Commande globale des huit parties :
 F0 43 73 01 51 05 00 00 08 <8 états> F7
 ```
 
-Ordre :
-
-```text
-RHY1 RHY2 BASS CHD1 CHD2 PAD PHR1 PHR2
-```
+Ordre : `RHY1 RHY2 BASS CHD1 CHD2 PAD PHR1 PHR2`.
 
 Le protocole Style ne fournit pas de GET validé pour ces huit états. Le cache est donc déterministe : tout ON au démarrage, remis à tout ON après changement de Style détecté et après la commande globale `RPAREN`.
-
-Section Control validé :
-
-```text
-F0 43 7E 00 ss 7F F7
-
-00..02 = Intro 1..3
-08..0B = Main A..D
-10..13 = Fill A..D
-18     = Break
-20..22 = Ending 1..3
-```
 
 ## 9. Guide Yamaha
 
@@ -346,9 +302,7 @@ F0 43 7E 00 ss 7F F7
 04 03 00 01 | 00
 ```
 
-GET/SET bool validé.
-
-Le mute du guide vocal CVP Access n'utilise aucune propriété Yamaha.
+GET/SET bool validé. Le mute du guide vocal CVP Access n'utilise aucune propriété Yamaha.
 
 ## 10. Registration Memory
 
@@ -367,8 +321,6 @@ Fingering : GPm07 payload[8]  03=AI Fingered / 04=Fingered / 0C=AI Full Keyboard
 ```
 
 ## 11. Recherches directes clôturées
-
-Ne pas relancer sans nouvelle preuve indépendante :
 
 ```text
 ACMP direct
@@ -391,8 +343,6 @@ Registration Memory 1..8
 Stream Lights ON/OFF
 ```
 
-Elles doivent rester visibles dans la map sous `Actions disponibles mais non attribuées`.
-
 ## 13. Installation / upgrade
 
 ```bash
@@ -402,28 +352,27 @@ python3 VERIFY_PACKAGE_151.py
 sudo bash cvp_access_installer/upgrade_1_5_1.sh
 ```
 
-L'upgrade conserve les personnalisations et ajoute M, L, RPAREN et les 16 ALT+touches uniquement si les combinaisons sont libres.
+L'upgrade :
+
+- conserve les personnalisations ;
+- migre les anciens Solo ALT officiels vers `SHIFT+...` ;
+- ajoute M, L, RPAREN et les 16 Solo Maj si les combinaisons sont libres ;
+- génère la map et les WAV ;
+- lance le Doctor ;
+- redémarre le service.
 
 ## 14. Vérification du paquet
 
-`VERIFY_PACKAGE_151.py` compile désormais :
-
-```text
-wrapper cvp_access_1_5_1.py
-base cvp_access_1_5_1_base.py
-moteurs historiques
-modules Song / Speech / MIDI / Voice / Style
-outils de génération et Doctor
-```
-
-Il vérifie aussi le layout courant, notamment :
+`VERIFY_PACKAGE_151.py` compile le wrapper, la base, les moteurs historiques, les modules et les outils. Il vérifie notamment :
 
 ```text
 M
 L
 RPAREN
-ALT+A .. ALT+K
+SHIFT+A .. SHIFT+K
 ```
+
+Il vérifie aussi que le layout officiel ne conserve plus d'ancien binding `ALT+... = song_track_solo:*`.
 
 Résultat attendu :
 
@@ -431,22 +380,20 @@ Résultat attendu :
 CVP Access 1.5.1 RC3 package: OK
 ```
 
-## 15. Doctor — VALIDATION INSTALLATION DU 12 SEPTEMBRE 2026
+## 15. Doctor
 
-Le Doctor exécuté sur le Raspberry de référence après déploiement du layout courant a renvoyé :
+Le Doctor exécuté avant la correction Alt -> Maj avait confirmé :
 
 ```text
-OK    Runtime 1.5.1             modules complets
-OK    Version runtime           1.5.1-RC3
-OK    Layout accessibilité      présente
-OK    WAV états 1.5.1           10 présents
-OK    WAV mute Style            8 présents
-OK    WAV Solo Song             16 présents
+OK Runtime 1.5.1
+OK Version runtime 1.5.1-RC3
+OK Layout accessibilité
+OK WAV états 1.5.1           10 présents
+OK WAV mute Style            8 présents
+OK WAV Solo Song             16 présents
 ```
 
-Conclusion : **runtime, layout et banques WAV du layout courant sont cohérents sur l'installation de référence.**
-
-Cette validation de paquet/install ne doit pas être confondue avec une validation fonctionnelle matérielle de chaque raccourci.
+Les banques WAV restent valides. Après upgrade, le Doctor doit être relancé pour confirmer le nouveau layout `SHIFT+...`.
 
 ## 16. État de validation fonctionnelle
 
@@ -462,14 +409,14 @@ arrêt Piper propre
 lecture de plusieurs noms de Voice
 ```
 
-### Implémenté + installé + Doctor OK, mais test fonctionnel encore requis
+### Implémenté mais test fonctionnel encore requis
 
 ```text
 M       = mute/réactivation guide vocal
 libellés Style « Mute ... »
 L       = toutes pistes Song ON
 ) / °   = toutes parties Style ON
-ALT+... = Solo Song
+Maj+... = Solo Song
 ```
 
 Ne marquer ces fonctions `VALIDÉES MATÉRIELLEMENT` qu'après confirmation explicite sur le CVP-905.
@@ -488,17 +435,18 @@ Ordre de priorité :
 8. runtime et modules
 9. anciens checkpoints uniquement comme historique
 
-## 18. Prochaines étapes raisonnables
+## 18. Prochaines étapes
 
-1. tester physiquement M ;
-2. tester les libellés Style `Mute ...` ;
-3. tester L ;
-4. tester `) / °` ;
-5. tester ALT + piste Song ;
-6. si la latence vocale reste perceptible malgré les WAV complets, identifier les annonces encore dynamiques et mesurer la latence playback/Piper ;
-7. compléter progressivement la table `cvp_voice_names.py` ;
-8. refaire un clone GitHub neuf + upgrade ;
-9. tester plus tard une installation réellement vierge.
+1. appliquer l'upgrade de migration Alt -> Maj ;
+2. vérifier le Doctor avec les bindings SHIFT ;
+3. tester physiquement M ;
+4. tester les libellés Style `Mute ...` ;
+5. tester L ;
+6. tester `) / °` ;
+7. tester Maj + piste Song ;
+8. si la latence vocale reste perceptible malgré les WAV complets, identifier les annonces encore dynamiques et mesurer la latence playback/Piper ;
+9. compléter progressivement `cvp_voice_names.py` ;
+10. refaire un clone GitHub neuf + upgrade.
 
 ## 19. Rollback
 
@@ -509,4 +457,4 @@ sudo systemctl restart cvp-access
 
 ## 20. Checkpoint
 
-**CVP Access 1.5.1-RC3, layout M/L/RPAREN/Solo et banques WAV associées sont consolidés sur `main` au 12 septembre 2026.**
+**CVP Access 1.5.1-RC3, layout Solo Maj, est le point de référence au 12 septembre 2026.**
