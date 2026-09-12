@@ -21,7 +21,7 @@ CTRL + W
 -> annonce l'aide du nom Style
 -> ne lit pas le Style
 
-CTRL + ALT + E
+CTRL + Maj + E
 -> annonce « Solo piste 3 »
 -> ne modifie aucune piste
 ```
@@ -71,26 +71,26 @@ Le raccourci `) / °` n’est pas un toggle : il force toujours les 8 parties su
 
 L n’est pas un toggle : il sert notamment à sortir rapidement d’un Solo.
 
-### Pistes Song — mode Solo ALT
+### Pistes Song — mode Solo Maj
 
 | Touche | Action |
 |---|---|
-| ALT + A | Solo piste 1 |
-| ALT + Z | Solo piste 2 |
-| ALT + E | Solo piste 3 |
-| ALT + R | Solo piste 4 |
-| ALT + T | Solo piste 5 |
-| ALT + Y | Solo piste 6 |
-| ALT + U | Solo piste 7 |
-| ALT + I | Solo piste 8 |
-| ALT + Q | Solo piste 9 |
-| ALT + S | Solo piste 10 |
-| ALT + D | Solo piste 11 |
-| ALT + F | Solo piste 12 |
-| ALT + G | Solo piste 13 |
-| ALT + H | Solo piste 14 |
-| ALT + J | Solo piste 15 |
-| ALT + K | Solo piste 16 |
+| Maj + A | Solo piste 1 |
+| Maj + Z | Solo piste 2 |
+| Maj + E | Solo piste 3 |
+| Maj + R | Solo piste 4 |
+| Maj + T | Solo piste 5 |
+| Maj + Y | Solo piste 6 |
+| Maj + U | Solo piste 7 |
+| Maj + I | Solo piste 8 |
+| Maj + Q | Solo piste 9 |
+| Maj + S | Solo piste 10 |
+| Maj + D | Solo piste 11 |
+| Maj + F | Solo piste 12 |
+| Maj + G | Solo piste 13 |
+| Maj + H | Solo piste 14 |
+| Maj + J | Solo piste 15 |
+| Maj + K | Solo piste 16 |
 
 Comportement Solo :
 
@@ -164,27 +164,27 @@ Les annonces de mesure utilisent des fragments WAV pré-générés jusqu’à la
 "RPAREN" = "style_all_parts_on"
 "L" = "song_all_tracks_on"
 
-"ALT+A" = "song_track_solo:1"
-"ALT+Z" = "song_track_solo:2"
-"ALT+E" = "song_track_solo:3"
-"ALT+R" = "song_track_solo:4"
-"ALT+T" = "song_track_solo:5"
-"ALT+Y" = "song_track_solo:6"
-"ALT+U" = "song_track_solo:7"
-"ALT+I" = "song_track_solo:8"
-"ALT+Q" = "song_track_solo:9"
-"ALT+S" = "song_track_solo:10"
-"ALT+D" = "song_track_solo:11"
-"ALT+F" = "song_track_solo:12"
-"ALT+G" = "song_track_solo:13"
-"ALT+H" = "song_track_solo:14"
-"ALT+J" = "song_track_solo:15"
-"ALT+K" = "song_track_solo:16"
+"SHIFT+A" = "song_track_solo:1"
+"SHIFT+Z" = "song_track_solo:2"
+"SHIFT+E" = "song_track_solo:3"
+"SHIFT+R" = "song_track_solo:4"
+"SHIFT+T" = "song_track_solo:5"
+"SHIFT+Y" = "song_track_solo:6"
+"SHIFT+U" = "song_track_solo:7"
+"SHIFT+I" = "song_track_solo:8"
+"SHIFT+Q" = "song_track_solo:9"
+"SHIFT+S" = "song_track_solo:10"
+"SHIFT+D" = "song_track_solo:11"
+"SHIFT+F" = "song_track_solo:12"
+"SHIFT+G" = "song_track_solo:13"
+"SHIFT+H" = "song_track_solo:14"
+"SHIFT+J" = "song_track_solo:15"
+"SHIFT+K" = "song_track_solo:16"
 
 "M" = "voice_guide_mute_toggle"
 ```
 
-L’upgrade ajoute ces bindings uniquement si les combinaisons sont libres. Une personnalisation existante doit être conservée et signalée comme conflit.
+L’upgrade ajoute ces bindings uniquement si les combinaisons sont libres. Lors du passage de l’ancien profil Solo ALT au profil Solo Maj, les anciennes affectations ALT officielles sont retirées automatiquement ; une personnalisation différente est conservée.
 
 ## Voice Main / Layer / Left
 
@@ -256,23 +256,5 @@ M = mute guide vocal
 libellés Style « Mute ... »
 L = toutes pistes Song ON
 ) / ° = toutes parties Style ON
-ALT + piste = Solo Song
+Maj + piste = Solo Song
 ```
-
-## Terminologie utilisateur
-
-```text
-Syncro Start
-Guide Yamaha
-Guide vocal
-Vol. guide vocal
-Mute Rythme 1
-Solo piste 1
-Pas de Song chargé.
-```
-
-## Règle de sécurité
-
-Une signature de protocole connue n’est pas automatiquement une commande utilisateur sûre. Restent notamment hors attribution directe : Guide Type, Stream Lights Speed, Global Reverb SET, sélection directe Style CVP, ACMP direct et Fingering direct.
-
-Les résultats Genos ne sont jamais considérés comme validés CVP sans test physique sur CVP-905.
