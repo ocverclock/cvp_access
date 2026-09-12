@@ -7,17 +7,29 @@ root = Path(__file__).resolve().parent
 
 for rel in [
     "cvp_access_1_5_1.py",
+    "cvp_access_1_5_1_base.py",
+    "cvp_access_v1.5.py",
+    "cvp_access_v1.4.1.py",
     "cvp_keyboard.py",
     "cvp_keyboard_map.py",
+    "cvp_song.py",
     "cvp_song_151.py",
     "cvp_speech.py",
     "cvp_speech_151.py",
+    "cvp_piper_worker.py",
+    "cvp_midi.py",
+    "cvp_yamaha.py",
+    "cvp_registration.py",
+    "cvp_style.py",
+    "cvp_voice.py",
     "cvp_voice_names.py",
     "cvp_access_installer/tools/generate_configured_voices.py",
     "cvp_access_installer/tools/generate_151_voices.py",
     "cvp_access_installer/tools/cvp_doctor_151.py",
 ]:
-    py_compile.compile(str(root / rel), doraise=True)
+    path = root / rel
+    assert path.is_file(), f"Fichier requis absent : {rel}"
+    py_compile.compile(str(path), doraise=True)
 
 with (root / "config/default-1.5.1.toml").open("rb") as handle:
     cfg = tomllib.load(handle)
@@ -29,11 +41,14 @@ assert general["caps_lock_layer"] is False
 expected = {
     "TOP1": "style_part_toggle:1",
     "TOP8": "style_part_toggle:8",
+    "RPAREN": "style_all_parts_on",
+    "L": "song_all_tracks_on",
     "W": "announce_style_name",
     "X": "announce_song_name",
     "C": "announce_song_length",
     "V": "sync_start_toggle",
     "B": "guide_toggle",
+    "M": "voice_guide_mute_toggle",
     "N": "announce_main_voice_name",
     "COMMA": "announce_layer_voice_name",
     "SEMICOLON": "announce_left_voice_name",
@@ -43,8 +58,20 @@ expected = {
     "PAGEDOWN": "style_volume_change:-1",
     "SHIFT+PAGEDOWN": "style_volume_change:-5",
 }
+
+song_keys = [
+    "A", "Z", "E", "R", "T", "Y", "U", "I",
+    "Q", "S", "D", "F", "G", "H", "J", "K",
+]
+
+for track, key in enumerate(song_keys, start=1):
+    expected[key] = f"song_track_toggle:{track}"
+    expected[f"ALT+{key}"] = f"song_track_solo:{track}"
+
 for combo, action in expected.items():
-    assert keys[combo] == action, f"{combo}: attendu {action!r}, obtenu {keys.get(combo)!r}"
+    assert keys.get(combo) == action, (
+        f"{combo}: attendu {action!r}, obtenu {keys.get(combo)!r}"
+    )
 
 assert not any(str(combo).upper().startswith("CAPS+") for combo in keys)
 
@@ -63,6 +90,14 @@ for action in (
     "stream_lights_toggle",
 ):
     assert action not in assigned_actions
+
+for action in (
+    "song_all_tracks_on",
+    "style_all_parts_on",
+    "song_track_solo",
+    "voice_guide_mute_toggle",
+):
+    assert action in assigned_actions, f"Action attendue non affectée : {action}"
 
 from cvp_voice_names import (
     CVPVoiceId,
