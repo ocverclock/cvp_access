@@ -6,6 +6,7 @@ Réutilise le gestionnaire hybride existant et ajoute :
 - annonces booléennes communes ;
 - annonces de valeurs/noms dynamiques ;
 - annonces Song prévisibles composées depuis des WAV pré-générés ;
+- annonces Solo Song pré-générées ;
 - lecture audio sérialisée pour éviter les coupures/craquements entre annonces ;
 - mute logiciel du guide vocal, indépendant de son volume ;
 - annonces explicites des mutes de parties Style.
@@ -199,6 +200,14 @@ def install_speech_hooks(core, speech_config):
             replace_key=f"style_part_{stem}",
         )
 
+    def announce_song_solo(track):
+        track = int(track)
+        return manager.speak(
+            f"Solo piste {track}.",
+            voice_dir / "song_solo" / f"solo_{track:02d}.wav",
+            replace_key="song_solo",
+        )
+
     def announce_named_value(label, value):
         # Les noms de Song/Style/Voice sont dynamiques : Piper reste nécessaire
         # la première fois, puis le cache TTS est réutilisé.
@@ -307,6 +316,7 @@ def install_speech_hooks(core, speech_config):
     core.announce_action_help = announce_action_help
     core.announce_boolean_state = announce_boolean_state
     core.announce_style_part = announce_style_part
+    core.announce_song_solo = announce_song_solo
     core.announce_named_value = announce_named_value
     core.announce_value = announce_value
     core.announce_song_state = announce_song_state
