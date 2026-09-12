@@ -140,6 +140,7 @@ def main():
         "C": "announce_song_length",
         "V": "sync_start_toggle",
         "B": "guide_toggle",
+        "M": "voice_guide_mute_toggle",
         "F7": "metronome_toggle",
         "PAGEUP": "style_volume_change:1",
         "SHIFT+PAGEUP": "style_volume_change:5",
@@ -174,6 +175,7 @@ def main():
         "guide",
         "stream_lights",
         "metronome",
+        "voice_guide",
     ):
         for state in (
             "on",
@@ -202,6 +204,36 @@ def main():
             f"{len(state_files)} présents"
             if not missing_states
             else f"{len(missing_states)} absents"
+        ),
+    )
+
+    style_stems = (
+        "rhythm_1",
+        "rhythm_2",
+        "bass",
+        "chord_1",
+        "chord_2",
+        "pad",
+        "phrase_1",
+        "phrase_2",
+    )
+    style_mute_files = [
+        voices / "style_part" / f"{stem}_mute.wav"
+        for stem in style_stems
+    ]
+    missing_style_mutes = [
+        p
+        for p in style_mute_files
+        if not p.is_file()
+    ]
+
+    add(
+        "WAV mute Style",
+        OK if not missing_style_mutes else WARN,
+        (
+            "8 présents"
+            if not missing_style_mutes
+            else f"{len(missing_style_mutes)} absents"
         ),
     )
 
