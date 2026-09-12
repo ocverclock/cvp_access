@@ -66,8 +66,21 @@ OK    WAV Solo Song             16 présents
 ========================================================================
 ```
 
+## Validation fonctionnelle matérielle
+
+Test confirmé sur le Yamaha CVP-905 de référence :
+
+```text
+Maj + touche de piste
+-> la piste sélectionnée passe / reste sur ON
+-> les 15 autres pistes Song passent sur OFF
+-> l'annonce « Solo piste N » est produite
+```
+
+Le mode Solo Song avec **Maj** est donc **VALIDÉ MATÉRIELLEMENT** sur CVP-905 firmware 1.03.
+
+`L` reste la commande prévue pour réactiver ensuite les 16 pistes Song.
+
 ## Statut
 
-**Migration / installation / layout / banques WAV : VALIDÉS.**
-
-Ce checkpoint ne vaut pas encore validation fonctionnelle matérielle du raccourci Solo sur le CVP-905. Cette validation sera acquise après confirmation explicite que `Maj + piste` met bien la piste choisie sur ON et les 15 autres sur OFF pendant l'utilisation réelle.
+**Migration / installation / layout / banques WAV / Solo Song Maj : VALIDÉS.**
