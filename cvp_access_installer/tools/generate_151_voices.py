@@ -226,6 +226,7 @@ def main():
         "guide": "Guide",
         "stream_lights": "Stream Lights",
         "metronome": "Métronome",
+        "voice_guide": "Guide vocal",
     }
 
     for stem, label in states.items():
