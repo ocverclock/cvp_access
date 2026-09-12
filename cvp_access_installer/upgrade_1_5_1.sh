@@ -19,7 +19,7 @@ install -m 0644 \
     "$RUNTIME_DIR/cvp_access_1_5_1_base.py"
 
 # Migration non destructive d'une configuration déjà installée.
-# Ne pas écraser une personnalisation existante des touches L ou )/°.
+# Ne jamais écraser une personnalisation existante.
 if [[ -f "$CONFIG_FILE" ]]; then
     python3 - "$CONFIG_FILE" <<'PY'
 from pathlib import Path
@@ -36,6 +36,22 @@ keys = data.get("keys", {})
 bindings = {
     "L": "song_all_tracks_on",
     "RPAREN": "style_all_parts_on",
+    "ALT+A": "song_track_solo:1",
+    "ALT+Z": "song_track_solo:2",
+    "ALT+E": "song_track_solo:3",
+    "ALT+R": "song_track_solo:4",
+    "ALT+T": "song_track_solo:5",
+    "ALT+Y": "song_track_solo:6",
+    "ALT+U": "song_track_solo:7",
+    "ALT+I": "song_track_solo:8",
+    "ALT+Q": "song_track_solo:9",
+    "ALT+S": "song_track_solo:10",
+    "ALT+D": "song_track_solo:11",
+    "ALT+F": "song_track_solo:12",
+    "ALT+G": "song_track_solo:13",
+    "ALT+H": "song_track_solo:14",
+    "ALT+J": "song_track_solo:15",
+    "ALT+K": "song_track_solo:16",
 }
 
 lines = text.splitlines()
@@ -73,6 +89,6 @@ PY
 fi
 
 # L'installateur RC3 historique réalise ensuite copie runtime, compilation,
-# génération des WAV, Doctor et redémarrage. Comme les nouvelles touches ont
-# déjà été ajoutées, leurs annonces d'aide/exécution sont pré-générées aussi.
+# génération des WAV, Doctor et redémarrage. Les nouvelles touches sont déjà
+# présentes dans keyboard.toml avant cette étape.
 exec bash "$INSTALLER_DIR/upgrade_1_5_1_base.sh"
