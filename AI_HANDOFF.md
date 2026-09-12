@@ -50,7 +50,7 @@ cvp_access_1_5_1.py
 -> cvp_access_v1.4.1.py
 ```
 
-Le wrapper courant ajoute les commandes globales L / RPAREN et le Solo ALT. La base contient les correctifs Song, Piper, Voice Name, Guide Yamaha, métronome et accessibilité.
+Le wrapper courant ajoute les commandes globales L / RPAREN et le Solo Maj. La base contient les correctifs Song, Piper, Voice Name, Guide Yamaha, métronome et accessibilité.
 
 ## 4. Layout de référence
 
@@ -94,22 +94,22 @@ L               = toutes les pistes Song ON
 Solo :
 
 ```text
-ALT+A = Solo piste 1
-ALT+Z = Solo piste 2
-ALT+E = Solo piste 3
-ALT+R = Solo piste 4
-ALT+T = Solo piste 5
-ALT+Y = Solo piste 6
-ALT+U = Solo piste 7
-ALT+I = Solo piste 8
-ALT+Q = Solo piste 9
-ALT+S = Solo piste 10
-ALT+D = Solo piste 11
-ALT+F = Solo piste 12
-ALT+G = Solo piste 13
-ALT+H = Solo piste 14
-ALT+J = Solo piste 15
-ALT+K = Solo piste 16
+Maj+A = Solo piste 1
+Maj+Z = Solo piste 2
+Maj+E = Solo piste 3
+Maj+R = Solo piste 4
+Maj+T = Solo piste 5
+Maj+Y = Solo piste 6
+Maj+U = Solo piste 7
+Maj+I = Solo piste 8
+Maj+Q = Solo piste 9
+Maj+S = Solo piste 10
+Maj+D = Solo piste 11
+Maj+F = Solo piste 12
+Maj+G = Solo piste 13
+Maj+H = Solo piste 14
+Maj+J = Solo piste 15
+Maj+K = Solo piste 16
 ```
 
 Le Solo active d'abord la piste choisie, coupe les quinze autres, relit les seize états puis annonce `Solo piste N`. L remet les seize pistes sur ON.
@@ -231,7 +231,8 @@ sudo bash cvp_access_installer/upgrade_1_5_1.sh
 L'upgrade :
 
 - préserve les personnalisations ;
-- ajoute M, L, RPAREN et les 16 bindings ALT seulement si libres ;
+- migre les anciens Solo ALT officiels vers Maj ;
+- ajoute M, L, RPAREN et les 16 bindings SHIFT seulement si libres ;
 - copie wrapper + base ;
 - génère map et WAV ;
 - lance Doctor ;
@@ -239,7 +240,7 @@ L'upgrade :
 
 ## 9. Doctor — checkpoint confirmé le 12 septembre 2026
 
-Résultat observé sur le Raspberry de référence :
+Résultat observé sur le Raspberry de référence avant la correction ALT -> Maj :
 
 ```text
 OK    Runtime 1.5.1             modules complets
@@ -250,9 +251,7 @@ OK    WAV mute Style            8 présents
 OK    WAV Solo Song             16 présents
 ```
 
-Interprétation correcte : **installation, layout et banques WAV cohérents**.
-
-Ne pas interpréter ce Doctor comme une validation matérielle automatique de M, L, RPAREN ou Solo.
+Les banques WAV Solo ne changent pas avec le changement de modificateur. Après upgrade, le Doctor doit confirmer le nouveau layout SHIFT.
 
 ## 10. Validation matérielle
 
@@ -275,7 +274,7 @@ M       = mute/réactivation guide vocal
 libellés Style Mute ...
 L       = toutes pistes Song ON
 ) / °   = toutes parties Style ON
-ALT+... = Solo Song
+Maj+... = Solo Song
 ```
 
 Ne les marquer validés matériellement qu'après confirmation explicite de l'utilisateur.
@@ -309,15 +308,16 @@ ACMP et Fingering disposent de workarounds Registration validés.
 
 ## 13. Priorités suivantes
 
-1. test matériel M ;
-2. test matériel libellés Style `Mute ...` ;
-3. test matériel L ;
-4. test matériel `) / °` ;
-5. test matériel Solo ALT ;
-6. si la latence vocale reste sensible alors que les WAV sont complets, identifier les annonces encore dynamiques et mesurer le chemin audio ;
-7. compléter `cvp_voice_names.py` ;
-8. refaire un clone GitHub neuf + upgrade ;
-9. installation réellement vierge plus tard.
+1. appliquer l'upgrade de migration ALT -> Maj ;
+2. vérifier le Doctor avec les bindings SHIFT ;
+3. test matériel M ;
+4. test matériel libellés Style `Mute ...` ;
+5. test matériel L ;
+6. test matériel `) / °` ;
+7. test matériel Solo Maj ;
+8. si la latence vocale reste sensible alors que les WAV sont complets, identifier les annonces encore dynamiques et mesurer le chemin audio ;
+9. compléter `cvp_voice_names.py` ;
+10. refaire un clone GitHub neuf + upgrade.
 
 ## 14. Rollback
 
