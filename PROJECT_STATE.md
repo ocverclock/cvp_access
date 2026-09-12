@@ -87,7 +87,7 @@ Les touches simples restent des toggles individuels ON/OFF.
 
 ### 3.3 Solo Song — modificateur Maj
 
-Le Solo utilise désormais **Maj**, pas Alt.
+Le Solo utilise **Maj**, pas Alt.
 
 ```text
 Maj + A = Solo piste 1
@@ -124,6 +124,8 @@ Comportement :
 `L` remet les seize pistes Song sur ON et sert de sortie rapide du Solo.
 
 L'ancien profil `ALT+...` est migré automatiquement lors de l'upgrade : une ancienne affectation ALT n'est supprimée que si elle correspond exactement au Solo officiel. Les personnalisations différentes sont conservées.
+
+**Validation matérielle :** le 12 septembre 2026, le comportement `Maj + piste = piste choisie ON, 15 autres OFF` a été confirmé sur le Yamaha CVP-905 firmware 1.03. Le Solo Song avec Maj est donc **VALIDÉ MATÉRIELLEMENT**.
 
 ### 3.4 Informations / accessibilité
 
@@ -276,7 +278,7 @@ Tracks active : 0C 00 01 01 | 10..1F
 Métronome     : 07 00 00 01 | 00
 ```
 
-Le déplacement par mesure, F3, la boucle A/B et le transport ont été testés physiquement sur le CVP-905. Le métronome est restauré par CVP Access lorsqu'un transport ou une navigation le coupe alors qu'il était actif.
+Le déplacement par mesure, F3, la boucle A/B, le transport et le Solo Song avec Maj ont été testés physiquement sur le CVP-905. Le métronome est restauré par CVP Access lorsqu'un transport ou une navigation le coupe alors qu'il était actif.
 
 ## 8. Style — protocole utile
 
@@ -380,20 +382,25 @@ Résultat attendu :
 CVP Access 1.5.1 RC3 package: OK
 ```
 
-## 15. Doctor
+## 15. Doctor — VALIDÉ APRÈS MIGRATION ALT -> MAJ
 
-Le Doctor exécuté avant la correction Alt -> Maj avait confirmé :
+Le Doctor exécuté après migration du layout a confirmé :
 
 ```text
-OK Runtime 1.5.1
-OK Version runtime 1.5.1-RC3
-OK Layout accessibilité
-OK WAV états 1.5.1           10 présents
-OK WAV mute Style            8 présents
-OK WAV Solo Song             16 présents
+OK    Runtime 1.5.1             modules complets
+OK    Version runtime           1.5.1-RC3
+OK    Layout accessibilité      présente
+OK    WAV états 1.5.1           10 présents
+OK    WAV mute Style            8 présents
+OK    WAV Solo Song             16 présents
 ```
 
-Les banques WAV restent valides. Après upgrade, le Doctor doit être relancé pour confirmer le nouveau layout `SHIFT+...`.
+Les deux générateurs ont également confirmé que toutes les banques étaient déjà présentes :
+
+```text
+Generated: 0; already present: 863
+Generated: 0; existing: 262
+```
 
 ## 16. État de validation fonctionnelle
 
@@ -407,6 +414,7 @@ Play/Pause
 restauration métronome pendant transport
 arrêt Piper propre
 lecture de plusieurs noms de Voice
+Maj + piste = Solo Song
 ```
 
 ### Implémenté mais test fonctionnel encore requis
@@ -416,10 +424,7 @@ M       = mute/réactivation guide vocal
 libellés Style « Mute ... »
 L       = toutes pistes Song ON
 ) / °   = toutes parties Style ON
-Maj+... = Solo Song
 ```
-
-Ne marquer ces fonctions `VALIDÉES MATÉRIELLEMENT` qu'après confirmation explicite sur le CVP-905.
 
 ## 17. Sources de vérité
 
@@ -437,16 +442,13 @@ Ordre de priorité :
 
 ## 18. Prochaines étapes
 
-1. appliquer l'upgrade de migration Alt -> Maj ;
-2. vérifier le Doctor avec les bindings SHIFT ;
-3. tester physiquement M ;
-4. tester les libellés Style `Mute ...` ;
-5. tester L ;
-6. tester `) / °` ;
-7. tester Maj + piste Song ;
-8. si la latence vocale reste perceptible malgré les WAV complets, identifier les annonces encore dynamiques et mesurer la latence playback/Piper ;
-9. compléter progressivement `cvp_voice_names.py` ;
-10. refaire un clone GitHub neuf + upgrade.
+1. tester physiquement M ;
+2. tester les libellés Style `Mute ...` ;
+3. tester L ;
+4. tester `) / °` ;
+5. si la latence vocale reste perceptible malgré les WAV complets, identifier les annonces encore dynamiques et mesurer la latence playback/Piper ;
+6. compléter progressivement `cvp_voice_names.py` ;
+7. refaire un clone GitHub neuf + upgrade.
 
 ## 19. Rollback
 
@@ -457,4 +459,4 @@ sudo systemctl restart cvp-access
 
 ## 20. Checkpoint
 
-**CVP Access 1.5.1-RC3, layout Solo Maj, est le point de référence au 12 septembre 2026.**
+**CVP Access 1.5.1-RC3, layout Solo Maj, installation et Solo matériellement validés sur CVP-905, est le point de référence au 12 septembre 2026.**
