@@ -35,6 +35,7 @@ required=(
     cvp_access_installer/tools/cvp_web.py
     cvp_access_installer/install_maintenance.sh
     cvp_access_installer/network/cvp-wifi-fallback
+    cvp_access_installer/network/cvp-wifi-connect
     cvp_access_installer/systemd/cvp-wifi-fallback.service.in
     cvp_access_installer/systemd/cvp-web.service.in
 )
