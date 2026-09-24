@@ -35,6 +35,7 @@ required=(
     cvp_access_installer/tools/generate_151_voices.py
     cvp_access_installer/tools/cvp_doctor_151.py
     cvp_access_installer/tools/cvp_web.py
+    cvp_access_installer/tools/cvp_update_from_github
     cvp_access_installer/samba/cvp-access.conf.in
     cvp_access_installer/install_maintenance.sh
     cvp_access_installer/network/cvp-wifi-fallback
