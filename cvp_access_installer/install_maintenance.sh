@@ -68,6 +68,10 @@ install -m 0755     "$INSTALLER_DIR/network/cvp-wifi-connect"     /usr/local/sbi
 
 install -m 0755     "$INSTALLER_DIR/tools/cvp_web.py"     "$RUNTIME_DIR/cvp_web.py"
 
+install -m 0755 \
+    "$INSTALLER_DIR/tools/cvp_update_from_github" \
+    /usr/local/sbin/cvp-update-from-github
+
 if [[ -f "$REPO_DIR/cvp_keyboard_map.py" ]]; then
     install -m 0755 "$REPO_DIR/cvp_keyboard_map.py" "$RUNTIME_DIR/cvp_keyboard_map.py"
     if [[ -f "$CONFIG_DIR/keyboard.toml" ]]; then
@@ -78,7 +82,7 @@ fi
 
 install -m 0644     "$INSTALLER_DIR/systemd/cvp-wifi-fallback.service.in"     /etc/systemd/system/cvp-wifi-fallback.service
 
-sed     -e "s#@CVP_USER@#$CVP_USER#g"     -e "s#@PROJECT_DIR@#$RUNTIME_DIR#g"     "$INSTALLER_DIR/systemd/cvp-web.service.in"     > /etc/systemd/system/cvp-web.service
+sed     -e "s#@CVP_USER@#$CVP_USER#g"     -e "s#@PROJECT_DIR@#$RUNTIME_DIR#g"     -e "s#@REPO_DIR@#$REPO_DIR#g"     "$INSTALLER_DIR/systemd/cvp-web.service.in"     > /etc/systemd/system/cvp-web.service
 chmod 0644 /etc/systemd/system/cvp-web.service
 
 # NetworkManager's dnsmasq instance for shared connections reads this directory.
