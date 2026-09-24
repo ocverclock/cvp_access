@@ -56,6 +56,8 @@ assert "USB MIDI Interface MIDI 1" in core_source
 assert "configured_midi_name" in core_source
 assert "configured_keyboard_path" in core_source
 assert "/etc/cvp-access/hardware.toml" in core_source
+assert "register_midi_channel_listener" in core_source
+assert "dispatch_midi_channel_message" in core_source
 
 keyboard_map_source = (root / "cvp_keyboard_map.py").read_text(encoding="utf-8")
 assert "maintenance-grid" in keyboard_map_source
@@ -66,6 +68,7 @@ assert "height:198mm" in keyboard_map_source
 assert "${html.escape(hostname)}" not in keyboard_map_source
 assert "copyValue(this)" in keyboard_map_source
 assert "smb://" in keyboard_map_source
+assert "Réservé dictaphone MIDI 1.6" in keyboard_map_source
 
 portal_source = (
     root / "cvp_access_installer/tools/cvp_web.py"
@@ -94,6 +97,9 @@ assert "Environment=CVP_WEB_REQUIRE_AUTH=0" in service_template_source
 assert "CVP_REPO_DIR=@REPO_DIR@" in service_template_source
 
 speech_source = (root / "cvp_speech_151.py").read_text(encoding="utf-8")
+keyboard_source = (root / "cvp_keyboard.py").read_text(encoding="utf-8")
+assert 'range(1, 16)' in keyboard_source
+
 runtime_source = (root / "cvp_access_v1.5.py").read_text(encoding="utf-8")
 generator_source = (
     root / "cvp_access_installer/tools/generate_151_voices.py"
@@ -105,6 +111,8 @@ doctor_source = (
 assert "announce_startup_ready" in speech_source
 assert "announce_device_restart" in speech_source
 assert "announce_startup_ready" in runtime_source
+assert "CVP_RECORDER_PROBE" in runtime_source
+assert "Recorder probe : actif" in runtime_source
 assert "system/startup_ready.wav" in generator_source
 assert "system/restart_device.wav" in generator_source
 assert "startup_ready.wav" in doctor_source
