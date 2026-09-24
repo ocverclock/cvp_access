@@ -273,7 +273,9 @@ Les partages Samba officiels sont `CVP_access` pour le projet et `CVP_config` po
 
 La carte clavier reprend les blocs **Accès Web** et **Partages Samba** tout en restant conçue pour une impression sur **une seule page A4 paysage**.
 
-Les actions de configuration nécessitent le mot de passe du hotspot `CVP-ACCESS`, utilisé comme mot de passe de maintenance. Le point d'accès fournit également les indications de portail captif destinées à proposer automatiquement le dashboard sur téléphone ou ordinateur. L'accès direct `http://10.42.0.1` reste toujours la référence en mode hotspot.
+Le portail propose également **Mettre à jour depuis GitHub**. Cette action vérifie que le dépôt local ne contient pas de modifications, effectue un `git pull --ff-only`, lance le vérificateur de paquet le plus récent puis l'upgrade de version le plus récent. La mise à jour est exécutée dans un service systemd séparé afin de continuer même lorsque le portail Web se redémarre.
+
+Pour la phase de mise au point actuelle, la demande de mot de passe des boutons du portail est suspendue (`CVP_WEB_REQUIRE_AUTH=0`). Le mécanisme reste disponible pour être réactivé ultérieurement. Le point d'accès fournit également les indications de portail captif destinées à proposer automatiquement le dashboard sur téléphone ou ordinateur. L'accès direct `http://10.42.0.1` reste toujours la référence en mode hotspot.
 
 ## Installation / upgrade
 
