@@ -289,7 +289,19 @@ sed \
 chmod 0644 "$SAMBA_FRAGMENT"
 
 INCLUDE_LINE="include = $SAMBA_FRAGMENT"
-grep -Fqx "$INCLUDE_LINE" /etc/samba/smb.conf || printf '\n%s\n' "$INCLUDE_LINE" >> /etc/samba/smb.conf
+if ! grep -Fqx "$INCLUDE_LINE" /etc/samba/smb.conf; then
+    if grep -q '^\[global\]' /etc/samba/smb.conf; then
+        sed -i "/^\[global\]/a $INCLUDE_LINE" /etc/samba/smb.conf
+    else
+        tmp_smb="$(mktemp)"
+        {
+            printf '[global]\n%s\n\n' "$INCLUDE_LINE"
+            cat /etc/samba/smb.conf
+        } > "$tmp_smb"
+        install -m 0644 "$tmp_smb" /etc/samba/smb.conf
+        rm -f "$tmp_smb"
+    fi
+fi
 
 testparm -s >/dev/null || die "Samba configuration validation failed."
 
