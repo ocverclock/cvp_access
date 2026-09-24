@@ -83,6 +83,7 @@ Les sections Style restent disponibles comme actions configurables même lorsqu�
 
 ### Accessibilité et voix
 
+- au démarrage, une fois MIDI + clavier + moteur vocal prêts : **« Dispositif Melody Music CVP Access opérationnel. »** ;
 - clavier USB AZERTY configurable par TOML ;
 - `CTRL + touche` = aide vocale sans exécution ;
 - **M = mute/réactivation du guide vocal CVP Access** ;
