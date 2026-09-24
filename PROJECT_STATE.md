@@ -463,6 +463,16 @@ Le moteur historique `cvp_access_v1.4.1.py` lit cette préférence avant les rè
 
 Le portail captif utilise le dnsmasq de la connexion partagée NetworkManager avec DNS wildcard vers `10.42.0.1` et l'option DHCP 114. Les endpoints usuels Apple/Android/Windows sont redirigés vers le dashboard. Cette ouverture automatique reste à valider sur les différents OS.
 
+### Authentification portail — temporairement suspendue
+
+Pour faciliter les essais sur le Raspberry de référence, la protection par mot de passe des boutons du portail est suspendue par défaut :
+
+```text
+CVP_WEB_REQUIRE_AUTH=0
+```
+
+Les actions restent limitées aux réseaux locaux autorisés. Le code d'authentification est conservé et peut être réactivé avec `CVP_WEB_REQUIRE_AUTH=1` puis redémarrage de `cvp-web.service`.
+
 ### Accès Web et Samba — 1.5.2-RC1
 
 Le dashboard et la carte clavier affichent les adresses de maintenance. Sur la page Web, elles sont cliquables pour les copier dans le presse-papiers.
