@@ -438,6 +438,30 @@ Un portail captif pourra être ajouté afin de proposer automatiquement cette pa
 
 La sélection dynamique des périphériques doit suivre la règle : périphérique connu prioritaire, candidat unique accepté automatiquement, plusieurs candidats ambigus présentés dans l'interface Web plutôt que choisis au hasard.
 
+### Implémentation dépôt — 24 septembre 2026
+
+Les éléments suivants sont intégrés au dépôt :
+
+```text
+cvp_access_installer/install_maintenance.sh
+cvp_access_installer/network/cvp-wifi-fallback
+cvp_access_installer/systemd/cvp-wifi-fallback.service.in
+cvp_access_installer/systemd/cvp-web.service.in
+cvp_access_installer/tools/cvp_web.py
+```
+
+Le portail Web fonctionne sur le port HTTP 80 et limite les clients au sous-réseau `10.42.0.0/24` et à localhost. Il expose un dashboard d'état, les interfaces MIDI disponibles, l'audio Yamaha, le clavier USB, les périphériques USB, les événements utiles, le Doctor, le redémarrage du service CVP Access et le redémarrage du Raspberry.
+
+Une sélection MIDI faite dans le dashboard est écrite dans :
+
+```text
+/etc/cvp-access/hardware.toml
+```
+
+Le moteur historique `cvp_access_v1.4.1.py` lit cette préférence avant les règles automatiques. Le nom d'interface est mémorisé, jamais le numéro ALSA `hw:X,Y,Z`.
+
+Le portail captif utilise le dnsmasq de la connexion partagée NetworkManager avec DNS wildcard vers `10.42.0.1` et l'option DHCP 114. Les endpoints usuels Apple/Android/Windows sont redirigés vers le dashboard. Cette ouverture automatique reste à valider sur les différents OS.
+
 ## 14. Vérification du paquet
 
 `VERIFY_PACKAGE_151.py` compile le wrapper, la base, les moteurs historiques, les modules et les outils. Il vérifie notamment :
@@ -527,9 +551,10 @@ Ordre de priorité :
 4. tester `) / °` ;
 5. si la latence vocale reste perceptible malgré les WAV complets, identifier les annonces encore dynamiques et mesurer la latence playback/Piper ;
 6. compléter progressivement `cvp_voice_names.py` ;
-7. intégrer le service Wi-Fi fallback et le profil CVP-ACCESS dans l'installateur/updater ;
-8. créer l'interface Web locale de maintenance et le portail captif optionnel ;
-9. maintenir le test d’installation depuis un Raspberry neuf lors des prochaines versions majeures.
+7. valider l'installation automatique du fallback Wi-Fi et du portail Web sur le Raspberry de référence ;
+8. valider l'ouverture automatique du portail captif sur iOS, Android et ordinateur ;
+9. valider l'affectation MIDI persistante depuis le dashboard avec les deux interfaces supportées ;
+10. maintenir le test d’installation depuis un Raspberry neuf lors des prochaines versions majeures.
 
 ## 19. Rollback
 
