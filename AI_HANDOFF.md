@@ -363,3 +363,19 @@ La conception validée à ce stade est dans `docs/MIDI_RECORDER_1_6.md`.
 Ne pas réutiliser `ESC` pour le Recorder : `ESC` reste la relance système. La touche Recorder retenue est **F15**. Le Recorder doit fonctionner avec cette seule touche, en distinguant appui court et appui long à partir des événements evdev bruts. Le routeur 1.5.2 ne couvre que F1..F13 ; ajouter F14/F15 dans la 1.6 avant tout binding.
 
 Ne pas ouvrir un second port MIDI pour le Recorder. Le `midi_receiver()` existant lit déjà le flux brut complet et parse les messages canal. La 1.6 doit ajouter un listener/tap interne protégé sur ce récepteur, puis valider Note On/Note Off et l'absence de régression SysEx avant l'enregistrement complet.
+
+
+## Mise à jour depuis le portail
+
+Le dashboard 1.5.2 possède un bouton **Mettre à jour depuis GitHub**. Il lance `/usr/local/sbin/cvp-update-from-github` dans un service systemd transitoire.
+
+Le helper :
+
+```text
+refuse un dépôt avec modifications locales
+-> git pull --ff-only
+-> dernier VERIFY_PACKAGE_*.py
+-> dernier upgrade_*.sh
+```
+
+Ne remplacer cette logique par un simple `git pull` exécuté dans le processus Web : l'upgrade peut redémarrer `cvp-web.service` et doit survivre à ce redémarrage.
