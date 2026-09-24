@@ -64,6 +64,8 @@ chmod 0600 "$PASSWORD_FILE"
 
 install -m 0755     "$INSTALLER_DIR/network/cvp-wifi-fallback"     /usr/local/sbin/cvp-wifi-fallback
 
+install -m 0755     "$INSTALLER_DIR/network/cvp-wifi-connect"     /usr/local/sbin/cvp-wifi-connect
+
 install -m 0755     "$INSTALLER_DIR/tools/cvp_web.py"     "$RUNTIME_DIR/cvp_web.py"
 
 install -m 0644     "$INSTALLER_DIR/systemd/cvp-wifi-fallback.service.in"     /etc/systemd/system/cvp-wifi-fallback.service
@@ -80,10 +82,10 @@ dhcp-option=114,http://10.42.0.1/captive-portal
 EOF
 chmod 0644 /etc/NetworkManager/dnsmasq-shared.d/cvp-access-portal.conf
 
-# Publish a stable maintenance alias without changing the machine hostname.
-touch /etc/avahi/hosts
-if ! grep -Fqx "10.42.0.1 cvp-access.local" /etc/avahi/hosts; then
-    printf '\n10.42.0.1 cvp-access.local\n' >> /etc/avahi/hosts
+# Remove the old fixed hotspot alias if it exists. On a normal Wi-Fi network
+# that address would be wrong; Avahi already publishes the real hostname.
+if [[ -f /etc/avahi/hosts ]]; then
+    sed -i '/^[[:space:]]*10\.42\.0\.1[[:space:]]\+cvp-access\.local[[:space:]]*$/d' /etc/avahi/hosts
 fi
 
 systemctl daemon-reload
@@ -96,6 +98,8 @@ echo "[CVP Access] Maintenance network installed"
 echo "SSID      : $HOTSPOT"
 echo "IP        : 10.42.0.1"
 echo "Portal    : http://10.42.0.1"
-echo "mDNS      : http://cvp-access.local"
+HOST_NOW="$(hostnamectl --static 2>/dev/null || hostname)"
+echo "Hotspot   : http://10.42.0.1"
+echo "Wi-Fi LAN : http://$HOST_NOW.local"
 echo "Password  : stored in $PASSWORD_FILE"
 echo "Note      : captive DNS settings apply the next time the hotspot is activated."
