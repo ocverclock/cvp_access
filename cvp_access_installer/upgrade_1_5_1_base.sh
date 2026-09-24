@@ -164,6 +164,12 @@ else
     echo "WARNING: Piper environment absent; WAV generation skipped." >&2
 fi
 
+if [[ -f "$INSTALLER_DIR/install_maintenance.sh" ]]; then
+    CVP_USER="$CVP_USER" bash "$INSTALLER_DIR/install_maintenance.sh"
+else
+    echo "WARNING: maintenance network installer absent." >&2
+fi
+
 runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" CVP_RUNTIME_DIR="$RUNTIME_DIR" CVP_VOICE_DIR="$VOICE_DIR" CVP_CONFIG_FILE="$CONFIG_FILE" python3 "$RUNTIME_DIR/cvp_doctor_151.py"
 systemctl restart cvp-access.service
 
