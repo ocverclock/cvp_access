@@ -80,6 +80,13 @@ assert "copyButton(value)" in portal_source
 assert "smbProject" in portal_source
 assert "request_authorized" in portal_source
 assert "cvp-access.service" in portal_source
+assert "CVP_WEB_REQUIRE_AUTH" in portal_source
+assert "\"auth_required\": AUTH_REQUIRED" in portal_source
+
+service_template_source = (
+    root / "cvp_access_installer/systemd/cvp-web.service.in"
+).read_text(encoding="utf-8")
+assert "Environment=CVP_WEB_REQUIRE_AUTH=0" in service_template_source
 
 speech_source = (root / "cvp_speech_151.py").read_text(encoding="utf-8")
 runtime_source = (root / "cvp_access_v1.5.py").read_text(encoding="utf-8")
