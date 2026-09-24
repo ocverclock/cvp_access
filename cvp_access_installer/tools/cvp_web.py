@@ -200,29 +200,42 @@ def recent_events():
     return lines[-30:]
 
 
-def connected_wifi_networks():
-    """Return the IPv4 networks directly attached to wlan0."""
-    rc, out, _ = run(["ip", "-j", "-4", "addr", "show", "dev", "wlan0"])
+def connected_local_networks():
+    """Return private IPv4 networks directly attached to this Raspberry."""
+    rc, out, _ = run(["ip", "-j", "-4", "addr", "show"])
     if rc != 0 or not out:
         return []
+
     try:
         data = json.loads(out)
     except json.JSONDecodeError:
         return []
 
     networks = []
+
     for interface in data:
+        if interface.get("ifname") == "lo":
+            continue
+
         for info in interface.get("addr_info", []):
             local = info.get("local")
             prefix = info.get("prefixlen")
+
             if not local or prefix is None:
                 continue
+
             try:
-                networks.append(
-                    ipaddress.ip_network(f"{local}/{prefix}", strict=False)
+                address = ipaddress.ip_address(local)
+                network = ipaddress.ip_network(
+                    f"{local}/{prefix}",
+                    strict=False,
                 )
             except ValueError:
                 continue
+
+            if address.is_private:
+                networks.append(network)
+
     return networks
 
 
@@ -238,7 +251,7 @@ def client_allowed(address):
     if ip.version != 4:
         return False
 
-    return any(ip in network for network in connected_wifi_networks())
+    return any(ip in network for network in connected_local_networks())
 
 
 def admin_secret():
