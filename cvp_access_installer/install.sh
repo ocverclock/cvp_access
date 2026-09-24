@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-INSTALLER_VERSION="0.4.0"
+INSTALLER_VERSION="0.5.0"
 REQUIRED_CODENAME="${CVP_REQUIRED_CODENAME:-trixie}"
 REQUIRED_ARCH="${CVP_REQUIRED_ARCH:-arm64}"
 MIN_FREE_KB="${CVP_MIN_FREE_KB:-2097152}"   # 2 GiB
@@ -350,6 +350,17 @@ if [[ -f "$MAINTENANCE_INSTALLER" ]]; then
     CVP_USER="$CVP_USER" bash "$MAINTENANCE_INSTALLER"
 else
     warn "Maintenance network installer not found: $MAINTENANCE_INSTALLER"
+fi
+
+# -----------------------------------------------------------------------------
+# Current CVP Access release
+# -----------------------------------------------------------------------------
+RELEASE_UPGRADER="$INSTALLER_DIR/upgrade_1_5_2.sh"
+if [[ -f "$RELEASE_UPGRADER" ]]; then
+    log "Deploying current CVP Access release 1.5.2-RC1"
+    CVP_USER="$CVP_USER" bash "$RELEASE_UPGRADER"
+else
+    warn "Current release upgrader not found: $RELEASE_UPGRADER"
 fi
 
 # -----------------------------------------------------------------------------
