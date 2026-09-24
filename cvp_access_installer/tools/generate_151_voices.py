@@ -138,6 +138,19 @@ def main():
         "Relance du dispositif CVP Access.",
     )
 
+    # Recorder 1.6 — feedback must remain immediate for a blind user.
+    for path, text in {
+        "recorder/ready.wav": "Enregistrement prêt.",
+        "recorder/cancelled.wav": "Enregistrement annulé.",
+        "recorder/no_recording.wav": "Aucun enregistrement disponible.",
+        "recorder/play.wav": "Lecture.",
+        "recorder/play_stopped.wav": "Lecture arrêtée.",
+        "recorder/play_finished.wav": "Lecture terminée.",
+        "recorder/output_missing.wav": "Sortie MIDI de lecture introuvable.",
+        "recorder/save_error.wav": "Erreur pendant la sauvegarde.",
+    }.items():
+        add(path, text)
+
     song_numeric_actions = {
         "song_position",
         "song_measure_previous",
