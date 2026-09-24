@@ -33,7 +33,17 @@ KEYBOARD_MAP = CONFIG_DIR / "keyboard-map.html"
 ADMIN_SECRET_FILE = CONFIG_DIR / "hotspot-password"
 WIFI_RESULT_FILE = Path("/run/cvp-wifi-connect-result.json")
 WIFI_CONNECT_HELPER = Path("/usr/local/sbin/cvp-wifi-connect")
+UPDATE_HELPER = Path("/usr/local/sbin/cvp-update-from-github")
+UPDATE_STATE_FILE = Path("/run/cvp-access-update-state")
+UPDATE_LOG_FILE = Path("/run/cvp-access-update.log")
+UPDATE_SERVICE = "cvp-access-github-update.service"
 CVP_USER = os.environ.get("CVP_USER", "pi")
+REPO_DIR = Path(
+    os.environ.get(
+        "CVP_REPO_DIR",
+        f"/home/{CVP_USER}/CVP_access",
+    )
+)
 AUTH_REQUIRED = os.environ.get("CVP_WEB_REQUIRE_AUTH", "0").strip().lower() in {
     "1", "true", "yes", "on"
 }
@@ -389,6 +399,62 @@ def launch_wifi_connect(ssid, password, hidden=False):
     return True, "Connexion Wi-Fi lancée"
 
 
+def update_status():
+    state = "idle"
+    try:
+        raw = UPDATE_STATE_FILE.read_text(encoding="utf-8").strip()
+        if raw in {"idle", "running", "success", "failed"}:
+            state = raw
+    except OSError:
+        pass
+
+    service = service_state(UPDATE_SERVICE)
+    if service in {"active", "activating"}:
+        state = "running"
+
+    try:
+        lines = UPDATE_LOG_FILE.read_text(
+            encoding="utf-8",
+            errors="replace",
+        ).splitlines()
+        log_tail = "\n".join(lines[-30:])
+    except OSError:
+        log_tail = ""
+
+    return {
+        "state": state,
+        "service": service,
+        "log": log_tail,
+    }
+
+
+def launch_github_update():
+    if not UPDATE_HELPER.is_file():
+        return False, "Assistant de mise à jour absent"
+
+    if not (REPO_DIR / ".git").is_dir():
+        return False, f"Dépôt Git introuvable : {REPO_DIR}"
+
+    current = service_state(UPDATE_SERVICE)
+    if current in {"active", "activating"}:
+        return False, "Une mise à jour est déjà en cours"
+
+    args = [
+        "systemd-run",
+        "--unit=cvp-access-github-update",
+        "--collect",
+        "--no-block",
+        f"--setenv=CVP_USER={CVP_USER}",
+        f"--setenv=CVP_REPO_DIR={REPO_DIR}",
+        str(UPDATE_HELPER),
+    ]
+    rc, out, err = run(args, timeout=8)
+    if rc != 0:
+        return False, err or out or "Impossible de lancer la mise à jour"
+
+    return True, "Mise à jour GitHub lancée"
+
+
 def network_status():
     _, active, _ = run(
         ["nmcli", "-g", "GENERAL.CONNECTION", "device", "show", "wlan0"]
@@ -421,6 +487,7 @@ def build_status():
             "web": service_state("cvp-web.service"),
         },
         "network": network_status(),
+        "update": update_status(),
         "midi": midi,
         "selected_midi": selected_midi_name(),
         "audio": audio_lines,
@@ -570,10 +637,16 @@ details summary{cursor:pointer;font-weight:700}
       <div class="actions">
         <button class="protected" onclick="action('restart')">Relancer CVP Access</button>
         <button class="secondary protected" onclick="action('doctor')">Lancer le Doctor</button>
+        <button id="updateButton" class="primary protected" onclick="updateGithub()">Mettre à jour depuis GitHub</button>
         <a class="btn secondary" href="/keyboard-map">Carte clavier</a>
         <button class="danger protected" onclick="rebootPi()">Redémarrer le Raspberry</button>
       </div>
       <div id="actionResult" class="small" style="margin-top:10px"></div>
+      <div id="updateStatus" class="small" style="margin-top:8px"></div>
+      <details id="updateDetails" style="margin-top:10px;display:none">
+        <summary>Journal de mise à jour</summary>
+        <pre id="updateLog"></pre>
+      </details>
       <div id="doctorBox" style="display:none;margin-top:12px">
         <b>Résultat du Doctor</b>
         <pre id="doctorOutput"></pre>
@@ -665,6 +738,24 @@ async function refresh(){
   '<div class="small" style="margin-top:8px">'+esc(d.network.address||'Aucune adresse Wi-Fi')+'</div>';
  if(result.status) document.getElementById('wifiResult').textContent=result.status+' · '+(result.ssid||'')+(result.detail?' · '+result.detail:'');
 
+ const upd=d.update||{};
+ const updateLabels={
+   idle:'Aucune mise à jour lancée depuis cette page.',
+   running:'Mise à jour GitHub en cours…',
+   success:'Dernière mise à jour terminée avec succès.',
+   failed:'La dernière mise à jour a échoué. Consulte le journal.'
+ };
+ document.getElementById('updateStatus').textContent=updateLabels[upd.state]||upd.state||'';
+ const updateDetails=document.getElementById('updateDetails');
+ const updateLog=document.getElementById('updateLog');
+ if(upd.log){
+   updateDetails.style.display='block';
+   updateLog.textContent=upd.log;
+ }else{
+   updateDetails.style.display='none';
+   updateLog.textContent='';
+ }
+
  const rawHost=String(d.network.hostname||'cvp-access');
  const localWeb='http://'+rawHost+'.local';
  const hotspotWeb='http://10.42.0.1';
@@ -727,6 +818,9 @@ async function refresh(){
    authSection.style.display='';
    setProtected(unlocked);
  }
+
+ const updateButton=document.getElementById('updateButton');
+ if(updateButton && upd.state==='running') updateButton.disabled=true;
 }
 
 async function scanWifi(){
@@ -762,6 +856,15 @@ async function post(url,body={}){
 function action(name){post('/api/action/'+name)}
 function selectMidi(name){post('/api/midi/select',{name})}
 function selectKeyboard(path){post('/api/keyboard/select',{path})}
+async function updateGithub(){
+ if(!confirm('Récupérer la dernière version depuis GitHub et l’installer ?'))return;
+ const button=document.getElementById('updateButton');
+ button.disabled=true;
+ document.getElementById('updateStatus').textContent='Mise à jour en cours… La page peut se reconnecter automatiquement.';
+ const d=await post('/api/action/update');
+ if(d&&d.message) document.getElementById('updateStatus').textContent=d.message;
+ setTimeout(refresh,1500);
+}
 function rebootPi(){if((!authRequired||unlocked)&&confirm('Redémarrer complètement le Raspberry ?'))post('/api/action/reboot')}
 async function connectWifi(){
  const manual=document.getElementById('manualSsid').value.trim();
@@ -979,6 +1082,14 @@ class Handler(BaseHTTPRequestHandler):
                     "output": result,
                 },
                 200,
+            )
+            return
+
+        if path == "/api/action/update":
+            ok, message = launch_github_update()
+            self.send_json(
+                {"message": message},
+                202 if ok else 409,
             )
             return
 
