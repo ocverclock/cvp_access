@@ -40,6 +40,7 @@ maintenance_required = [
     "cvp_access_installer/network/cvp-wifi-connect",
     "cvp_access_installer/systemd/cvp-wifi-fallback.service.in",
     "cvp_access_installer/systemd/cvp-web.service.in",
+    "cvp_access_installer/samba/cvp-access.conf.in",
 ]
 for rel in maintenance_required:
     assert (root / rel).is_file(), f"Fichier maintenance absent : {rel}"
@@ -98,6 +99,12 @@ assert "startup_ready.wav" in doctor_source
 assert "restart_device.wav" in doctor_source
 assert "WAV système" in doctor_source
 assert '("1.5.1", "1.5.2")' in doctor_source
+
+shared_upgrade_source = (
+    root / "cvp_access_installer/upgrade_1_5_1_base.sh"
+).read_text(encoding="utf-8")
+assert "Refreshing Samba shares" in shared_upgrade_source
+assert "install_maintenance.sh" in shared_upgrade_source
 
 fresh_install_source = (
     root / "cvp_access_installer/install.sh"
