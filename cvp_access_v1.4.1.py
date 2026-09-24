@@ -1425,6 +1425,24 @@ def sync_tracks(port):
 # CLAVIER
 # ============================================================
 
+def configured_keyboard_path():
+
+    if not HARDWARE_CONFIG.is_file():
+        return None
+
+    try:
+        with HARDWARE_CONFIG.open("rb") as handle:
+            data = tomllib.load(handle)
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+
+    path = data.get("keyboard", {}).get("path")
+    if isinstance(path, str) and path.strip():
+        return path.strip()
+
+    return None
+
+
 def find_keyboard():
 
     keyboards = sorted(
@@ -1441,13 +1459,19 @@ def find_keyboard():
 
         sys.exit(1)
 
+    preferred = configured_keyboard_path()
+    if preferred and preferred in keyboards:
+        selected = preferred
+    else:
+        selected = keyboards[0]
+
     print(
         "Clavier :",
-        keyboards[0]
+        selected
     )
 
     return InputDevice(
-        keyboards[0]
+        selected
     )
 
 
