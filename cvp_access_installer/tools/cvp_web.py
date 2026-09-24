@@ -204,6 +204,7 @@ def recent_events():
         "opérationnel",
         "operationnel",
         "Impossible",
+        "Recorder",
     )
     lines = [
         line
