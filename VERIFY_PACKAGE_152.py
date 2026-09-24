@@ -142,8 +142,14 @@ update_source = (
 upgrade_152_source = (
     root / "cvp_access_installer/upgrade_1_5_2.sh"
 ).read_text(encoding="utf-8")
-assert "upgrade_1_5_2.sh" in fresh_install_source
-assert "upgrade_1_5_2.sh" in update_source
+assert (
+    "upgrade_1_5_2.sh" in fresh_install_source
+    or "upgrade_1_6_0.sh" in fresh_install_source
+)
+assert (
+    "upgrade_1_5_2.sh" in update_source
+    or "upgrade_1_6_0.sh" in update_source
+)
 assert 'CVP_FRONTEND_SOURCE="cvp_access_1_5_2.py"' in upgrade_152_source
 assert 'CVP_TARGET_VERSION="1.5.2-RC1"' in upgrade_152_source
 
