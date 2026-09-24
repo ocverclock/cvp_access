@@ -68,7 +68,7 @@ assert "height:198mm" in keyboard_map_source
 assert "${html.escape(hostname)}" not in keyboard_map_source
 assert "copyValue(this)" in keyboard_map_source
 assert "smb://" in keyboard_map_source
-assert "Réservé dictaphone MIDI 1.6" in keyboard_map_source
+assert "Dictaphone MIDI" in keyboard_map_source
 
 portal_source = (
     root / "cvp_access_installer/tools/cvp_web.py"
@@ -118,7 +118,7 @@ assert "system/restart_device.wav" in generator_source
 assert "startup_ready.wav" in doctor_source
 assert "restart_device.wav" in doctor_source
 assert "WAV système" in doctor_source
-assert '("1.5.1", "1.5.2")' in doctor_source
+assert '("1.5.1", "1.5.2", "1.6.0")' in doctor_source
 
 updater_helper_source = (
     root / "cvp_access_installer/tools/cvp_update_from_github"
