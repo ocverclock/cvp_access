@@ -148,6 +148,62 @@ def install_speech_hooks(core, speech_config):
             replace_key="system_status",
         )
 
+    def announce_recorder_ready():
+        return manager.speak(
+            "Enregistrement prêt.",
+            voice_dir / "recorder" / "ready.wav",
+            replace_key="recorder_status",
+        )
+
+    def announce_recorder_cancelled():
+        return manager.speak(
+            "Enregistrement annulé.",
+            voice_dir / "recorder" / "cancelled.wav",
+            replace_key="recorder_status",
+        )
+
+    def announce_recorder_no_recording():
+        return manager.speak(
+            "Aucun enregistrement disponible.",
+            voice_dir / "recorder" / "no_recording.wav",
+            replace_key="recorder_status",
+        )
+
+    def announce_recorder_play():
+        return manager.speak(
+            "Lecture.",
+            voice_dir / "recorder" / "play.wav",
+            replace_key="recorder_status",
+        )
+
+    def announce_recorder_play_stopped():
+        return manager.speak(
+            "Lecture arrêtée.",
+            voice_dir / "recorder" / "play_stopped.wav",
+            replace_key="recorder_status",
+        )
+
+    def announce_recorder_play_finished():
+        return manager.speak(
+            "Lecture terminée.",
+            voice_dir / "recorder" / "play_finished.wav",
+            replace_key="recorder_status",
+        )
+
+    def announce_recorder_output_missing():
+        return manager.speak(
+            "Sortie MIDI de lecture introuvable.",
+            voice_dir / "recorder" / "output_missing.wav",
+            replace_key="recorder_status",
+        )
+
+    def announce_recorder_save_error():
+        return manager.speak(
+            "Erreur pendant la sauvegarde.",
+            voice_dir / "recorder" / "save_error.wav",
+            replace_key="recorder_status",
+        )
+
     def announce_device_restart():
         # ESC redémarre le processus. L'annonce doit donc être synchrone :
         # attendre la fin de aplay avant SystemExit, sinon cleanup() la coupe.
@@ -337,6 +393,14 @@ def install_speech_hooks(core, speech_config):
         )
 
     core.announce_startup_ready = announce_startup_ready
+    core.announce_recorder_ready = announce_recorder_ready
+    core.announce_recorder_cancelled = announce_recorder_cancelled
+    core.announce_recorder_no_recording = announce_recorder_no_recording
+    core.announce_recorder_play = announce_recorder_play
+    core.announce_recorder_play_stopped = announce_recorder_play_stopped
+    core.announce_recorder_play_finished = announce_recorder_play_finished
+    core.announce_recorder_output_missing = announce_recorder_output_missing
+    core.announce_recorder_save_error = announce_recorder_save_error
     core.announce_device_restart = announce_device_restart
     core.announce_action_help = announce_action_help
     core.announce_boolean_state = announce_boolean_state
