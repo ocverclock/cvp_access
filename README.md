@@ -11,7 +11,7 @@ CVP Access permet de piloter et d’interroger des fonctions importantes d’un 
 Version de référence :
 
 ```text
-CVP Access 1.5.2-RC1
+CVP Access 1.6.0-RC1
 Consolidation : 24 septembre 2026
 ```
 
@@ -227,6 +227,23 @@ Solo piste 1
 Pas de Song chargé.
 ```
 
+## Dictaphone MIDI — 1.6
+
+F15 est la touche unique du dictaphone MIDI accessible :
+
+```text
+F15 long  -> « Enregistrement prêt »
+1re note  -> début réel de l'enregistrement
+F15 court -> annuler si rien n'a été joué
+F15 court -> arrêter + sauvegarder si l'enregistrement a démarré
+F15 court au repos -> lire le morceau sélectionné
+F15 court en lecture -> stop
+```
+
+Les fichiers sont enregistrés dans `~/CVP_Recordings/` sous la forme `AAAA-MM-JJ_NNN.mid`. Le portail Web permet de choisir le morceau courant et Samba expose le partage `CVP_recordings`.
+
+CTRL+F15 annonce la fonction sans l'exécuter.
+
 ## Maintenance autonome
 
 CVP Access peut être maintenu même chez un client sans box ni Wi-Fi.
@@ -261,8 +278,10 @@ Web hotspot       : http://10.42.0.1
 Mac / Linux :
 smb://<hostname>.local/CVP_access
 smb://<hostname>.local/CVP_config
+smb://<hostname>.local/CVP_recordings
 smb://10.42.0.1/CVP_access
 smb://10.42.0.1/CVP_config
+smb://10.42.0.1/CVP_recordings
 
 Windows :
 \\<hostname>.local\CVP_access
@@ -282,8 +301,8 @@ Pour la phase de mise au point actuelle, la demande de mot de passe des boutons 
 ```bash
 cd ~/CVP_access
 git pull --ff-only origin main
-python3 VERIFY_PACKAGE_152.py
-sudo bash cvp_access_installer/upgrade_1_5_2.sh
+python3 VERIFY_PACKAGE_160.py
+sudo bash cvp_access_installer/upgrade_1_6_0.sh
 ```
 
 L’upgrade conserve les personnalisations existantes et n’ajoute les nouveaux raccourcis que si les combinaisons sont libres.
@@ -316,6 +335,7 @@ Lire dans cet ordre :
 
 ```text
 PROJECT_STATE.md
+docs/CVP_ACCESS_1_6.md
 docs/CVP_ACCESS_1_5_2.md
 docs/NETWORK_MAINTENANCE_PORTAL.md
 AI_HANDOFF.md
