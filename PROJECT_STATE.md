@@ -2,7 +2,7 @@
 
 Dernière consolidation : **24 septembre 2026**.
 
-Version de référence : **CVP Access 1.5.1-RC3**.
+Version de référence : **CVP Access 1.5.2-RC1**.
 
 Instrument de référence : **Yamaha CVP-905 firmware 1.03**.
 
@@ -26,7 +26,7 @@ Toute validation dite matérielle doit provenir du CVP-905 de référence ou êt
 Repo            : ~/CVP_access
 Runtime         : /opt/cvp-access
 Entrée runtime  : /opt/cvp-access/cvp_access.py
-Source courante : cvp_access_1_5_1.py
+Source courante : cvp_access_1_5_2.py
 Base 1.5.1      : cvp_access_1_5_1_base.py
 Config active   : /etc/cvp-access/keyboard.toml
 Map             : /etc/cvp-access/keyboard-map.html
@@ -38,7 +38,7 @@ Voix            : fr_FR-siwis-medium
 Architecture transitoire :
 
 ```text
-cvp_access_1_5_1.py
+cvp_access_1_5_2.py
     -> cvp_access_1_5_1_base.py
         -> cvp_access_v1.5.py
             -> cvp_access_v1.4.1.py
@@ -364,8 +364,8 @@ Stream Lights ON/OFF
 ```bash
 cd ~/CVP_access
 git pull --ff-only origin main
-python3 VERIFY_PACKAGE_151.py
-sudo bash cvp_access_installer/upgrade_1_5_1.sh
+python3 VERIFY_PACKAGE_152.py
+sudo bash cvp_access_installer/upgrade_1_5_2.sh
 ```
 
 L'upgrade :
@@ -386,8 +386,9 @@ Comportement retenu :
 
 ```text
 démarrage Raspberry
--> tentative de connexion aux Wi-Fi connus
--> si aucun Wi-Fi normal n'est disponible après ~30 s
+-> si Ethernet ou Wi-Fi normal est connecté : réseau normal prioritaire
+-> CVP-ACCESS reste arrêté
+-> si aucun réseau normal n'est disponible après ~30 s
 -> activation automatique du point d'accès CVP-ACCESS
 ```
 
@@ -404,15 +405,15 @@ service       : cvp-wifi-fallback.service
 script        : /usr/local/sbin/cvp-wifi-fallback
 ```
 
-Le profil `CVP-ACCESS` ne doit pas s'autoconnecter directement : le service de fallback le démarre uniquement lorsqu'aucune connexion Wi-Fi normale n'est active. Le Wi-Fi normal reste prioritaire.
+Le profil `CVP-ACCESS` ne doit pas s'autoconnecter directement : le service de fallback le démarre uniquement lorsqu'aucune connexion Ethernet ou Wi-Fi normale n'est active. Une connexion réseau normale reste prioritaire. Si le hotspot est actif puis qu'un réseau normal apparaît, le hotspot est arrêté. Sans interface Wi-Fi disponible, aucune tentative de hotspot n'est faite.
 
 Validation réelle : Wi-Fi magasin coupé volontairement, apparition automatique de `CVP-ACCESS`, connexion au point d'accès et accès SSH à `10.42.0.1` confirmés.
 
-### Interface Web de maintenance — architecture retenue pour évolution
+### Interface Web de maintenance — implémentée
 
 Objectif : exposer une page locale d'état et de configuration accessible sans Internet.
 
-Fonctions prévues :
+Fonctions implémentées :
 
 - état du service CVP Access ;
 - modèle/version runtime ;
@@ -434,7 +435,7 @@ http://10.42.0.1
 http://cvp-access.local
 ```
 
-Un portail captif pourra être ajouté afin de proposer automatiquement cette page lorsqu'un technicien se connecte au SSID `CVP-ACCESS`. Cette ouverture automatique doit rester un confort et non une dépendance : l'URL locale directe doit toujours fonctionner.
+Le portail captif est implémenté via le dnsmasq de la connexion partagée NetworkManager, DNS wildcard et option DHCP 114. L'ouverture automatique dépend du système client et reste un confort : l'URL locale directe doit toujours fonctionner.
 
 La sélection dynamique des périphériques doit suivre la règle : périphérique connu prioritaire, candidat unique accepté automatiquement, plusieurs candidats ambigus présentés dans l'interface Web plutôt que choisis au hasard.
 
@@ -450,7 +451,7 @@ cvp_access_installer/systemd/cvp-web.service.in
 cvp_access_installer/tools/cvp_web.py
 ```
 
-Le portail Web fonctionne sur le port HTTP 80 et limite les clients au sous-réseau `10.42.0.0/24` et à localhost. Il expose un dashboard d'état, les interfaces MIDI disponibles, l'audio Yamaha, le clavier USB, les périphériques USB, les événements utiles, le Doctor, le redémarrage du service CVP Access et le redémarrage du Raspberry.
+Le portail Web fonctionne sur le port HTTP 80 et accepte localhost, le hotspot `10.42.0.0/24` et les sous-réseaux IPv4 privés directement connectés au Raspberry (Ethernet ou Wi-Fi). Il expose un dashboard d'état, les interfaces MIDI disponibles, l'audio Yamaha, le clavier USB, les périphériques USB, les événements utiles, le Doctor, le redémarrage du service CVP Access et le redémarrage du Raspberry.
 
 Une sélection MIDI faite dans le dashboard est écrite dans :
 
@@ -462,9 +463,42 @@ Le moteur historique `cvp_access_v1.4.1.py` lit cette préférence avant les rè
 
 Le portail captif utilise le dnsmasq de la connexion partagée NetworkManager avec DNS wildcard vers `10.42.0.1` et l'option DHCP 114. Les endpoints usuels Apple/Android/Windows sont redirigés vers le dashboard. Cette ouverture automatique reste à valider sur les différents OS.
 
+### Accès Web et Samba — 1.5.2-RC1
+
+Le dashboard et la carte clavier affichent les adresses de maintenance. Sur la page Web, elles sont cliquables pour les copier dans le presse-papiers.
+
+```text
+Web réseau normal : http://<hostname>.local
+Web hotspot       : http://10.42.0.1
+
+Mac / Linux :
+smb://<hostname>.local/CVP_access
+smb://<hostname>.local/CVP_config
+smb://10.42.0.1/CVP_access
+smb://10.42.0.1/CVP_config
+
+Windows :
+\\<hostname>.local\CVP_access
+\\<hostname>.local\CVP_config
+\\10.42.0.1\CVP_access
+\\10.42.0.1\CVP_config
+```
+
+Partages Samba officiels :
+
+```text
+CVP_access -> dépôt/projet
+CVP_config -> configuration client
+```
+
+Sur macOS, utiliser Finder → Aller → Se connecter au serveur (`Cmd + K`) avec `smb://...`. Sous Linux/GNOME/Zorin, utiliser aussi `smb://...`; le backend `gvfs-backends` peut être nécessaire.
+
+La carte clavier conserve ces deux blocs en bas de page et reste formatée pour **une seule page A4 paysage**.
+
+
 ## 14. Vérification du paquet
 
-`VERIFY_PACKAGE_151.py` compile le wrapper, la base, les moteurs historiques, les modules et les outils. Il vérifie notamment :
+`VERIFY_PACKAGE_152.py` compile le wrapper 1.5.2, la base 1.5.1, les moteurs historiques, les modules et les outils. Il vérifie notamment :
 
 ```text
 M
@@ -478,7 +512,7 @@ Il vérifie aussi que le layout officiel ne conserve plus d'ancien binding `ALT+
 Résultat attendu :
 
 ```text
-CVP Access 1.5.1 RC3 package: OK
+CVP Access 1.5.2 RC1 package: OK
 ```
 
 ## 15. Doctor — VALIDÉ APRÈS MIGRATION ALT -> MAJ
@@ -486,8 +520,8 @@ CVP Access 1.5.1 RC3 package: OK
 Le Doctor exécuté après migration du layout a confirmé :
 
 ```text
-OK    Runtime 1.5.1             modules complets
-OK    Version runtime           1.5.1-RC3
+OK    Runtime 1.5.x             modules complets
+OK    Version runtime           1.5.2-RC1
 OK    Layout accessibilité      présente
 OK    WAV états 1.5.1           10 présents
 OK    WAV mute Style            8 présents
