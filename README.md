@@ -232,10 +232,11 @@ Pas de Song chargé.
 CVP Access peut être maintenu même chez un client sans box ni Wi-Fi.
 
 ```text
-Wi-Fi connu disponible
-  -> connexion normale
+Réseau Ethernet ou Wi-Fi normal disponible
+  -> connexion normale prioritaire
+  -> CVP-ACCESS reste arrêté
 
-aucun Wi-Fi connu après ~30 s
+aucun réseau normal disponible après ~30 s
   -> point d'accès CVP-ACCESS
   -> Raspberry : 10.42.0.1
   -> portail : http://10.42.0.1
