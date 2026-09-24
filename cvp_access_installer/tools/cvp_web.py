@@ -795,7 +795,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if not self.allowed():
-            self.send_bytes(403, b"CVP Access portal: local Wi-Fi access only\n")
+            self.send_bytes(403, b"CVP Access portal: local network access only\n")
             return
 
         path = urlparse(self.path).path
@@ -849,7 +849,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not self.allowed():
-            self.send_json({"error": "local Wi-Fi access only"}, 403)
+            self.send_json({"error": "local network access only"}, 403)
             return
 
         length = min(int(self.headers.get("Content-Length", "0") or 0), 8192)
