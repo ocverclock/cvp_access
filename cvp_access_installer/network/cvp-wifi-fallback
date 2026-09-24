@@ -10,25 +10,65 @@ log() {
     printf '[cvp-wifi] %s\n' "$*"
 }
 
-while true; do
-    ACTIVE="$(nmcli -g GENERAL.CONNECTION device show "$DEV" 2>/dev/null || true)"
+# A normal network connection (Ethernet or Wi-Fi) always has priority over the
+# maintenance hotspot. "Connected" here means NetworkManager considers the
+# interface connected; Internet access is not required.
+normal_network_active() {
+    nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device status 2>/dev/null |
+        awk -F: -v hotspot="$HOTSPOT" '
+            $1 != "lo" &&
+            $3 == "connected" &&
+            $4 != hotspot &&
+            ($2 == "ethernet" || $2 == "wifi") {
+                found = 1
+            }
+            END { exit(found ? 0 : 1) }
+        '
+}
 
-    if [[ -n "$ACTIVE" && "$ACTIVE" != "--" && "$ACTIVE" != "$HOTSPOT" ]]; then
+hotspot_active() {
+    nmcli -t -f NAME connection show --active 2>/dev/null |
+        grep -Fxq "$HOTSPOT"
+}
+
+wifi_device_available() {
+    nmcli -t -f DEVICE,TYPE device status 2>/dev/null |
+        awk -F: -v dev="$DEV" '$1 == dev && $2 == "wifi" { found = 1 } END { exit(found ? 0 : 1) }'
+}
+
+while true; do
+    # Ethernet or a normal Wi-Fi connection is sufficient: do not start the AP.
+    # If the AP was already active when a LAN connection appeared, stop it.
+    if normal_network_active; then
+        if hotspot_active; then
+            log "Réseau normal actif : arrêt de $HOTSPOT"
+            nmcli connection down "$HOTSPOT" >/dev/null 2>&1 || true
+        fi
         sleep 15
         continue
     fi
 
-    if [[ "$ACTIVE" == "$HOTSPOT" ]]; then
+    # If the maintenance hotspot is already providing access, keep it.
+    if hotspot_active; then
+        sleep 30
+        continue
+    fi
+
+    # No usable Wi-Fi radio means there is nothing to turn into an AP.
+    if ! wifi_device_available; then
         sleep 30
         continue
     fi
 
     sleep "$WAIT_SECONDS"
 
-    ACTIVE="$(nmcli -g GENERAL.CONNECTION device show "$DEV" 2>/dev/null || true)"
+    # Re-check after the grace period: Ethernet/Wi-Fi may have come up meanwhile.
+    if normal_network_active; then
+        continue
+    fi
 
-    if [[ -z "$ACTIVE" || "$ACTIVE" == "--" ]]; then
-        log "Aucun Wi-Fi connu actif : démarrage de $HOTSPOT"
+    if ! hotspot_active; then
+        log "Aucun réseau normal actif : démarrage de $HOTSPOT"
         if ! nmcli connection up "$HOTSPOT" ifname "$DEV"; then
             log "Échec du démarrage de $HOTSPOT ; nouvel essai dans 30 s"
         fi
