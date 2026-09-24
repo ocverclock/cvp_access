@@ -1077,6 +1077,60 @@ class CVPActions:
         )
 
 
+def install_recorder_probe(core):
+    """Optional development probe for the future 1.6 MIDI recorder."""
+    enabled = os.environ.get(
+        "CVP_RECORDER_PROBE",
+        "0",
+    ).strip().lower() in {"1", "true", "yes", "on"}
+
+    if not enabled:
+        return None
+
+    register = getattr(
+        core,
+        "register_midi_channel_listener",
+        None,
+    )
+    if not callable(register):
+        print("Recorder probe : MIDI tap indisponible")
+        return None
+
+    def listener(packet, timestamp):
+        if not packet:
+            return
+
+        status = packet[0]
+        if status >= 0xF0:
+            return
+
+        channel = (status & 0x0F) + 1
+        if channel != 1:
+            return
+
+        command = status & 0xF0
+
+        if command == 0x90 and len(packet) >= 3:
+            note = packet[1]
+            velocity = packet[2]
+            kind = "NOTE_OFF" if velocity == 0 else "NOTE_ON"
+            print(
+                f"Recorder probe : CH1 {kind} "
+                f"note={note} velocity={velocity} "
+                f"t={timestamp:.3f}"
+            )
+        elif command == 0x80 and len(packet) >= 3:
+            print(
+                f"Recorder probe : CH1 NOTE_OFF "
+                f"note={packet[1]} velocity={packet[2]} "
+                f"t={timestamp:.3f}"
+            )
+
+    register(listener)
+    print("Recorder probe : actif sur canal MIDI 1")
+    return listener
+
+
 def initialise_piano(core, port):
     # Permanent receiver: same validated architecture as v1.4.1.
     thread = threading.Thread(
@@ -1115,6 +1169,7 @@ def initialise_piano(core, port):
 
 def main():
     core = load_core()
+    recorder_probe = install_recorder_probe(core)
 
     config = load_keyboard_config(
         CONFIG_FILE,
