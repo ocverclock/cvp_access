@@ -55,6 +55,7 @@ assert "Accès Web" in keyboard_map_source
 assert "Partages Samba" in keyboard_map_source
 assert "@page{size:A4 landscape" in keyboard_map_source
 assert "height:198mm" in keyboard_map_source
+assert "${html.escape(hostname)}" not in keyboard_map_source
 
 portal_source = (
     root / "cvp_access_installer/tools/cvp_web.py"
