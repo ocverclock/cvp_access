@@ -664,16 +664,24 @@ async function refresh(){
  const sambaConfig='\\\\'+rawHost+'.local\\CVP_config';
  const sambaHotspotProject='\\\\10.42.0.1\\CVP_access';
  const sambaHotspotConfig='\\\\10.42.0.1\\CVP_config';
+ const smbProject='smb://'+rawHost+'.local/CVP_access';
+ const smbConfig='smb://'+rawHost+'.local/CVP_config';
+ const smbHotspotProject='smb://10.42.0.1/CVP_access';
+ const smbHotspotConfig='smb://10.42.0.1/CVP_config';
 
  document.getElementById('webAccess').innerHTML=
   '<div class="row"><span class="label">Réseau local</span>'+copyButton(localWeb)+'</div>'+
   '<div class="row"><span class="label">Hotspot CVP-ACCESS</span>'+copyButton(hotspotWeb)+'</div>';
 
  document.getElementById('sambaAccess').innerHTML=
+  '<div class="small" style="margin-bottom:6px"><b>Mac / Linux</b> — utiliser <code>smb://</code></div>'+
+  '<div class="row"><span class="label">Projet</span>'+copyButton(smbProject)+'</div>'+
+  '<div class="row"><span class="label">Configuration</span>'+copyButton(smbConfig)+'</div>'+
+  '<div class="row"><span class="label">Hotspot projet</span>'+copyButton(smbHotspotProject)+'</div>'+
+  '<div class="row"><span class="label">Hotspot config</span>'+copyButton(smbHotspotConfig)+'</div>'+
+  '<div class="small" style="margin:10px 0 4px"><b>Windows</b> — utiliser <code>\\\\</code></div>'+
   '<div class="row"><span class="label">Projet</span>'+copyButton(sambaProject)+'</div>'+
   '<div class="row"><span class="label">Configuration</span>'+copyButton(sambaConfig)+'</div>'+
-  '<div class="row"><span class="label">Hotspot projet</span>'+copyButton(sambaHotspotProject)+'</div>'+
-  '<div class="row"><span class="label">Hotspot config</span>'+copyButton(sambaHotspotConfig)+'</div>'+
   '<div class="small" style="margin-top:8px">Utilisateur Samba : '+esc(d.samba_user||'pi')+'</div>';
 
  let m='';
