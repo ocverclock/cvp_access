@@ -206,10 +206,11 @@ def render_key(key, bindings, grow=1.0, printed_label=None):
 
     if key == "F15" and not items:
         return (
-            f'<div class="key unused" style="flex-grow:{grow}">'
+            f'<div class="key recorder" style="flex-grow:{grow}">'
             f'<div class="keyname">{html.escape(label)}</div>'
-            '<div class="specialtext"><strong>Réservé dictaphone MIDI 1.6</strong><br>'
-            'Appui court / appui long en développement</div></div>'
+            '<div class="specialtext"><strong>Dictaphone MIDI</strong><br>'
+            'Court : lecture / stop / annuler / sauver<br>'
+            'Maintenir : nouvel enregistrement</div></div>'
         )
     for mods, action in items:
         mod = ""
@@ -290,6 +291,7 @@ h1{margin:0;font-size:22px}
 .style{background:#f0f8f0;border-bottom:4px solid #57945a}
 .voice{background:#f6f1fa;border-bottom:4px solid #8663a8}
 .system{background:#fbf4ec;border-bottom:4px solid #b77a39}
+.recorder{background:#f3f0ff;border-bottom:4px solid #6941c6}
 .unused{background:#fbfbfb;color:#aaa}
 .side h2{margin:0 0 5px;font-size:12px}
 .nav-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
@@ -328,7 +330,7 @@ h1{margin:0;font-size:22px}
 <body>
 <div class="header"><div><h1>CVP Access — Carte des commandes</h1>
 <div class="subtitle">Générée depuis {html.escape(str(config_path))}</div></div>
-<div class="stats">{mapped} affectation(s)<br>Layout accessibilité 1.5.2 RC1</div></div>
+<div class="stats">{mapped} affectation(s)<br>Layout accessibilité 1.6.0 RC1</div></div>
 
 <div class="help-banner"><strong>CTRL = AIDE VOCALE.</strong>
 Maintenir CTRL puis appuyer sur une touche attribuée :
@@ -366,6 +368,12 @@ Sans Song chargé : annonce « Pas de Song chargé ».</div></div></aside></div>
     &nbsp;•&nbsp;
     <button class="copyvalue" data-copy="smb://10.42.0.1/CVP_config"
       onclick="copyValue(this)">smb://10.42.0.1/CVP_config</button><br>
+    Enregistrements :
+    <button class="copyvalue" data-copy="smb://{html.escape(hostname, quote=True)}.local/CVP_recordings"
+      onclick="copyValue(this)">smb://{html.escape(hostname)}.local/CVP_recordings</button>
+    &nbsp;•&nbsp;
+    <button class="copyvalue" data-copy="smb://10.42.0.1/CVP_recordings"
+      onclick="copyValue(this)">smb://10.42.0.1/CVP_recordings</button><br>
     <strong>Windows :</strong>
     <button class="copyvalue" data-copy="\\\\{html.escape(hostname, quote=True)}.local\\CVP_access"
       onclick="copyValue(this)">\\\\{html.escape(hostname)}.local\\CVP_access</button>
