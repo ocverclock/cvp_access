@@ -428,21 +428,43 @@ h2{font-size:1rem;margin:0 0 10px}.row{display:flex;justify-content:space-betwee
 .ok{color:#08752f;font-weight:700}.bad{color:#b42318;font-weight:700}.muted{color:#667085}
 button,a.btn{border:0;border-radius:8px;padding:9px 11px;margin:3px;background:#1f2937;color:white;text-decoration:none;display:inline-block;cursor:pointer}
 button.secondary,a.secondary{background:#475467}button.danger{background:#b42318}
+input,select{box-sizing:border-box;width:100%;padding:9px;margin:5px 0;border:1px solid #cdd2da;border-radius:8px;background:white}
 pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;padding:10px;border-radius:8px;max-height:270px;overflow:auto}
 .device{padding:9px 0;border-top:1px solid #eee}.device:first-child{border-top:0}.selected{font-weight:700;color:#08752f}
 small{color:#667085}.notice{background:#eef4ff;padding:10px;border-radius:8px;margin-bottom:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(max-width:600px){.two{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header><h1>CVP Access — Maintenance</h1><p>Melody Music · Raspberry autonome</p></header>
 <main>
-<div class="notice">Cette page fonctionne localement, sans Internet. Accès de secours : <b>10.42.0.1</b>.</div>
+<div class="notice">Accessible depuis CVP-ACCESS ou depuis le même réseau Wi-Fi que le Raspberry.</div>
 <div class="grid">
 <section class="card"><h2>Système</h2><div id="system">Chargement…</div></section>
 <section class="card"><h2>Réseau</h2><div id="network">Chargement…</div></section>
 <section class="card"><h2>MIDI</h2><div id="midi">Chargement…</div></section>
 <section class="card"><h2>Périphériques</h2><div id="devices">Chargement…</div></section>
 </div>
+
+<section class="card">
+<h2>Connexion Wi-Fi</h2>
+<p class="muted">Choisis un réseau. Si la connexion échoue, CVP-ACCESS est réactivé automatiquement.</p>
+<button class="secondary" onclick="scanWifi()">Rechercher les réseaux</button>
+<select id="wifiList"><option value="">Recherche en attente…</option></select>
+<div class="two">
+<input id="manualSsid" placeholder="SSID manuel / réseau caché">
+<input id="wifiPassword" type="password" placeholder="Mot de passe du Wi-Fi">
+</div>
+<button onclick="connectWifi()">Se connecter à ce Wi-Fi</button>
+<div id="wifiResult" class="muted" style="margin-top:8px"></div>
+</section>
+
+<section class="card">
+<h2>Accès maintenance</h2>
+<p class="muted">Pour modifier la configuration, saisis le mot de passe de CVP-ACCESS.</p>
+<input id="adminPassword" type="password" placeholder="Mot de passe CVP-ACCESS">
+</section>
+
 <section class="card"><h2>Actions</h2>
 <button onclick="action('restart')">Relancer CVP Access</button>
 <button class="secondary" onclick="action('doctor')">Lancer le Doctor</button>
@@ -455,6 +477,10 @@ small{color:#667085}.notice{background:#eef4ff;padding:10px;border-radius:8px;ma
 <script>
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const badge=s=>'<span class="'+(s==='active'?'ok':'bad')+'">'+esc(s)+'</span>';
+const admin=document.getElementById('adminPassword');
+admin.value=sessionStorage.getItem('cvpAdmin')||'';
+admin.addEventListener('input',()=>sessionStorage.setItem('cvpAdmin',admin.value));
+
 async function refresh(){
  const r=await fetch('/api/status',{cache:'no-store'}); const d=await r.json();
  document.getElementById('system').innerHTML=
@@ -462,12 +488,19 @@ async function refresh(){
   '<div class="row"><span>CVP Access</span>'+badge(d.services.cvp_access)+'</div>'+
   '<div class="row"><span>Fallback Wi-Fi</span>'+badge(d.services.wifi_fallback)+'</div>'+
   '<div class="row"><span>Portail Web</span>'+badge(d.services.web)+'</div>';
+ const localUrl='http://'+esc(d.network.hostname)+'.local';
+ let result=d.network.wifi_result||{};
  document.getElementById('network').innerHTML=
   '<div class="row"><span>Connexion</span><b>'+esc(d.network.connection)+'</b></div>'+
   '<div class="row"><span>Hotspot</span><b>'+(d.network.hotspot?'CVP-ACCESS':'non')+'</b></div>'+
+  '<div class="row"><span>Nom local</span><b>'+localUrl+'</b></div>'+
   '<small>'+esc(d.network.address||'')+'</small>';
+ if(result.status){
+   document.getElementById('wifiResult').textContent=
+    result.status+' · '+(result.ssid||'')+(result.detail?' · '+result.detail:'');
+ }
  let m='';
- if(!d.midi.length)m='<span class="bad">Aucune interface MIDI bidirectionnelle détectée</span>';
+ if(!d.midi.length)m='<span class="bad">Aucune interface MIDI détectée</span>';
  for(const x of d.midi){
    const sel=d.selected_midi===x.name;
    m+='<div class="device"><div class="'+(sel?'selected':'')+'">'+esc(x.name)+'</div>'+
@@ -488,15 +521,57 @@ async function refresh(){
   '<br><small>'+d.usb.map(esc).join('<br>')+'</small>';
  document.getElementById('events').textContent=d.events.join('\n')||'Aucun événement utile récent.';
 }
+
+async function scanWifi(){
+ const box=document.getElementById('wifiResult');
+ box.textContent='Recherche des réseaux…';
+ try{
+   const r=await fetch('/api/wifi/scan',{cache:'no-store'});
+   const d=await r.json();
+   const sel=document.getElementById('wifiList');
+   sel.innerHTML='';
+   const first=document.createElement('option');
+   first.value=''; first.textContent='Sélectionner un réseau';
+   sel.appendChild(first);
+   for(const n of d.networks||[]){
+     const o=document.createElement('option');
+     o.value=n.ssid;
+     o.textContent=n.ssid+' · '+n.signal+'%'+(n.security?' · '+n.security:' · ouvert');
+     sel.appendChild(o);
+   }
+   box.textContent=(d.networks||[]).length+' réseau(x) détecté(s).';
+ }catch(e){box.textContent='Recherche impossible. Saisis le SSID manuellement.'}
+}
+
 async function post(url,body={}){
+ body.admin_password=admin.value;
  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
- const d=await r.json(); document.getElementById('actionResult').textContent=d.message||d.error||'OK'; setTimeout(refresh,800);
+ const d=await r.json();
+ if(r.status===401){document.getElementById('actionResult').textContent='Mot de passe maintenance incorrect.';return d}
+ document.getElementById('actionResult').textContent=d.message||d.error||'OK';
+ setTimeout(refresh,800); return d;
 }
 function action(name){post('/api/action/'+name)}
 function selectMidi(name){post('/api/midi/select',{name})}
 function selectKeyboard(path){post('/api/keyboard/select',{path})}
 function rebootPi(){if(confirm('Redémarrer complètement le Raspberry ?'))post('/api/action/reboot')}
-refresh(); setInterval(refresh,4000);
+async function connectWifi(){
+ const manual=document.getElementById('manualSsid').value.trim();
+ const listed=document.getElementById('wifiList').value;
+ const ssid=manual||listed;
+ if(!ssid){document.getElementById('wifiResult').textContent='Choisis ou saisis un réseau.';return}
+ document.getElementById('wifiResult').textContent='Tentative de connexion à '+ssid+'…';
+ const d=await post('/api/wifi/connect',{
+   ssid:ssid,
+   password:document.getElementById('wifiPassword').value,
+   hidden:Boolean(manual)
+ });
+ if(d&&d.message){
+   document.getElementById('wifiResult').textContent=
+    d.message+' La page peut se couper pendant le changement de réseau. En cas d’échec, reconnecte-toi à CVP-ACCESS.';
+ }
+}
+refresh(); scanWifi(); setInterval(refresh,4000);
 </script>
 </body></html>
 """
