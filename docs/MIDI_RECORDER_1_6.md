@@ -25,6 +25,26 @@ F15 ne doit servir qu'au dictaphone MIDI dans le layout 1.6. Le comportement app
 
 **Point technique :** le routeur clavier 1.5.2 ne déclare actuellement que F1 à F13. L'implémentation 1.6 devra donc ajouter explicitement F14/F15 au catalogue evdev et faire apparaître F15 sur la carte clavier avant d'activer le Recorder.
 
+### Checkpoint matériel F15 — validé
+
+Test réalisé sur le clavier Apple Extended USB connecté au Raspberry :
+
+```text
+KEY_F15 1
+KEY_F15 2
+KEY_F15 0
+```
+
+Interprétation :
+
+- `1` = appui ;
+- `2` = répétition automatique pendant maintien ;
+- `0` = relâchement.
+
+F15 est donc **VALIDÉE MATÉRIELLEMENT** comme touche exploitable pour le dictaphone. L'implémentation devra ignorer les événements `value=2` pour éviter les doubles commandes.
+
+Le routeur commun accepte maintenant F14 et F15. La carte clavier affiche aussi F14/F15 ; tant que la 1.6 n'est pas activée, F15 porte la mention « Réservé dictaphone MIDI 1.6 ».
+
 ### État repos
 
 Appui court :
@@ -321,3 +341,24 @@ Le module doit rester indépendant du protocole Yamaha autant que possible.
 8. liste et sélection sur le portail Web ;
 9. validation avec VoiceOver sur le Mac du client ;
 10. seulement ensuite envisager le multi-canal.
+
+
+## Probe MIDI intégré — checkpoint suivant
+
+Le runtime possède maintenant un tap de messages MIDI canal dans le récepteur permanent. Aucun second port ALSA n'est ouvert.
+
+Un probe de développement, désactivé par défaut, permet de vérifier les Note On / Note Off du canal 1 :
+
+```text
+CVP_RECORDER_PROBE=1
+```
+
+Sortie attendue dans le journal :
+
+```text
+Recorder probe : actif sur canal MIDI 1
+Recorder probe : CH1 NOTE_ON note=... velocity=...
+Recorder probe : CH1 NOTE_OFF note=... velocity=...
+```
+
+Ce probe ne sauvegarde encore aucun fichier. Il sert uniquement à valider le chemin de capture avant d'activer la machine d'états et l'écriture SMF.
