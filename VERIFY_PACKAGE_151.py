@@ -31,6 +31,20 @@ for rel in [
     assert path.is_file(), f"Fichier requis absent : {rel}"
     py_compile.compile(str(path), doraise=True)
 
+speech_source = (root / "cvp_speech_151.py").read_text(encoding="utf-8")
+runtime_source = (root / "cvp_access_v1.5.py").read_text(encoding="utf-8")
+generator_source = (
+    root / "cvp_access_installer/tools/generate_151_voices.py"
+).read_text(encoding="utf-8")
+doctor_source = (
+    root / "cvp_access_installer/tools/cvp_doctor_151.py"
+).read_text(encoding="utf-8")
+
+assert "announce_startup_ready" in speech_source
+assert "announce_startup_ready" in runtime_source
+assert "system/startup_ready.wav" in generator_source
+assert "system/startup_ready.wav" in doctor_source
+
 with (root / "config/default-1.5.1.toml").open("rb") as handle:
     cfg = tomllib.load(handle)
 
