@@ -72,6 +72,28 @@ class RecorderController:
 
     def _speak(self, text: str):
         print(f"Recorder : {text}")
+
+        fixed = {
+            "Enregistrement prêt.": "announce_recorder_ready",
+            "Enregistrement annulé.": "announce_recorder_cancelled",
+            "Aucun enregistrement disponible.": "announce_recorder_no_recording",
+            "Lecture.": "announce_recorder_play",
+            "Lecture arrêtée.": "announce_recorder_play_stopped",
+            "Lecture terminée.": "announce_recorder_play_finished",
+            "Sortie MIDI de lecture introuvable.": "announce_recorder_output_missing",
+            "Erreur pendant la sauvegarde.": "announce_recorder_save_error",
+        }
+
+        hook = fixed.get(text)
+        if hook:
+            announcer = getattr(self.core, hook, None)
+            if callable(announcer):
+                try:
+                    announcer()
+                    return
+                except Exception as exc:
+                    print("Recorder : erreur annonce :", exc)
+
         announcer = getattr(self.core, "announce_action_help", None)
         if callable(announcer):
             try:
