@@ -49,6 +49,7 @@ SERVICE_FILE="/etc/systemd/system/cvp-access.service"
 SAMBA_FRAGMENT="/etc/samba/cvp-access.conf"
 CONFIG_DIR="/etc/cvp-access"
 CONFIG_FILE="$CONFIG_DIR/keyboard.toml"
+RECORDINGS_DIR="$CVP_HOME/CVP_Recordings"
 
 log "CVP Access installer $INSTALLER_VERSION"
 printf 'User        : %s\n' "$CVP_USER"
@@ -57,6 +58,7 @@ printf 'Repository  : %s\n' "$REPO_DIR"
 printf 'Installer   : %s\n' "$INSTALLER_DIR"
 printf 'Runtime     : %s\n' "$RUNTIME_DIR"
 printf 'Voice bank  : %s\n' "$VOICE_DIR"
+install -d -o "$CVP_USER" -g "$CVP_USER" -m 0775 "$RECORDINGS_DIR"
 
 # -----------------------------------------------------------------------------
 # OS preflight
@@ -285,6 +287,7 @@ sed \
     -e "s#@CVP_USER@#$CVP_USER#g" \
     -e "s#@PROJECT_DIR@#$REPO_DIR#g" \
     -e "s#@CONFIG_DIR@#$CONFIG_DIR#g" \
+    -e "s#@RECORDINGS_DIR@#$RECORDINGS_DIR#g" \
     "$SAMBA_TEMPLATE" > "$SAMBA_FRAGMENT"
 chmod 0644 "$SAMBA_FRAGMENT"
 
