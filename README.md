@@ -21,7 +21,7 @@ Validation matérielle principale :
 Yamaha CVP-905
 Firmware 1.03
 Raspberry Pi / Debian 13 arm64
-Interface MIDI DIN Prodipe
+Interface MIDI DIN : ProdipeMIDIlilo ou USB MIDI Interface
 USB Audio du CVP
 Clavier Apple Extended USB
 Piper fr_FR-siwis-medium
