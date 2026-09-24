@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CVP_USER="${CVP_USER:-pi}"
+REPO_DIR="${CVP_REPO_DIR:-/home/$CVP_USER/CVP_access}"
+STATE_FILE="/run/cvp-access-update-state"
+LOG_FILE="/run/cvp-access-update.log"
+
+write_state() {
+    printf '%s\n' "$1" > "$STATE_FILE"
+    chmod 0644 "$STATE_FILE"
+}
+
+finish() {
+    rc=$?
+    if (( rc == 0 )); then
+        write_state "success"
+        printf '\n[CVP Access update] Mise à jour terminée avec succès.\n'
+    else
+        write_state "failed"
+        printf '\n[CVP Access update] ECHEC (code %s).\n' "$rc"
+    fi
+}
+trap finish EXIT
+
+: > "$LOG_FILE"
+chmod 0644 "$LOG_FILE"
+exec >>"$LOG_FILE" 2>&1
+
+write_state "running"
+
+printf '[CVP Access update] %s\n' "$(date --iso-8601=seconds)"
+printf 'Utilisateur : %s\n' "$CVP_USER"
+printf 'Depot       : %s\n' "$REPO_DIR"
+
+getent passwd "$CVP_USER" >/dev/null || {
+    echo "Utilisateur CVP introuvable : $CVP_USER" >&2
+    exit 1
+}
+
+CVP_HOME="$(getent passwd "$CVP_USER" | cut -d: -f6)"
+
+[[ -d "$REPO_DIR/.git" ]] || {
+    echo "Depot Git introuvable : $REPO_DIR" >&2
+    exit 1
+}
+
+git_user() {
+    runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" git "$@"
+}
+
+if [[ -n "$(git_user -C "$REPO_DIR" status --porcelain)" ]]; then
+    echo "Des modifications locales sont presentes. Mise a jour annulee pour ne rien ecraser." >&2
+    git_user -C "$REPO_DIR" status --short
+    exit 1
+fi
+
+echo
+echo "[CVP Access update] Recuperation GitHub"
+git_user -C "$REPO_DIR" pull --ff-only
+
+VERIFY_SCRIPT="$(
+    find "$REPO_DIR" -maxdepth 1 -type f -name 'VERIFY_PACKAGE_*.py' -printf '%p\n' \
+    | sort -V \
+    | tail -n 1
+)"
+
+if [[ -n "$VERIFY_SCRIPT" ]]; then
+    echo
+    echo "[CVP Access update] Verification : $(basename "$VERIFY_SCRIPT")"
+    runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" python3 "$VERIFY_SCRIPT"
+fi
+
+mapfile -t UPGRADERS < <(
+    find "$REPO_DIR/cvp_access_installer" -maxdepth 1 -type f -name 'upgrade_*.sh' -printf '%f\n' \
+    | grep -E '^upgrade_[0-9]+(_[0-9]+){1,2}\.sh$' \
+    | sort -V
+)
+
+(( ${#UPGRADERS[@]} > 0 )) || {
+    echo "Aucun installateur de version trouve." >&2
+    exit 1
+}
+
+UPGRADE_SCRIPT="$REPO_DIR/cvp_access_installer/${UPGRADERS[-1]}"
+
+echo
+echo "[CVP Access update] Installation : $(basename "$UPGRADE_SCRIPT")"
+CVP_USER="$CVP_USER" bash "$UPGRADE_SCRIPT"
