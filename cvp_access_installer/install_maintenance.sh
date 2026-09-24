@@ -76,7 +76,7 @@ chmod 0644 /etc/systemd/system/cvp-web.service
 install -d -m 0755 /etc/NetworkManager/dnsmasq-shared.d
 cat > /etc/NetworkManager/dnsmasq-shared.d/cvp-access-portal.conf <<'EOF'
 address=/#/10.42.0.1
-dhcp-option=114,http://10.42.0.1/
+dhcp-option=114,http://10.42.0.1/captive-portal
 EOF
 chmod 0644 /etc/NetworkManager/dnsmasq-shared.d/cvp-access-portal.conf
 
