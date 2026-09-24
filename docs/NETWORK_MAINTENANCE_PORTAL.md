@@ -6,7 +6,7 @@ Date : 24 septembre 2026
 
 CVP Access doit rester administrable chez un client qui ne possède ni box ni Wi-Fi.
 
-Le Raspberry essaie d'abord les réseaux Wi-Fi déjà connus. Si aucun réseau normal n'est disponible après environ 30 secondes, il active son propre point d'accès `CVP-ACCESS`.
+Le Raspberry privilégie toute connexion réseau normale déjà disponible. Ethernet a également priorité sur le hotspot : si une liaison Ethernet ou un Wi-Fi normal est connecté, `CVP-ACCESS` reste arrêté. Si aucun réseau normal n'est disponible après environ 30 secondes, il active son propre point d'accès `CVP-ACCESS`.
 
 ## Wi-Fi fallback validé
 
