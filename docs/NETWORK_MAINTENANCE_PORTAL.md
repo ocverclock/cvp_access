@@ -153,4 +153,40 @@ L'interface Web de maintenance est destinée au réseau local CVP-ACCESS. Les op
 
 Le fallback Wi-Fi est validé en fonctionnement réel.
 
-L'interface Web, l'affectation dynamique et le portail captif sont des évolutions approuvées mais pas encore implémentées.
+Le fallback Wi-Fi est validé en fonctionnement réel. Le portail Web, l'affectation MIDI/clavier persistante et le portail captif sont implémentés dans le dépôt ; leur validation matérielle complète reste à effectuer.
+
+
+## Implémentation actuelle
+
+Fichiers :
+
+```text
+cvp_access_installer/install_maintenance.sh
+cvp_access_installer/network/cvp-wifi-fallback
+cvp_access_installer/systemd/cvp-wifi-fallback.service.in
+cvp_access_installer/systemd/cvp-web.service.in
+cvp_access_installer/tools/cvp_web.py
+```
+
+Le portail HTTP écoute sur le port 80 mais n'accepte que les clients du sous-réseau `10.42.0.0/24` et localhost.
+
+Il expose :
+
+- état des services ;
+- réseau courant ;
+- interfaces MIDI ;
+- sélection persistante MIDI ;
+- claviers USB et sélection persistante ;
+- audio Yamaha détecté ;
+- périphériques USB ;
+- événements CVP Access filtrés ;
+- lancement du Doctor ;
+- relance de CVP Access ;
+- redémarrage du Raspberry ;
+- carte clavier.
+
+Les sélections sont enregistrées dans `/etc/cvp-access/hardware.toml`.
+
+Le portail captif combine DNS wildcard sur le dnsmasq de la connexion partagée, redirections des URLs de détection usuelles et une API captive sur `/captive-portal` annoncée par DHCP option 114.
+
+La génération du mot de passe d'un hotspot neuf est aléatoire. Un profil `CVP-ACCESS` déjà présent conserve son mot de passe.
