@@ -35,6 +35,7 @@ for rel in [
 maintenance_required = [
     "cvp_access_installer/install_maintenance.sh",
     "cvp_access_installer/network/cvp-wifi-fallback",
+    "cvp_access_installer/network/cvp-wifi-connect",
     "cvp_access_installer/systemd/cvp-wifi-fallback.service.in",
     "cvp_access_installer/systemd/cvp-web.service.in",
 ]
@@ -54,6 +55,9 @@ portal_source = (
 assert "10.42.0.1" in portal_source
 assert "/api/midi/select" in portal_source
 assert "/api/keyboard/select" in portal_source
+assert "/api/wifi/connect" in portal_source
+assert "/api/wifi/scan" in portal_source
+assert "request_authorized" in portal_source
 assert "cvp-access.service" in portal_source
 
 speech_source = (root / "cvp_speech_151.py").read_text(encoding="utf-8")
