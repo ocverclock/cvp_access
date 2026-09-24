@@ -663,4 +663,4 @@ Principes retenus :
 
 La touche dictaphone retenue est **F15**. Test matériel validé sur l'Apple Extended USB : `KEY_F15 1 / 2 / 0`. Le routeur commun accepte désormais F14/F15 et la carte clavier les affiche ; F15 est marquée « Réservé dictaphone MIDI 1.6 » tant que la fonction n'est pas activée.
 
-Architecture Recorder retenue : ne pas ouvrir un second port MIDI. Le `midi_receiver()` historique reçoit déjà le flux brut complet et parse les messages de canal. Un listener/tap interne protégé est maintenant présent ; le probe `CVP_RECORDER_PROBE=1` journalise les Note On/Note Off du canal 1. Prochain checkpoint : valider ces notes sur le CVP-905 sans régression SysEx.
+Architecture Recorder retenue : ne pas ouvrir un second port MIDI. Le `midi_receiver()` historique reçoit déjà le flux brut complet et parse les messages de canal. Un listener/tap interne protégé est maintenant présent ; le probe `CVP_RECORDER_PROBE=1` a été validé matériellement sur le CVP de référence : Note On / Note Off canal 1 correctement reçus, y compris notes chevauchées. Prochain checkpoint : confirmer l'absence de régression SysEx pendant que le tap est actif.
