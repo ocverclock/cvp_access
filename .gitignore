@@ -23,3 +23,9 @@ cvp_functional_*.json
 cvp_functional_*.md
 diff_*.json
 *_capture.txt
+
+
+# macOS Finder metadata — may appear when browsing the Samba share
+.DS_Store
+._.DS_Store
+._*
