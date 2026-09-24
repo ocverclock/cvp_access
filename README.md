@@ -314,6 +314,8 @@ Lire dans cet ordre :
 
 ```text
 PROJECT_STATE.md
+docs/CVP_ACCESS_1_5_2.md
+docs/NETWORK_MAINTENANCE_PORTAL.md
 AI_HANDOFF.md
 docs/CVP_ACCESS_1_5_1.md
 docs/KEY_ACTIONS_1_5_1.md
