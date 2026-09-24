@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -12,6 +13,34 @@ from pathlib import Path
 OK = "OK"
 WARN = "WARN"
 FAIL = "FAIL"
+
+
+def service_state(name):
+    try:
+        result = subprocess.run(
+            ["systemctl", "is-active", name],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        return result.stdout.strip() or "inactive"
+    except (OSError, subprocess.TimeoutExpired):
+        return "unknown"
+
+
+def command_output(args):
+    try:
+        result = subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        return result.returncode, result.stdout.strip(), result.stderr.strip()
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return 127, "", str(exc)
 
 
 def main():
@@ -285,6 +314,42 @@ def main():
             if not missing_solo
             else f"{len(missing_solo)} absents"
         ),
+    )
+
+    wifi_state = service_state("cvp-wifi-fallback.service")
+    web_state = service_state("cvp-web.service")
+    add(
+        "Wi-Fi fallback",
+        OK if wifi_state == "active" else WARN,
+        wifi_state,
+    )
+    add(
+        "Portail maintenance",
+        OK if web_state == "active" else WARN,
+        web_state,
+    )
+
+    nm_rc, nm_out, nm_err = command_output(
+        ["nmcli", "-g", "802-11-wireless.mode,ipv4.method,ipv4.addresses",
+         "connection", "show", "CVP-ACCESS"]
+    )
+    expected_hotspot = (
+        nm_rc == 0
+        and "ap" in nm_out
+        and "shared" in nm_out
+        and "10.42.0.1/24" in nm_out
+    )
+    add(
+        "Profil CVP-ACCESS",
+        OK if expected_hotspot else WARN,
+        nm_out.replace("\n", " | ") if nm_out else (nm_err or "absent"),
+    )
+
+    portal_file = runtime / "cvp_web.py"
+    add(
+        "Portail Web runtime",
+        OK if portal_file.is_file() else WARN,
+        str(portal_file),
     )
 
     print()
