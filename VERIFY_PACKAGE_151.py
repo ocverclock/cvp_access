@@ -41,9 +41,12 @@ doctor_source = (
 ).read_text(encoding="utf-8")
 
 assert "announce_startup_ready" in speech_source
+assert "announce_device_restart" in speech_source
 assert "announce_startup_ready" in runtime_source
 assert "system/startup_ready.wav" in generator_source
+assert "system/restart_device.wav" in generator_source
 assert "system/startup_ready.wav" in doctor_source
+assert "restart_device.wav" in doctor_source
 
 with (root / "config/default-1.5.1.toml").open("rb") as handle:
     cfg = tomllib.load(handle)
