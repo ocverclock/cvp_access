@@ -148,8 +148,8 @@ def save_keyboard_path(path):
 
 def runtime_version():
     for path in (
-        RUNTIME / "cvp_access_1_5_1_base.py",
         RUNTIME / "cvp_access.py",
+        RUNTIME / "cvp_access_1_5_1_base.py",
     ):
         if not path.is_file():
             continue
