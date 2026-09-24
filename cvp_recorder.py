@@ -173,9 +173,20 @@ class RecorderController:
     # F15 short / long press
     # ------------------------------------------------------------------
 
-    def handle_key_event(self, event):
+    def handle_key_event(self, event, *, help_requested=False):
         if event.type != ecodes.EV_KEY or event.code != ecodes.KEY_F15:
             return False
+
+        # CTRL keeps the global CVP Access accessibility convention:
+        # announce the function without executing it.
+        if help_requested:
+            if event.value == 1:
+                self._speak(
+                    "Dictaphone MIDI. Appui court : lecture, arrêt, "
+                    "annulation ou sauvegarde selon l'état. "
+                    "Appui long : préparer un nouvel enregistrement."
+                )
+            return True
 
         # value=1 press, value=2 autorepeat, value=0 release.
         if event.value == 1:
