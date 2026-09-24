@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-UPDATE_VERSION="0.3.2"
+UPDATE_VERSION="0.4.0"
 REQUIRED_CODENAME="${CVP_REQUIRED_CODENAME:-trixie}"
 REQUIRED_ARCH="${CVP_REQUIRED_ARCH:-arm64}"
 PIPER_VOICE="${CVP_PIPER_VOICE:-fr_FR-siwis-medium}"
@@ -274,6 +274,17 @@ systemctl enable --now avahi-daemon
 systemctl enable --now smbd
 systemctl restart smbd
 systemctl restart cvp-access.service || true
+
+# -----------------------------------------------------------------------------
+# Autonomous maintenance Wi-Fi + local Web portal
+# -----------------------------------------------------------------------------
+MAINTENANCE_INSTALLER="$INSTALLER_DIR/install_maintenance.sh"
+if [[ -f "$MAINTENANCE_INSTALLER" ]]; then
+    log "Refreshing autonomous maintenance network"
+    CVP_USER="$CVP_USER" bash "$MAINTENANCE_INSTALLER"
+else
+    warn "Maintenance network installer not found: $MAINTENANCE_INSTALLER"
+fi
 
 # -----------------------------------------------------------------------------
 # Diagnostic
