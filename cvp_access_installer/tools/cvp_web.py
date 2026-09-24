@@ -430,161 +430,273 @@ DASHBOARD = r"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CVP Access — Maintenance</title>
+<title>CVP Access</title>
 <style>
-:root{font-family:system-ui,-apple-system,sans-serif;color:#16181d;background:#f4f5f7}
-body{margin:0}header{background:#111827;color:white;padding:18px 20px}
-header h1{margin:0;font-size:1.35rem}header p{margin:.35rem 0 0;color:#cbd5e1}
-main{max-width:1050px;margin:auto;padding:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-.card{background:white;border-radius:12px;padding:15px;box-shadow:0 1px 4px #0002;margin-bottom:12px}
-h2{font-size:1rem;margin:0 0 10px}.row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #eee}.row:last-child{border:0}
-.ok{color:#08752f;font-weight:700}.bad{color:#b42318;font-weight:700}.muted{color:#667085}
-button,a.btn{border:0;border-radius:8px;padding:9px 11px;margin:3px;background:#1f2937;color:white;text-decoration:none;display:inline-block;cursor:pointer}
-button.secondary,a.secondary{background:#475467}button.danger{background:#b42318}
-input,select{box-sizing:border-box;width:100%;padding:9px;margin:5px 0;border:1px solid #cdd2da;border-radius:8px;background:white}
-pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;padding:10px;border-radius:8px;max-height:270px;overflow:auto}
-.device{padding:9px 0;border-top:1px solid #eee}.device:first-child{border-top:0}.selected{font-weight:700;color:#08752f}
-small{color:#667085}.notice{background:#eef4ff;padding:10px;border-radius:8px;margin-bottom:12px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(max-width:600px){.two{grid-template-columns:1fr}}
+:root{
+  color-scheme:light;
+  --bg:#f3f6fb;--panel:#fff;--ink:#172033;--muted:#667085;
+  --line:#e5e9f0;--nav:#111827;--accent:#2563eb;--ok:#15803d;
+  --warn:#b45309;--bad:#b42318;--soft:#eef4ff;--shadow:0 10px 30px rgba(15,23,42,.07)
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:var(--nav);color:#fff}
+.header-inner{max-width:1180px;margin:auto;padding:22px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:42px;height:42px;border-radius:12px;background:#fff;color:#111827;display:grid;place-items:center;font-weight:800}
+.brand h1{font-size:1.18rem;margin:0}.brand p{margin:3px 0 0;color:#cbd5e1;font-size:.9rem}
+main{max-width:1180px;margin:auto;padding:22px}
+.hero{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;margin-bottom:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:18px}
+.hero-main{padding:22px}.hero-main h2{margin:0 0 7px;font-size:1.45rem}.hero-main p{margin:0;color:var(--muted)}
+.hero-side{display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center}
+.status-dot{width:14px;height:14px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 6px #dcfce7;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.span-4{grid-column:span 4}.span-6{grid-column:span 6}.span-8{grid-column:span 8}.span-12{grid-column:1/-1}
+h3{font-size:1rem;margin:0 0 14px}.sub{color:var(--muted);font-size:.88rem;margin-top:-7px;margin-bottom:12px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);align-items:center}.row:last-child{border-bottom:0}
+.label{color:var(--muted)}.value{font-weight:650;text-align:right}
+.pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:.78rem;font-weight:700}
+.pill.ok{background:#dcfce7;color:var(--ok)}.pill.bad{background:#fee2e2;color:var(--bad)}.pill.warn{background:#fef3c7;color:var(--warn)}
+.device{padding:11px 0;border-top:1px solid var(--line)}.device:first-child{border-top:0}.device-name{font-weight:700}.selected{color:var(--ok)}
+button,.btn{appearance:none;border:0;border-radius:10px;padding:9px 12px;font-weight:650;cursor:pointer;background:#111827;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button:hover,.btn:hover{filter:brightness(1.06)}button.secondary,.btn.secondary{background:#475467}button.primary{background:var(--accent)}button.danger{background:var(--bad)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+input,select{width:100%;padding:10px 11px;border:1px solid #cfd6e3;border-radius:10px;background:#fff;color:var(--ink);outline:none}
+input:focus,select:focus{border-color:#8bb3ff;box-shadow:0 0 0 3px #dbeafe}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.notice{background:var(--soft);border:1px solid #cfe0ff;border-radius:12px;padding:11px 12px;color:#344054;font-size:.9rem}
+.auth{background:#fff8eb;border:1px solid #fde2a7}.auth.ok{background:#ecfdf3;border-color:#b7ebc6}
+pre{white-space:pre-wrap;word-break:break-word;background:#0f172a;color:#e5e7eb;padding:14px;border-radius:12px;max-height:320px;overflow:auto;font-size:.82rem}
+details summary{cursor:pointer;font-weight:700}
+.small{font-size:.82rem;color:var(--muted)}
+#toast{position:fixed;right:18px;bottom:18px;max-width:360px;background:#111827;color:#fff;border-radius:12px;padding:11px 14px;box-shadow:0 12px 30px #0003;display:none;z-index:100}
+@media(max-width:900px){.hero{grid-template-columns:1fr}.span-4,.span-6,.span-8{grid-column:1/-1}}
+@media(max-width:600px){main{padding:12px}.header-inner{padding:16px}.two{grid-template-columns:1fr}.actions>*{flex:1 1 100%}}
 </style>
 </head>
 <body>
-<header><h1>CVP Access — Maintenance</h1><p>Melody Music · Raspberry autonome</p></header>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">CVP</div>
+      <div><h1>CVP Access</h1><p>Console de maintenance Melody Music</p></div>
+    </div>
+    <div id="topStatus" class="pill ok">En ligne</div>
+  </div>
+</header>
+
 <main>
-<div class="notice">Accessible depuis CVP-ACCESS ou depuis le même réseau Wi-Fi que le Raspberry.</div>
-<div class="grid">
-<section class="card"><h2>Système</h2><div id="system">Chargement…</div></section>
-<section class="card"><h2>Réseau</h2><div id="network">Chargement…</div></section>
-<section class="card"><h2>MIDI</h2><div id="midi">Chargement…</div></section>
-<section class="card"><h2>Périphériques</h2><div id="devices">Chargement…</div></section>
-</div>
+  <div class="hero">
+    <section class="panel hero-main">
+      <h2>État du dispositif</h2>
+      <p>Diagnostic, périphériques et configuration du Raspberry CVP Access.</p>
+      <div class="notice" style="margin-top:16px">
+        Accès local uniquement. Hotspot : <b>10.42.0.1</b> · Réseau local : <b>&lt;hostname&gt;.local</b>
+      </div>
+    </section>
+    <section class="panel hero-side">
+      <div class="status-dot"></div>
+      <b id="readyText">CVP Access opérationnel</b>
+      <span id="versionText" class="small" style="margin-top:5px">Version…</span>
+    </section>
+  </div>
 
-<section class="card">
-<h2>Connexion Wi-Fi</h2>
-<p class="muted">Choisis un réseau. Si la connexion échoue, CVP-ACCESS est réactivé automatiquement.</p>
-<button class="secondary" onclick="scanWifi()">Rechercher les réseaux</button>
-<select id="wifiList"><option value="">Recherche en attente…</option></select>
-<div class="two">
-<input id="manualSsid" placeholder="SSID manuel / réseau caché">
-<input id="wifiPassword" type="password" placeholder="Mot de passe du Wi-Fi">
-</div>
-<button onclick="connectWifi()">Se connecter à ce Wi-Fi</button>
-<div id="wifiResult" class="muted" style="margin-top:8px"></div>
-</section>
+  <div class="grid">
+    <section class="panel span-4"><h3>Système</h3><div id="system">Chargement…</div></section>
+    <section class="panel span-4"><h3>Réseau</h3><div id="network">Chargement…</div></section>
+    <section class="panel span-4"><h3>MIDI</h3><div id="midi">Chargement…</div></section>
 
-<section class="card">
-<h2>Accès maintenance</h2>
-<p class="muted">Pour modifier la configuration, saisis le mot de passe de CVP-ACCESS.</p>
-<input id="adminPassword" type="password" placeholder="Mot de passe CVP-ACCESS">
-</section>
+    <section class="panel span-6">
+      <h3>Périphériques</h3>
+      <p class="sub">Audio Yamaha, clavier USB et périphériques détectés.</p>
+      <div id="devices">Chargement…</div>
+    </section>
 
-<section class="card"><h2>Actions</h2>
-<button onclick="action('restart')">Relancer CVP Access</button>
-<button class="secondary" onclick="action('doctor')">Lancer le Doctor</button>
-<a class="btn secondary" href="/keyboard-map">Carte clavier</a>
-<button class="danger" onclick="rebootPi()">Redémarrer le Raspberry</button>
-<div id="actionResult" class="muted" style="margin-top:8px"></div>
-</section>
-<section class="card"><h2>Événements utiles</h2><pre id="events">Chargement…</pre></section>
+    <section class="panel span-6">
+      <h3>Connexion Wi-Fi</h3>
+      <p class="sub">Si la connexion échoue, CVP-ACCESS est réactivé automatiquement.</p>
+      <div class="actions" style="margin-bottom:10px"><button class="secondary" onclick="scanWifi()">Rechercher les réseaux</button></div>
+      <select id="wifiList"><option value="">Recherche en attente…</option></select>
+      <div class="two" style="margin-top:9px">
+        <input id="manualSsid" placeholder="SSID manuel / réseau caché">
+        <input id="wifiPassword" type="password" placeholder="Mot de passe du Wi-Fi">
+      </div>
+      <div class="actions" style="margin-top:10px"><button class="primary protected" onclick="connectWifi()">Connecter le Raspberry</button></div>
+      <div id="wifiResult" class="small" style="margin-top:9px"></div>
+    </section>
+
+    <section class="panel span-12">
+      <h3>Accès maintenance</h3>
+      <div id="authBox" class="notice auth">
+        <div class="two">
+          <div>
+            <b>Déverrouiller les actions</b>
+            <div class="small" style="margin-top:4px">Utilise le mot de passe de CVP-ACCESS.</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <input id="adminPassword" type="password" placeholder="Mot de passe maintenance">
+            <button class="primary" onclick="unlock()">Déverrouiller</button>
+          </div>
+        </div>
+        <div id="authMessage" class="small" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <section class="panel span-12">
+      <h3>Maintenance</h3>
+      <div class="actions">
+        <button class="protected" onclick="action('restart')">Relancer CVP Access</button>
+        <button class="secondary protected" onclick="action('doctor')">Lancer le Doctor</button>
+        <a class="btn secondary" href="/keyboard-map">Carte clavier</a>
+        <button class="danger protected" onclick="rebootPi()">Redémarrer le Raspberry</button>
+      </div>
+      <div id="actionResult" class="small" style="margin-top:10px"></div>
+      <div id="doctorBox" style="display:none;margin-top:12px">
+        <b>Résultat du Doctor</b>
+        <pre id="doctorOutput"></pre>
+      </div>
+    </section>
+
+    <section class="panel span-12">
+      <details>
+        <summary>Événements utiles</summary>
+        <pre id="events">Chargement…</pre>
+      </details>
+    </section>
+  </div>
 </main>
+<div id="toast"></div>
+
 <script>
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const badge=s=>'<span class="'+(s==='active'?'ok':'bad')+'">'+esc(s)+'</span>';
+let unlocked=false;
 const admin=document.getElementById('adminPassword');
 admin.value=sessionStorage.getItem('cvpAdmin')||'';
-admin.addEventListener('input',()=>sessionStorage.setItem('cvpAdmin',admin.value));
+
+function toast(msg){
+ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
+ clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>t.style.display='none',3200);
+}
+function setProtected(enabled){
+ document.querySelectorAll('.protected').forEach(x=>x.disabled=!enabled);
+}
+function badge(s){
+ const cls=s==='active'?'ok':(s==='activating'?'warn':'bad');
+ return '<span class="pill '+cls+'">'+esc(s)+'</span>';
+}
+
+async function unlock(){
+ const p=admin.value.trim();
+ if(!p){document.getElementById('authMessage').textContent='Saisis le mot de passe de maintenance.';return}
+ const r=await fetch('/api/auth/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_password:p})});
+ const d=await r.json();
+ if(r.ok){
+   sessionStorage.setItem('cvpAdmin',p); unlocked=true; setProtected(true);
+   document.getElementById('authBox').classList.add('ok');
+   document.getElementById('authMessage').textContent='Maintenance déverrouillée pour cette session.';
+   toast('Maintenance déverrouillée');
+ }else{
+   sessionStorage.removeItem('cvpAdmin'); unlocked=false; setProtected(false);
+   document.getElementById('authBox').classList.remove('ok');
+   document.getElementById('authMessage').textContent=d.error||'Mot de passe incorrect.';
+ }
+}
 
 async function refresh(){
  const r=await fetch('/api/status',{cache:'no-store'}); const d=await r.json();
+ document.getElementById('versionText').textContent='Version '+d.version;
+ const coreOk=d.services.cvp_access==='active';
+ document.getElementById('readyText').textContent=coreOk?'CVP Access opérationnel':'CVP Access nécessite une vérification';
+ document.getElementById('topStatus').className='pill '+(coreOk?'ok':'bad');
+ document.getElementById('topStatus').textContent=coreOk?'En ligne':'À vérifier';
+
  document.getElementById('system').innerHTML=
-  '<div class="row"><span>Version</span><b>'+esc(d.version)+'</b></div>'+
-  '<div class="row"><span>CVP Access</span>'+badge(d.services.cvp_access)+'</div>'+
-  '<div class="row"><span>Fallback Wi-Fi</span>'+badge(d.services.wifi_fallback)+'</div>'+
-  '<div class="row"><span>Portail Web</span>'+badge(d.services.web)+'</div>';
- const localUrl='http://'+esc(d.network.hostname)+'.local';
+  '<div class="row"><span class="label">Version</span><span class="value">'+esc(d.version)+'</span></div>'+
+  '<div class="row"><span class="label">CVP Access</span>'+badge(d.services.cvp_access)+'</div>'+
+  '<div class="row"><span class="label">Fallback Wi-Fi</span>'+badge(d.services.wifi_fallback)+'</div>'+
+  '<div class="row"><span class="label">Portail Web</span>'+badge(d.services.web)+'</div>';
+
  let result=d.network.wifi_result||{};
  document.getElementById('network').innerHTML=
-  '<div class="row"><span>Connexion</span><b>'+esc(d.network.connection)+'</b></div>'+
-  '<div class="row"><span>Hotspot</span><b>'+(d.network.hotspot?'CVP-ACCESS':'non')+'</b></div>'+
-  '<div class="row"><span>Nom local</span><b>'+localUrl+'</b></div>'+
-  '<small>'+esc(d.network.address||'')+'</small>';
- if(result.status){
-   document.getElementById('wifiResult').textContent=
-    result.status+' · '+(result.ssid||'')+(result.detail?' · '+result.detail:'');
- }
+  '<div class="row"><span class="label">Connexion</span><span class="value">'+esc(d.network.connection)+'</span></div>'+
+  '<div class="row"><span class="label">Hotspot</span><span class="value">'+(d.network.hotspot?'CVP-ACCESS':'Non')+'</span></div>'+
+  '<div class="row"><span class="label">Nom local</span><span class="value">'+esc(d.network.hostname)+'.local</span></div>'+
+  '<div class="small" style="margin-top:8px">'+esc(d.network.address||'Aucune adresse Wi-Fi')+'</div>';
+ if(result.status) document.getElementById('wifiResult').textContent=result.status+' · '+(result.ssid||'')+(result.detail?' · '+result.detail:'');
+
  let m='';
- if(!d.midi.length)m='<span class="bad">Aucune interface MIDI détectée</span>';
+ if(!d.midi.length)m='<span class="pill bad">Aucune interface MIDI</span>';
  for(const x of d.midi){
    const sel=d.selected_midi===x.name;
-   m+='<div class="device"><div class="'+(sel?'selected':'')+'">'+esc(x.name)+'</div>'+
-      '<small>'+esc(x.port)+' · '+esc(x.direction)+'</small><br>'+
-      '<button class="secondary" onclick=\'selectMidi('+JSON.stringify(x.name)+')\'>'+(sel?'Sélectionnée':'Utiliser')+'</button></div>';
+   m+='<div class="device"><div class="device-name '+(sel?'selected':'')+'">'+esc(x.name)+'</div>'+
+      '<div class="small">'+esc(x.port)+' · '+esc(x.direction)+'</div>'+
+      '<button class="secondary protected" style="margin-top:8px" onclick=\'selectMidi('+JSON.stringify(x.name)+')\'>'+(sel?'Sélectionnée':'Utiliser')+'</button></div>';
  }
  document.getElementById('midi').innerHTML=m;
+
  const audio=d.audio.length?d.audio.map(esc).join('<br>'):'Aucun audio Yamaha détecté';
  let kb='';
- if(!d.keyboards.length) kb='<span class="bad">Aucun clavier USB détecté</span>';
+ if(!d.keyboards.length) kb='<span class="small">Aucun clavier USB détecté</span>';
  for(const path of d.keyboards){
    const sel=d.selected_keyboard===path;
-   kb+='<div class="device"><div class="'+(sel?'selected':'')+'">'+esc(path.split('/').pop())+'</div>'+
-      '<button class="secondary" onclick=\'selectKeyboard('+JSON.stringify(path)+')\'>'+(sel?'Sélectionné':'Utiliser')+'</button></div>';
+   kb+='<div class="device"><div class="device-name '+(sel?'selected':'')+'">'+esc(path.split('/').pop())+'</div>'+
+      '<button class="secondary protected" style="margin-top:8px" onclick=\'selectKeyboard('+JSON.stringify(path)+')\'>'+(sel?'Sélectionné':'Utiliser')+'</button></div>';
  }
  document.getElementById('devices').innerHTML=
-  '<b>Audio</b><div>'+audio+'</div><br><b>Clavier</b><div>'+kb+'</div>'+
-  '<br><small>'+d.usb.map(esc).join('<br>')+'</small>';
+  '<div class="row"><span class="label">Audio</span><span class="value">'+audio+'</span></div>'+
+  '<div style="margin-top:12px"><b>Clavier</b>'+kb+'</div>'+
+  '<details style="margin-top:12px"><summary class="small">USB détectés</summary><div class="small" style="margin-top:8px">'+d.usb.map(esc).join('<br>')+'</div></details>';
  document.getElementById('events').textContent=d.events.join('\n')||'Aucun événement utile récent.';
+ setProtected(unlocked);
 }
 
 async function scanWifi(){
- const box=document.getElementById('wifiResult');
- box.textContent='Recherche des réseaux…';
+ const box=document.getElementById('wifiResult'); box.textContent='Recherche des réseaux…';
  try{
-   const r=await fetch('/api/wifi/scan',{cache:'no-store'});
-   const d=await r.json();
-   const sel=document.getElementById('wifiList');
-   sel.innerHTML='';
-   const first=document.createElement('option');
-   first.value=''; first.textContent='Sélectionner un réseau';
-   sel.appendChild(first);
+   const r=await fetch('/api/wifi/scan',{cache:'no-store'}); const d=await r.json();
+   const sel=document.getElementById('wifiList'); sel.innerHTML='<option value="">Sélectionner un réseau</option>';
    for(const n of d.networks||[]){
-     const o=document.createElement('option');
-     o.value=n.ssid;
-     o.textContent=n.ssid+' · '+n.signal+'%'+(n.security?' · '+n.security:' · ouvert');
-     sel.appendChild(o);
+     const o=document.createElement('option'); o.value=n.ssid;
+     o.textContent=n.ssid+' · '+n.signal+'%'+(n.security?' · '+n.security:' · ouvert'); sel.appendChild(o);
    }
    box.textContent=(d.networks||[]).length+' réseau(x) détecté(s).';
  }catch(e){box.textContent='Recherche impossible. Saisis le SSID manuellement.'}
 }
 
 async function post(url,body={}){
+ if(!unlocked){toast('Déverrouille d’abord la maintenance.');return null}
  body.admin_password=admin.value;
  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
  const d=await r.json();
- if(r.status===401){document.getElementById('actionResult').textContent='Mot de passe maintenance incorrect.';return d}
+ if(r.status===401){
+   unlocked=false; setProtected(false); document.getElementById('authBox').classList.remove('ok');
+   document.getElementById('authMessage').textContent='Mot de passe maintenance incorrect.';
+   toast('Mot de passe incorrect'); return d;
+ }
  document.getElementById('actionResult').textContent=d.message||d.error||'OK';
- setTimeout(refresh,800); return d;
+ if(url==='/api/action/doctor' && d.output){
+   document.getElementById('doctorBox').style.display='block';
+   document.getElementById('doctorOutput').textContent=d.output;
+ }
+ toast(d.message||d.error||'OK'); setTimeout(refresh,800); return d;
 }
 function action(name){post('/api/action/'+name)}
 function selectMidi(name){post('/api/midi/select',{name})}
 function selectKeyboard(path){post('/api/keyboard/select',{path})}
-function rebootPi(){if(confirm('Redémarrer complètement le Raspberry ?'))post('/api/action/reboot')}
+function rebootPi(){if(unlocked&&confirm('Redémarrer complètement le Raspberry ?'))post('/api/action/reboot')}
 async function connectWifi(){
  const manual=document.getElementById('manualSsid').value.trim();
  const listed=document.getElementById('wifiList').value;
  const ssid=manual||listed;
  if(!ssid){document.getElementById('wifiResult').textContent='Choisis ou saisis un réseau.';return}
  document.getElementById('wifiResult').textContent='Tentative de connexion à '+ssid+'…';
- const d=await post('/api/wifi/connect',{
-   ssid:ssid,
-   password:document.getElementById('wifiPassword').value,
-   hidden:Boolean(manual)
- });
- if(d&&d.message){
-   document.getElementById('wifiResult').textContent=
-    d.message+' La page peut se couper pendant le changement de réseau. En cas d’échec, reconnecte-toi à CVP-ACCESS.';
- }
+ const d=await post('/api/wifi/connect',{ssid,password:document.getElementById('wifiPassword').value,hidden:Boolean(manual)});
+ if(d&&d.message) document.getElementById('wifiResult').textContent=d.message+' La page peut se couper pendant le changement de réseau.';
 }
-refresh(); scanWifi(); setInterval(refresh,4000);
+setProtected(false);
+refresh();
+if(admin.value) unlock();
+setInterval(refresh,5000);
 </script>
 </body></html>
 """
@@ -689,6 +801,16 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         path = urlparse(self.path).path
+
+        if path == "/api/auth/check":
+            if request_authorized(payload):
+                self.send_json({"ok": True, "message": "Maintenance déverrouillée"})
+            else:
+                self.send_json(
+                    {"ok": False, "error": "Mot de passe maintenance incorrect"},
+                    401,
+                )
+            return
 
         if not request_authorized(payload):
             self.send_json(
