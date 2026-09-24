@@ -12,7 +12,10 @@ import time
 import tomllib
 from pathlib import Path
 
-MIDI_NAME = "ProdipeMIDIlilo MIDI 1"
+MIDI_NAMES = [
+    "ProdipeMIDIlilo MIDI 1",
+    "USB MIDI Interface MIDI 1",
+]
 AUDIO_NAME = "Clavinova"
 AUDIO_DEVICE = "plughw:CARD=Clavinova,DEV=0"
 TEMPO_GET = "F0 43 73 01 52 25 26 01 00 08 00 00 01 00 01 00 F7"
@@ -63,11 +66,24 @@ def find_midi_port():
     rc, out, err = run(["amidi", "-l"])
     if rc != 0:
         return None, out + err
+
+    ports = []
     for line in out.splitlines():
-        if MIDI_NAME in line:
-            match = re.search(r"(hw:\d+,\d+,\d+)", line)
-            if match:
-                return match.group(1), out
+        match = re.search(
+            r"^\s*IO\s+(hw:\d+,\d+,\d+)\s+(.+?)\s*$",
+            line,
+        )
+        if match:
+            ports.append((match.group(1), match.group(2)))
+
+    for wanted_name in MIDI_NAMES:
+        for port, name in ports:
+            if wanted_name in name:
+                return port, out
+
+    if len(ports) == 1:
+        return ports[0][0], out
+
     return None, out
 
 
@@ -277,7 +293,7 @@ def main():
           keyboards[0] if keyboards else "not detected")
 
     midi_port, _ = find_midi_port()
-    check("Prodipe MIDI", OK if midi_port else WARN, midi_port or "not detected")
+    check("MIDI interface", OK if midi_port else WARN, midi_port or "not detected")
 
     rc, aplay_out, aplay_err = run(["aplay", "-l"])
     audio_found = rc == 0 and AUDIO_NAME.lower() in aplay_out.lower()
@@ -407,7 +423,7 @@ def main():
             status, detail = active_tempo_test(midi_port)
             check("Active SysEx GET Tempo", status, detail)
         else:
-            check("Active SysEx GET Tempo", SKIP, "Prodipe MIDI not detected")
+            check("Active SysEx GET Tempo", SKIP, "compatible MIDI interface not detected")
 
     if args.active_audio:
         if audio_found:
