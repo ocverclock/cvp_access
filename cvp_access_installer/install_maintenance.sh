@@ -15,6 +15,9 @@ fi
 [[ -n "$CVP_USER" && "$CVP_USER" != "root" ]] || CVP_USER="$(getent passwd 1000 | cut -d: -f1)"
 [[ -n "$CVP_USER" ]] || { echo "Unable to determine CVP user." >&2; exit 1; }
 
+CVP_HOME="$(getent passwd "$CVP_USER" | cut -d: -f6)"
+RECORDINGS_DIR="${CVP_RECORDINGS_DIR:-$CVP_HOME/CVP_Recordings}"
+
 RUNTIME_DIR="/opt/cvp-access"
 CONFIG_DIR="/etc/cvp-access"
 HOTSPOT="CVP-ACCESS"
@@ -30,6 +33,7 @@ for command in nmcli python3; do
 done
 
 install -d -m 0755 "$CONFIG_DIR" "$RUNTIME_DIR"
+install -d -o "$CVP_USER" -g "$CVP_USER" -m 0775 "$RECORDINGS_DIR"
 
 # Preserve the password of an already installed hotspot. Fresh installations
 # receive a random password unless CVP_HOTSPOT_PASSWORD is explicitly supplied.
@@ -82,7 +86,7 @@ fi
 
 install -m 0644     "$INSTALLER_DIR/systemd/cvp-wifi-fallback.service.in"     /etc/systemd/system/cvp-wifi-fallback.service
 
-sed     -e "s#@CVP_USER@#$CVP_USER#g"     -e "s#@PROJECT_DIR@#$RUNTIME_DIR#g"     -e "s#@REPO_DIR@#$REPO_DIR#g"     "$INSTALLER_DIR/systemd/cvp-web.service.in"     > /etc/systemd/system/cvp-web.service
+sed     -e "s#@CVP_USER@#$CVP_USER#g"     -e "s#@PROJECT_DIR@#$RUNTIME_DIR#g"     -e "s#@REPO_DIR@#$REPO_DIR#g"     -e "s#@RECORDINGS_DIR@#$RECORDINGS_DIR#g"     "$INSTALLER_DIR/systemd/cvp-web.service.in"     > /etc/systemd/system/cvp-web.service
 chmod 0644 /etc/systemd/system/cvp-web.service
 
 # NetworkManager's dnsmasq instance for shared connections reads this directory.
