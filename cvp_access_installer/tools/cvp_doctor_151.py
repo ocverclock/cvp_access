@@ -177,19 +177,24 @@ def main():
         ),
     )
 
-    # L'annonce de démarrage doit toujours être pré-générée.
-    startup_file = (
-        voices
-        / "system"
-        / "startup_ready.wav"
-    )
+    # Les annonces système doivent toujours être pré-générées.
+    startup_file = voices / "system" / "startup_ready.wav"
+    restart_file = voices / "system" / "restart_device.wav"
+    system_missing = [
+        p for p in (startup_file, restart_file)
+        if not p.is_file()
+    ]
     add(
-        "WAV démarrage",
-        OK if startup_file.is_file() else FAIL,
+        "WAV système",
+        OK if not system_missing else FAIL,
         (
-            "présent"
-            if startup_file.is_file()
-            else "absent: system/startup_ready.wav"
+            "démarrage + relance présents"
+            if not system_missing
+            else "absents: "
+            + ", ".join(
+                str(p.relative_to(voices))
+                for p in system_missing
+            )
         ),
     )
 
