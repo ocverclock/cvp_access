@@ -101,6 +101,47 @@ STYLE_PART_LABELS = [
 STYLE_CHANNELS = set(range(8, 16))
 STYLE_CHANGE_WINDOW = 1.5
 
+# Optional channel-message tap used by future modules such as the accessible
+# MIDI recorder. The historical receiver remains the single owner of the raw
+# ALSA MIDI input; listeners only receive copies of already parsed channel
+# messages and can never consume SysEx replies.
+midi_channel_listeners = []
+midi_channel_listeners_lock = threading.Lock()
+
+
+def register_midi_channel_listener(listener):
+    if not callable(listener):
+        raise TypeError("MIDI listener must be callable")
+    with midi_channel_listeners_lock:
+        if listener not in midi_channel_listeners:
+            midi_channel_listeners.append(listener)
+
+
+def unregister_midi_channel_listener(listener):
+    with midi_channel_listeners_lock:
+        try:
+            midi_channel_listeners.remove(listener)
+        except ValueError:
+            pass
+
+
+def dispatch_midi_channel_message(status, data, timestamp):
+    with midi_channel_listeners_lock:
+        listeners = tuple(midi_channel_listeners)
+
+    if not listeners:
+        return
+
+    packet = bytes([status, *data])
+
+    for listener in listeners:
+        try:
+            listener(packet, timestamp)
+        except Exception as exc:
+            # A recorder/debug listener must never stop the permanent MIDI
+            # receiver or break Yamaha SysEx processing.
+            print("Erreur listener MIDI :", exc)
+
 
 # ============================================================
 # CLAVIER AZERTY
