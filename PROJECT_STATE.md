@@ -192,6 +192,8 @@ Dispositif Melody Music CVP Access opérationnel.
 
 Le WAV `system/startup_ready.wav` est pré-généré pendant l'installation et contrôlé par le Doctor. L'annonce n'est pas émise si l'initialisation matérielle n'atteint pas l'état prêt.
 
+`ESC` annonce synchroniquement `Relance du dispositif CVP Access.` via `system/restart_device.wav`, attend la fin de la lecture, puis quitte le processus afin que `systemd` le relance.
+
 ## 4. Speech / Piper
 
 Configuration :
