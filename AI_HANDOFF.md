@@ -379,3 +379,16 @@ refuse un dépôt avec modifications locales
 ```
 
 Ne remplacer cette logique par un simple `git pull` exécuté dans le processus Web : l'upgrade peut redémarrer `cvp-web.service` et doit survivre à ce redémarrage.
+
+
+### Checkpoints Recorder validés / en cours
+
+F15 a été testée physiquement sur l'Apple Extended USB :
+
+```text
+KEY_F15 1 / KEY_F15 2 / KEY_F15 0
+```
+
+Le routeur prend désormais F14/F15 en charge et la keyboard map affiche F15 comme réservée au dictaphone 1.6.
+
+Le moteur MIDI possède maintenant `register_midi_channel_listener()` et `dispatch_midi_channel_message()`. Le probe `CVP_RECORDER_PROBE=1` permet de vérifier les Note On/Note Off du canal 1 sans ouvrir un second port ALSA.
