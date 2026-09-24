@@ -177,6 +177,22 @@ def main():
         ),
     )
 
+    # L'annonce de démarrage doit toujours être pré-générée.
+    startup_file = (
+        voices
+        / "system"
+        / "startup_ready.wav"
+    )
+    add(
+        "WAV démarrage",
+        OK if startup_file.is_file() else FAIL,
+        (
+            "présent"
+            if startup_file.is_file()
+            else "absent: system/startup_ready.wav"
+        ),
+    )
+
     # Vérification des WAV finis 1.5.1.
     state_files = []
     for stem in (
