@@ -93,7 +93,9 @@ path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 PY
 fi
 
-# L'installateur RC3 historique réalise ensuite copie runtime, compilation,
-# génération des WAV, Doctor et redémarrage. Les nouvelles touches sont déjà
-# présentes dans keyboard.toml avant cette étape.
+# L'installateur partagé réalise ensuite copie runtime, compilation,
+# génération des WAV, maintenance, Doctor et redémarrage. Les variables
+# permettent à 1.5.2 de réutiliser les migrations 1.5.1 sans dupliquer le code.
+export CVP_FRONTEND_SOURCE="${CVP_FRONTEND_SOURCE:-cvp_access_1_5_1.py}"
+export CVP_TARGET_VERSION="${CVP_TARGET_VERSION:-1.5.1-RC3}"
 exec bash "$INSTALLER_DIR/upgrade_1_5_1_base.sh"
