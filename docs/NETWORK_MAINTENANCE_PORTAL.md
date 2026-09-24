@@ -229,3 +229,23 @@ sélection SSID + mot de passe
 Le service `cvp-wifi-fallback.service` reste une deuxième sécurité si la réactivation immédiate du hotspot échoue.
 
 Le mot de passe du Wi-Fi cible est écrit uniquement dans une requête temporaire sous `/run`, mode 0600, supprimée après traitement. La connexion persistante est ensuite gérée par NetworkManager.
+
+
+## Keyboard map — accès maintenance
+
+La carte clavier imprimable contient deux encarts compacts :
+
+```text
+Accès Web
+- http://<hostname>.local
+- http://10.42.0.1 en mode CVP-ACCESS
+
+Partages Samba
+- \\<hostname>.local\CVP_access
+- \\<hostname>.local\CVP_config
+- équivalents via 10.42.0.1 en mode hotspot
+```
+
+Ces deux blocs sont aussi affichés dans le dashboard Web.
+
+La carte reste conçue pour tenir sur **une seule page A4 paysage**. Le CSS d'impression fixe la page à A4 landscape avec marge de 6 mm, limite la hauteur utile et empêche les blocs maintenance de se couper entre deux pages.
