@@ -600,3 +600,33 @@ sudo systemctl restart cvp-access
 ## 20. Checkpoint
 
 **CVP Access 1.5.1-RC3 est le point de référence au 24 septembre 2026 : installation sur Raspberry Pi neuf Debian 13 arm64, Solo Song et annonces système démarrage/relance matériellement validés avec le CVP-905 de référence.**
+
+
+## 17. Projet 1.6 — dictaphone MIDI
+
+Spécification de conception :
+
+```text
+docs/MIDI_RECORDER_1_6.md
+```
+
+Principes retenus :
+
+- une seule touche physique dédiée ;
+- appui long = armement d'un nouvel enregistrement ;
+- premier événement musical = début réel de l'enregistrement ;
+- appui court avant le premier événement = annulation de l'armement ;
+- appui court pendant l'enregistrement = arrêt + sauvegarde ;
+- appui court au repos = lecture du morceau sélectionné ;
+- appui court pendant lecture = stop ;
+- `ESC` reste exclusivement réservé à la relance de CVP Access ;
+- première portée : canal MIDI 1 ;
+- fichiers `AAAA-MM-JJ_NNN.mid` dans `~/CVP_Recordings/` ;
+- futur partage Samba `CVP_recordings` ;
+- liste et sélection des morceaux dans le portail Web ;
+- validation VoiceOver/macOS obligatoire ;
+- fiabilité de l'horloge hors ligne à traiter avant production.
+
+F8 est le candidat principal pour la touche dictaphone car elle est libre dans le layout courant et repérable à l'extrémité du groupe F5-F8, mais ce choix n'est pas encore figé.
+
+Checkpoint technique avant codage complet : vérifier qu'une écoute MIDI musicale parallèle peut fonctionner sans perturber les échanges SysEx de CVP Access.
