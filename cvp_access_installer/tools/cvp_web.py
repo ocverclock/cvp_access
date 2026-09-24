@@ -664,7 +664,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not self.allowed():
-            self.send_json({"error": "hotspot access only"}, 403)
+            self.send_json({"error": "local Wi-Fi access only"}, 403)
             return
 
         length = min(int(self.headers.get("Content-Length", "0") or 0), 8192)
@@ -676,6 +676,42 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         path = urlparse(self.path).path
+
+        if not request_authorized(payload):
+            self.send_json(
+                {"error": "Mot de passe maintenance incorrect"},
+                401,
+            )
+            return
+
+        if path == "/api/wifi/connect":
+            ssid = payload.get("ssid", "")
+            password = payload.get("password", "")
+            hidden = bool(payload.get("hidden", False))
+
+            if not isinstance(ssid, str):
+                self.send_json({"error": "SSID invalide"}, 400)
+                return
+
+            ssid = ssid.strip()
+            if not ssid or len(ssid.encode("utf-8")) > 32:
+                self.send_json({"error": "SSID invalide"}, 400)
+                return
+
+            if not isinstance(password, str) or len(password) > 64:
+                self.send_json({"error": "Mot de passe Wi-Fi invalide"}, 400)
+                return
+
+            ok, message = launch_wifi_connect(
+                ssid,
+                password,
+                hidden=hidden,
+            )
+            self.send_json(
+                {"message": message},
+                200 if ok else 500,
+            )
+            return
 
         if path == "/api/midi/select":
             name = payload.get("name")
