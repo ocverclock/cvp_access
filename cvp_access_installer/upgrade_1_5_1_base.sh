@@ -15,16 +15,18 @@ fi
 CVP_HOME="$(getent passwd "$CVP_USER" | cut -d: -f6)"
 RUNTIME_DIR="/opt/cvp-access"
 CONFIG_DIR="/etc/cvp-access"
+FRONTEND_SOURCE="${CVP_FRONTEND_SOURCE:-cvp_access_1_5_1.py}"
+TARGET_VERSION="${CVP_TARGET_VERSION:-1.5.1-RC3}"
 CONFIG_FILE="$CONFIG_DIR/keyboard.toml"
 VOICE_DIR="$CVP_HOME/cvp_voice"
 PIPER_DIR="$CVP_HOME/.local/share/cvp-access/piper-env"
 PIPER_MODEL_DIR="$CVP_HOME/piper-voices"
 
 echo
-echo "[CVP Access] Upgrade runtime -> 1.5.1-RC3"
+echo "[CVP Access] Upgrade runtime -> $TARGET_VERSION"
 
 required=(
-    cvp_access_1_5_1.py cvp_access_v1.5.py cvp_access_v1.4.1.py
+    "$FRONTEND_SOURCE" cvp_access_v1.5.py cvp_access_v1.4.1.py
     cvp_keyboard.py cvp_keyboard_map.py cvp_song.py cvp_song_151.py
     cvp_speech.py cvp_speech_151.py cvp_piper_worker.py cvp_midi.py
     cvp_yamaha.py cvp_registration.py cvp_style.py cvp_voice.py cvp_voice_names.py
@@ -45,7 +47,7 @@ done
 
 systemctl stop cvp-access.service 2>/dev/null || true
 install -d -m 0755 "$RUNTIME_DIR"
-install -m 0755 "$REPO_DIR/cvp_access_1_5_1.py" "$RUNTIME_DIR/cvp_access.py"
+install -m 0755 "$REPO_DIR/$FRONTEND_SOURCE" "$RUNTIME_DIR/cvp_access.py"
 for item in cvp_access_v1.5.py cvp_access_v1.4.1.py cvp_keyboard.py cvp_song.py cvp_song_151.py cvp_speech.py cvp_speech_151.py cvp_piper_worker.py cvp_midi.py cvp_yamaha.py cvp_registration.py cvp_style.py cvp_voice.py cvp_voice_names.py; do
     install -m 0644 "$REPO_DIR/$item" "$RUNTIME_DIR/$item"
 done
@@ -180,5 +182,5 @@ runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" CVP_RUNTIME_DIR="$RUNTIME_DIR" CV
 systemctl restart cvp-access.service
 
 echo
-echo "[CVP Access] 1.5.1-RC3 installed."
+echo "[CVP Access] $TARGET_VERSION installed."
 echo "Rollback: sudo cp /opt/cvp-access/cvp_access_v1.5.py /opt/cvp-access/cvp_access.py && sudo systemctl restart cvp-access"
