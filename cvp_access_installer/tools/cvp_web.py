@@ -2,8 +2,8 @@
 """Local maintenance portal for CVP Access.
 
 The service intentionally exposes only a small set of maintenance actions.
-It is reachable from the CVP-ACCESS hotspot subnet and localhost, not from
-arbitrary LAN interfaces.
+It is reachable from the CVP-ACCESS hotspot, localhost, and directly attached
+private LAN subnets.
 """
 
 from __future__ import annotations
@@ -420,6 +420,7 @@ def build_status():
         "audio": audio_lines,
         "keyboards": keyboards,
         "selected_keyboard": selected_keyboard_path(),
+        "samba_user": CVP_USER,
         "usb": usb_out.splitlines(),
         "events": recent_events(),
     }
@@ -505,6 +506,18 @@ details summary{cursor:pointer;font-weight:700}
     <section class="panel span-4"><h3>Système</h3><div id="system">Chargement…</div></section>
     <section class="panel span-4"><h3>Réseau</h3><div id="network">Chargement…</div></section>
     <section class="panel span-4"><h3>MIDI</h3><div id="midi">Chargement…</div></section>
+
+    <section class="panel span-6">
+      <h3>Accès Web</h3>
+      <p class="sub">Adresses de maintenance du Raspberry.</p>
+      <div id="webAccess">Chargement…</div>
+    </section>
+
+    <section class="panel span-6">
+      <h3>Partages Samba</h3>
+      <p class="sub">Accès au projet et à la configuration depuis un ordinateur.</p>
+      <div id="sambaAccess">Chargement…</div>
+    </section>
 
     <section class="panel span-6">
       <h3>Périphériques</h3>
@@ -623,6 +636,18 @@ async function refresh(){
   '<div class="row"><span class="label">Nom local</span><span class="value">'+esc(d.network.hostname)+'.local</span></div>'+
   '<div class="small" style="margin-top:8px">'+esc(d.network.address||'Aucune adresse Wi-Fi')+'</div>';
  if(result.status) document.getElementById('wifiResult').textContent=result.status+' · '+(result.ssid||'')+(result.detail?' · '+result.detail:'');
+
+ const host=esc(d.network.hostname);
+ document.getElementById('webAccess').innerHTML=
+  '<div class="row"><span class="label">Réseau local</span><span class="value">http://'+host+'.local</span></div>'+
+  '<div class="row"><span class="label">Hotspot CVP-ACCESS</span><span class="value">http://10.42.0.1</span></div>';
+
+ document.getElementById('sambaAccess').innerHTML=
+  '<div class="row"><span class="label">Projet</span><span class="value">\\\\'+host+'.local\\CVP_access</span></div>'+
+  '<div class="row"><span class="label">Configuration</span><span class="value">\\\\'+host+'.local\\CVP_config</span></div>'+
+  '<div class="row"><span class="label">Hotspot projet</span><span class="value">\\\\10.42.0.1\\CVP_access</span></div>'+
+  '<div class="row"><span class="label">Hotspot config</span><span class="value">\\\\10.42.0.1\\CVP_config</span></div>'+
+  '<div class="small" style="margin-top:8px">Utilisateur Samba : '+esc(d.samba_user||'pi')+'</div>';
 
  let m='';
  if(!d.midi.length)m='<span class="pill bad">Aucune interface MIDI</span>';
