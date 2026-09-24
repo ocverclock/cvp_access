@@ -639,4 +639,4 @@ Principes retenus :
 
 La touche dictaphone retenue est **F15**. Le routeur 1.5.2 ne déclare actuellement que F1 à F13 : la 1.6 devra donc ajouter F14/F15 au mapping evdev et F15 à la carte clavier avant d'activer le Recorder.
 
-Checkpoint technique avant codage complet : vérifier qu'une écoute MIDI musicale parallèle peut fonctionner sans perturber les échanges SysEx de CVP Access.
+Architecture Recorder retenue : ne pas ouvrir un second port MIDI. Le `midi_receiver()` historique reçoit déjà le flux brut complet et parse les messages de canal. La 1.6 ajoutera un listener/tap interne protégé qui recevra une copie des Note On/Note Off tandis que les SysEx continueront d'utiliser le chemin existant. Premier checkpoint : valider les notes reçues par ce tap sans régression SysEx.
