@@ -19,7 +19,11 @@ Le principe retenu pour la première version est volontairement simple :
 
 ## Touche unique — machine d'états
 
-La touche n'est pas encore figée. **F8 est le candidat principal** car elle est actuellement libre dans le layout officiel et se trouve à l'extrémité du groupe F5–F8, ce qui peut faciliter le repérage tactile. La validation ergonomique avec l'utilisateur reste nécessaire avant de rendre ce choix définitif.
+La touche dédiée retenue est **F15**.
+
+F15 ne doit servir qu'au dictaphone MIDI dans le layout 1.6. Le comportement appui court / appui long décrit ci-dessous lui est exclusivement associé.
+
+**Point technique :** le routeur clavier 1.5.2 ne déclare actuellement que F1 à F13. L'implémentation 1.6 devra donc ajouter explicitement F14/F15 au catalogue evdev et faire apparaître F15 sur la carte clavier avant d'activer le Recorder.
 
 ### État repos
 
@@ -282,7 +286,7 @@ Le module doit rester indépendant du protocole Yamaha autant que possible.
 
 ## Priorités de réalisation
 
-1. valider la touche physique et l'ergonomie ;
+1. ajouter F15 au routeur clavier et à la carte clavier, puis valider la détection physique ;
 2. tester l'écoute MIDI parallèle sans perturber CVP Access ;
 3. implémenter la machine d'états à une touche ;
 4. enregistrer un fichier canal 1 ;
