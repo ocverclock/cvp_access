@@ -11,8 +11,8 @@ CVP Access permet de piloter et d’interroger des fonctions importantes d’un 
 Version de référence :
 
 ```text
-CVP Access 1.5.1-RC3
-Consolidation : 12 septembre 2026
+CVP Access 1.5.2-RC1
+Consolidation : 24 septembre 2026
 ```
 
 Validation matérielle principale :
@@ -30,7 +30,7 @@ Piper fr_FR-siwis-medium
 Le runtime reste construit au-dessus du moteur historique validé. La couche actuelle est transitoire :
 
 ```text
-cvp_access_1_5_1.py
+cvp_access_1_5_2.py
   -> cvp_access_1_5_1_base.py
       -> cvp_access_v1.5.py
           -> cvp_access_v1.4.1.py
@@ -98,7 +98,7 @@ Les sections Style restent disponibles comme actions configurables même lorsqu�
 
 Les annonces Song prévisibles sont composées de WAV. La banque de nombres destinée aux mesures est limitée à `0..150`. Les 16 annonces `Solo piste N` sont pré-générées.
 
-## Layout clavier 1.5.1-RC3
+## Layout clavier 1.5.2-RC1
 
 ### Parties Style / clavier
 
@@ -252,6 +252,27 @@ Depuis le dashboard, un technicien peut rechercher les réseaux Wi-Fi, sélectio
 
 Les préférences matérielles sont mémorisées dans `/etc/cvp-access/hardware.toml` par identité stable, et non par numéro ALSA `hw:X,Y,Z`.
 
+Le dashboard affiche aussi les accès de maintenance sous forme **cliquable pour copie** :
+
+```text
+Web réseau local : http://<hostname>.local
+Web hotspot       : http://10.42.0.1
+
+Mac / Linux :
+smb://<hostname>.local/CVP_access
+smb://<hostname>.local/CVP_config
+smb://10.42.0.1/CVP_access
+smb://10.42.0.1/CVP_config
+
+Windows :
+\\<hostname>.local\CVP_access
+\\<hostname>.local\CVP_config
+```
+
+Les partages Samba officiels sont `CVP_access` pour le projet et `CVP_config` pour la configuration. Sur macOS, utiliser Finder → **Aller → Se connecter au serveur…** (`Cmd + K`) avec une URL `smb://...`. Sous Linux/GNOME/Zorin, utiliser également le format `smb://...` ; le backend GVFS SMB peut être requis.
+
+La carte clavier reprend les blocs **Accès Web** et **Partages Samba** tout en restant conçue pour une impression sur **une seule page A4 paysage**.
+
 Les actions de configuration nécessitent le mot de passe du hotspot `CVP-ACCESS`, utilisé comme mot de passe de maintenance. Le point d'accès fournit également les indications de portail captif destinées à proposer automatiquement le dashboard sur téléphone ou ordinateur. L'accès direct `http://10.42.0.1` reste toujours la référence en mode hotspot.
 
 ## Installation / upgrade
@@ -259,8 +280,8 @@ Les actions de configuration nécessitent le mot de passe du hotspot `CVP-ACCESS
 ```bash
 cd ~/CVP_access
 git pull --ff-only origin main
-python3 VERIFY_PACKAGE_151.py
-sudo bash cvp_access_installer/upgrade_1_5_1.sh
+python3 VERIFY_PACKAGE_152.py
+sudo bash cvp_access_installer/upgrade_1_5_2.sh
 ```
 
 L’upgrade conserve les personnalisations existantes et n’ajoute les nouveaux raccourcis que si les combinaisons sont libres.
