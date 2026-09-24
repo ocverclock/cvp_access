@@ -41,6 +41,7 @@ maintenance_required = [
     "cvp_access_installer/systemd/cvp-wifi-fallback.service.in",
     "cvp_access_installer/systemd/cvp-web.service.in",
     "cvp_access_installer/samba/cvp-access.conf.in",
+    "cvp_access_installer/tools/cvp_update_from_github",
 ]
 for rel in maintenance_required:
     assert (root / rel).is_file(), f"Fichier maintenance absent : {rel}"
@@ -82,11 +83,15 @@ assert "request_authorized" in portal_source
 assert "cvp-access.service" in portal_source
 assert "CVP_WEB_REQUIRE_AUTH" in portal_source
 assert "\"auth_required\": AUTH_REQUIRED" in portal_source
+assert "/api/action/update" in portal_source
+assert "Mettre à jour depuis GitHub" in portal_source
+assert "launch_github_update" in portal_source
 
 service_template_source = (
     root / "cvp_access_installer/systemd/cvp-web.service.in"
 ).read_text(encoding="utf-8")
 assert "Environment=CVP_WEB_REQUIRE_AUTH=0" in service_template_source
+assert "CVP_REPO_DIR=@REPO_DIR@" in service_template_source
 
 speech_source = (root / "cvp_speech_151.py").read_text(encoding="utf-8")
 runtime_source = (root / "cvp_access_v1.5.py").read_text(encoding="utf-8")
@@ -106,6 +111,13 @@ assert "startup_ready.wav" in doctor_source
 assert "restart_device.wav" in doctor_source
 assert "WAV système" in doctor_source
 assert '("1.5.1", "1.5.2")' in doctor_source
+
+updater_helper_source = (
+    root / "cvp_access_installer/tools/cvp_update_from_github"
+).read_text(encoding="utf-8")
+assert "git_user -C \"$REPO_DIR\" pull --ff-only" in updater_helper_source
+assert "VERIFY_PACKAGE_" in updater_helper_source
+assert "upgrade_[0-9]" in updater_helper_source
 
 shared_upgrade_source = (
     root / "cvp_access_installer/upgrade_1_5_1_base.sh"
