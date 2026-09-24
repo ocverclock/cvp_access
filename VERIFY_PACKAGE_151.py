@@ -45,6 +45,7 @@ core_source = (root / "cvp_access_v1.4.1.py").read_text(encoding="utf-8")
 assert "ProdipeMIDIlilo MIDI 1" in core_source
 assert "USB MIDI Interface MIDI 1" in core_source
 assert "configured_midi_name" in core_source
+assert "configured_keyboard_path" in core_source
 assert "/etc/cvp-access/hardware.toml" in core_source
 
 portal_source = (
@@ -52,6 +53,7 @@ portal_source = (
 ).read_text(encoding="utf-8")
 assert "10.42.0.1" in portal_source
 assert "/api/midi/select" in portal_source
+assert "/api/keyboard/select" in portal_source
 assert "cvp-access.service" in portal_source
 
 speech_source = (root / "cvp_speech_151.py").read_text(encoding="utf-8")
