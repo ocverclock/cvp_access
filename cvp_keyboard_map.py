@@ -316,7 +316,7 @@ h1{margin:0;font-size:22px}
 <body>
 <div class="header"><div><h1>CVP Access — Carte des commandes</h1>
 <div class="subtitle">Générée depuis {html.escape(str(config_path))}</div></div>
-<div class="stats">{mapped} affectation(s)<br>Layout accessibilité 1.5.1 RC2</div></div>
+<div class="stats">{mapped} affectation(s)<br>Layout accessibilité 1.5.1 RC3</div></div>
 
 <div class="help-banner"><strong>CTRL = AIDE VOCALE.</strong>
 Maintenir CTRL puis appuyer sur une touche attribuée :
@@ -333,14 +333,14 @@ Sans Song chargé : annonce « Pas de Song chargé ».</div></div></aside></div>
 <section class="maintenance-grid">
   <div class="maintenance-card">
     <h2>Accès Web</h2>
-    Réseau local : <code>http://${html.escape(hostname)}.local</code><br>
+    Réseau local : <code>http://{html.escape(hostname)}.local</code><br>
     Hotspot CVP-ACCESS : <code>http://10.42.0.1</code>
   </div>
   <div class="maintenance-card">
     <h2>Partages Samba</h2>
-    Projet : <code>\\\\${html.escape(hostname)}.local\\CVP_access</code>
+    Projet : <code>\\\\{html.escape(hostname)}.local\\CVP_access</code>
     &nbsp;•&nbsp; hotspot : <code>\\\\10.42.0.1\\CVP_access</code><br>
-    Config : <code>\\\\${html.escape(hostname)}.local\\CVP_config</code>
+    Config : <code>\\\\{html.escape(hostname)}.local\\CVP_config</code>
     &nbsp;•&nbsp; hotspot : <code>\\\\10.42.0.1\\CVP_config</code>
   </div>
 </section>
