@@ -57,6 +57,7 @@ assert "@page{size:A4 landscape" in keyboard_map_source
 assert "height:198mm" in keyboard_map_source
 assert "${html.escape(hostname)}" not in keyboard_map_source
 assert "copyValue(this)" in keyboard_map_source
+assert "smb://" in keyboard_map_source
 
 portal_source = (
     root / "cvp_access_installer/tools/cvp_web.py"
@@ -69,6 +70,7 @@ assert "/api/wifi/scan" in portal_source
 assert "webAccess" in portal_source
 assert "sambaAccess" in portal_source
 assert "copyButton(value)" in portal_source
+assert "smbProject" in portal_source
 assert "request_authorized" in portal_source
 assert "cvp-access.service" in portal_source
 
