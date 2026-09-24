@@ -12,7 +12,7 @@ Instrument de référence : **Yamaha CVP-905 firmware 1.03**.
 Yamaha CVP-905
 Firmware 1.03
 Raspberry Pi / Debian 13 arm64
-Interface MIDI DIN Prodipe
+Interface MIDI DIN : ProdipeMIDIlilo ou USB MIDI Interface
 USB Audio du CVP
 Clavier Apple Extended USB
 Piper fr_FR-siwis-medium
@@ -377,6 +377,67 @@ L'upgrade :
 - lance le Doctor ;
 - redémarre le service.
 
+
+## 13.1 Réseau de maintenance autonome — VALIDÉ SUR RASPBERRY
+
+Le dispositif ne doit pas dépendre de la présence d'une box ou d'un Wi-Fi chez le client.
+
+Comportement retenu :
+
+```text
+démarrage Raspberry
+-> tentative de connexion aux Wi-Fi connus
+-> si aucun Wi-Fi normal n'est disponible après ~30 s
+-> activation automatique du point d'accès CVP-ACCESS
+```
+
+Configuration validée le 24 septembre 2026 :
+
+```text
+SSID          : CVP-ACCESS
+mode          : access point
+bande         : 2,4 GHz (bg)
+IPv4          : shared
+Raspberry AP  : 10.42.0.1/24
+SSH           : pi@10.42.0.1
+service       : cvp-wifi-fallback.service
+script        : /usr/local/sbin/cvp-wifi-fallback
+```
+
+Le profil `CVP-ACCESS` ne doit pas s'autoconnecter directement : le service de fallback le démarre uniquement lorsqu'aucune connexion Wi-Fi normale n'est active. Le Wi-Fi normal reste prioritaire.
+
+Validation réelle : Wi-Fi magasin coupé volontairement, apparition automatique de `CVP-ACCESS`, connexion au point d'accès et accès SSH à `10.42.0.1` confirmés.
+
+### Interface Web de maintenance — architecture retenue pour évolution
+
+Objectif : exposer une page locale d'état et de configuration accessible sans Internet.
+
+Fonctions prévues :
+
+- état du service CVP Access ;
+- modèle/version runtime ;
+- interface MIDI détectée et port ALSA courant ;
+- périphériques USB détectés ;
+- clavier USB détecté ;
+- audio CVP détecté ;
+- état de connexion au piano / dernier échange utile ;
+- journaux récents filtrés ;
+- redémarrage du service CVP Access ;
+- affectation explicite d'un périphérique lorsqu'il y a plusieurs candidats ;
+- diagnostic Doctor depuis l'interface ;
+- accès à la carte clavier et à la configuration.
+
+Accès cible :
+
+```text
+http://10.42.0.1
+http://cvp-access.local
+```
+
+Un portail captif pourra être ajouté afin de proposer automatiquement cette page lorsqu'un technicien se connecte au SSID `CVP-ACCESS`. Cette ouverture automatique doit rester un confort et non une dépendance : l'URL locale directe doit toujours fonctionner.
+
+La sélection dynamique des périphériques doit suivre la règle : périphérique connu prioritaire, candidat unique accepté automatiquement, plusieurs candidats ambigus présentés dans l'interface Web plutôt que choisis au hasard.
+
 ## 14. Vérification du paquet
 
 `VERIFY_PACKAGE_151.py` compile le wrapper, la base, les moteurs historiques, les modules et les outils. Il vérifie notamment :
@@ -466,7 +527,9 @@ Ordre de priorité :
 4. tester `) / °` ;
 5. si la latence vocale reste perceptible malgré les WAV complets, identifier les annonces encore dynamiques et mesurer la latence playback/Piper ;
 6. compléter progressivement `cvp_voice_names.py` ;
-7. maintenir le test d’installation depuis un Raspberry neuf lors des prochaines versions majeures.
+7. intégrer le service Wi-Fi fallback et le profil CVP-ACCESS dans l'installateur/updater ;
+8. créer l'interface Web locale de maintenance et le portail captif optionnel ;
+9. maintenir le test d’installation depuis un Raspberry neuf lors des prochaines versions majeures.
 
 ## 19. Rollback
 
