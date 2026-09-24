@@ -13,6 +13,7 @@ import subprocess
 import sys
 import threading
 import time
+import tomllib
 import wave
 from pathlib import Path
 
@@ -31,6 +32,12 @@ MIDI_NAMES = [
     "USB MIDI Interface MIDI 1",
 ]
 MIDI_NAME = None
+HARDWARE_CONFIG = Path(
+    os.environ.get(
+        "CVP_HARDWARE_CONFIG",
+        "/etc/cvp-access/hardware.toml",
+    )
+)
 
 # Volume initial de la voix
 voice_volume = 80
@@ -251,6 +258,28 @@ atexit.register(cleanup)
 # MIDI : recherche interface
 # ============================================================
 
+def configured_midi_name():
+
+    env_name = os.environ.get("CVP_MIDI_PREFERRED", "").strip()
+    if env_name:
+        return env_name
+
+    if not HARDWARE_CONFIG.is_file():
+        return None
+
+    try:
+        with HARDWARE_CONFIG.open("rb") as handle:
+            data = tomllib.load(handle)
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+
+    name = data.get("midi", {}).get("name")
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+
+    return None
+
+
 def find_midi_port():
 
     global MIDI_NAME
@@ -274,6 +303,14 @@ def find_midi_port():
             ports.append(
                 (match.group(1), match.group(2))
             )
+
+    # Une affectation explicite faite depuis l'interface Web est prioritaire.
+    preferred_name = configured_midi_name()
+    if preferred_name:
+        for port, name in ports:
+            if name == preferred_name:
+                MIDI_NAME = name
+                return port
 
     # Interfaces validées / prévues, par ordre de priorité.
     for wanted_name in MIDI_NAMES:
