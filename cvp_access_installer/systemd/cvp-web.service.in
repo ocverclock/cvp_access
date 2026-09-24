@@ -12,6 +12,7 @@ Environment=PYTHONUNBUFFERED=1
 Environment=CVP_USER=@CVP_USER@
 Environment=CVP_RUNTIME_DIR=@PROJECT_DIR@
 Environment=CVP_CONFIG_DIR=/etc/cvp-access
+Environment=CVP_WEB_REQUIRE_AUTH=0
 ExecStart=/usr/bin/python3 @PROJECT_DIR@/cvp_web.py
 Restart=always
 RestartSec=3
