@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -u
+
+HOTSPOT="${CVP_HOTSPOT_NAME:-CVP-ACCESS}"
+DEV="${CVP_WIFI_DEVICE:-wlan0}"
+WAIT_SECONDS="${CVP_WIFI_FALLBACK_WAIT:-30}"
+
+log() {
+    logger -t cvp-wifi "$*"
+    printf '[cvp-wifi] %s\n' "$*"
+}
+
+while true; do
+    ACTIVE="$(nmcli -g GENERAL.CONNECTION device show "$DEV" 2>/dev/null || true)"
+
+    if [[ -n "$ACTIVE" && "$ACTIVE" != "--" && "$ACTIVE" != "$HOTSPOT" ]]; then
+        sleep 15
+        continue
+    fi
+
+    if [[ "$ACTIVE" == "$HOTSPOT" ]]; then
+        sleep 30
+        continue
+    fi
+
+    sleep "$WAIT_SECONDS"
+
+    ACTIVE="$(nmcli -g GENERAL.CONNECTION device show "$DEV" 2>/dev/null || true)"
+
+    if [[ -z "$ACTIVE" || "$ACTIVE" == "--" ]]; then
+        log "Aucun Wi-Fi connu actif : démarrage de $HOTSPOT"
+        if ! nmcli connection up "$HOTSPOT" ifname "$DEV"; then
+            log "Échec du démarrage de $HOTSPOT ; nouvel essai dans 30 s"
+        fi
+    fi
+
+    sleep 30
+done
