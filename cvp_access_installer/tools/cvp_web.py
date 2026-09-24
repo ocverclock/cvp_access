@@ -82,28 +82,63 @@ def parse_midi_devices():
     return devices
 
 
-def selected_midi_name():
+def load_hardware_config():
     if not HARDWARE_CONFIG.is_file():
-        return None
+        return {}
     try:
         with HARDWARE_CONFIG.open("rb") as handle:
             data = tomllib.load(handle)
-        value = data.get("midi", {}).get("name")
-        return value if isinstance(value, str) and value.strip() else None
+        return data if isinstance(data, dict) else {}
     except Exception:
-        return None
+        return {}
+
+
+def save_hardware_config(data):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    lines = []
+
+    midi_name = data.get("midi", {}).get("name")
+    if isinstance(midi_name, str):
+        lines += [
+            "[midi]",
+            "name = " + json.dumps(midi_name, ensure_ascii=False),
+            "",
+        ]
+
+    keyboard_path = data.get("keyboard", {}).get("path")
+    if isinstance(keyboard_path, str):
+        lines += [
+            "[keyboard]",
+            "path = " + json.dumps(keyboard_path, ensure_ascii=False),
+            "",
+        ]
+
+    tmp = HARDWARE_CONFIG.with_suffix(".tmp")
+    tmp.write_text("\n".join(lines), encoding="utf-8")
+    os.chmod(tmp, 0o644)
+    tmp.replace(HARDWARE_CONFIG)
+
+
+def selected_midi_name():
+    value = load_hardware_config().get("midi", {}).get("name")
+    return value if isinstance(value, str) and value.strip() else None
+
+
+def selected_keyboard_path():
+    value = load_hardware_config().get("keyboard", {}).get("path")
+    return value if isinstance(value, str) and value.strip() else None
 
 
 def save_midi_name(name):
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = HARDWARE_CONFIG.with_suffix(".tmp")
-    if name:
-        content = "[midi]\nname = " + json.dumps(name, ensure_ascii=False) + "\n"
-    else:
-        content = "[midi]\nname = \"\"\n"
-    tmp.write_text(content, encoding="utf-8")
-    os.chmod(tmp, 0o644)
-    tmp.replace(HARDWARE_CONFIG)
+    data = load_hardware_config()
+    data.setdefault("midi", {})["name"] = name
+    save_hardware_config(data)
+
+
+def save_keyboard_path(path):
+    data = load_hardware_config()
+    data.setdefault("keyboard", {})["path"] = path
+    save_hardware_config(data)
 
 
 def runtime_version():
@@ -194,6 +229,7 @@ def build_status():
         "selected_midi": selected_midi_name(),
         "audio": audio_lines,
         "keyboards": keyboards,
+        "selected_keyboard": selected_keyboard_path(),
         "usb": usb_out.splitlines(),
         "events": recent_events(),
     }
@@ -262,8 +298,14 @@ async function refresh(){
       '<button class="secondary" onclick=\'selectMidi('+JSON.stringify(x.name)+')\'>'+(sel?'Sélectionnée':'Utiliser')+'</button></div>';
  }
  document.getElementById('midi').innerHTML=m;
- const audio=d.audio.length?d.audio.join('<br>'):'Aucun audio Yamaha détecté';
- const kb=d.keyboards.length?d.keyboards.join('<br>'):'Aucun clavier USB détecté';
+ const audio=d.audio.length?d.audio.map(esc).join('<br>'):'Aucun audio Yamaha détecté';
+ let kb='';
+ if(!d.keyboards.length) kb='<span class="bad">Aucun clavier USB détecté</span>';
+ for(const path of d.keyboards){
+   const sel=d.selected_keyboard===path;
+   kb+='<div class="device"><div class="'+(sel?'selected':'')+'">'+esc(path.split('/').pop())+'</div>'+
+      '<button class="secondary" onclick=\'selectKeyboard('+JSON.stringify(path)+')\'>'+(sel?'Sélectionné':'Utiliser')+'</button></div>';
+ }
  document.getElementById('devices').innerHTML=
   '<b>Audio</b><div>'+audio+'</div><br><b>Clavier</b><div>'+kb+'</div>'+
   '<br><small>'+d.usb.map(esc).join('<br>')+'</small>';
@@ -275,6 +317,7 @@ async function post(url,body={}){
 }
 function action(name){post('/api/action/'+name)}
 function selectMidi(name){post('/api/midi/select',{name})}
+function selectKeyboard(path){post('/api/keyboard/select',{path})}
 function rebootPi(){if(confirm('Redémarrer complètement le Raspberry ?'))post('/api/action/reboot')}
 refresh(); setInterval(refresh,4000);
 </script>
@@ -377,6 +420,19 @@ class Handler(BaseHTTPRequestHandler):
             save_midi_name(name)
             run(["systemctl", "restart", "cvp-access.service"], timeout=8)
             self.send_json({"message": f"Interface MIDI sélectionnée : {name}"})
+            return
+
+        if path == "/api/keyboard/select":
+            keyboard_path = payload.get("path")
+            current = set(glob.glob("/dev/input/by-id/*-event-kbd"))
+            if not isinstance(keyboard_path, str) or keyboard_path not in current:
+                self.send_json({"error": "Clavier USB non disponible"}, 400)
+                return
+            save_keyboard_path(keyboard_path)
+            run(["systemctl", "restart", "cvp-access.service"], timeout=8)
+            self.send_json(
+                {"message": "Clavier sélectionné : " + Path(keyboard_path).name}
+            )
             return
 
         if path == "/api/action/restart":
