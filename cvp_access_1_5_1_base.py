@@ -168,6 +168,18 @@ class CVPActions151(legacy.CVPActions):
             self.midi
         )
 
+    def restart(self):
+        """Annonce la relance avant de laisser systemd redémarrer CVP Access."""
+        print("Relance du dispositif CVP Access...")
+        announcer = getattr(
+            self.core,
+            "announce_device_restart",
+            None,
+        )
+        if callable(announcer):
+            announcer()
+        raise SystemExit(0)
+
     def _restore_metronome_after_song_transport(self, was_on):
         """Conserve un métronome déjà actif pendant PLAY/PAUSE Song."""
         if not was_on:
