@@ -1,6 +1,6 @@
 # CVP Access — état de référence du projet
 
-Dernière consolidation : **12 septembre 2026**.
+Dernière consolidation : **24 septembre 2026**.
 
 Version de référence : **CVP Access 1.5.1-RC3**.
 
@@ -181,6 +181,16 @@ Maj + Inser / Suppr    = Main +5 / -5
 `CTRL + touche` annonce la fonction sans l'exécuter. Exemple : `CTRL + Maj + E` annonce l'aide du Solo piste 3 sans modifier les pistes.
 
 La couche Caps Lock expérimentale de RC1 est abandonnée.
+
+### 3.8 Démarrage vocal
+
+Après initialisation du MIDI, du clavier USB et du moteur vocal, CVP Access annonce une seule fois :
+
+```text
+Dispositif Melody Music CVP Access opérationnel.
+```
+
+Le WAV `system/startup_ready.wav` est pré-généré pendant l'installation et contrôlé par le Doctor. L'annonce n'est pas émise si l'initialisation matérielle n'atteint pas l'état prêt.
 
 ## 4. Speech / Piper
 
