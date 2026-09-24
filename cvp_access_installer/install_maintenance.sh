@@ -96,8 +96,6 @@ systemctl try-restart avahi-daemon.service >/dev/null 2>&1 || true
 echo
 echo "[CVP Access] Maintenance network installed"
 echo "SSID      : $HOTSPOT"
-echo "IP        : 10.42.0.1"
-echo "Portal    : http://10.42.0.1"
 HOST_NOW="$(hostnamectl --static 2>/dev/null || hostname)"
 echo "Hotspot   : http://10.42.0.1"
 echo "Wi-Fi LAN : http://$HOST_NOW.local"
