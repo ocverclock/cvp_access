@@ -133,6 +133,10 @@ def main():
         "system/startup_ready.wav",
         "Dispositif Melody Music CVP Access opérationnel.",
     )
+    add(
+        "system/restart_device.wav",
+        "Relance du dispositif CVP Access.",
+    )
 
     song_numeric_actions = {
         "song_position",
