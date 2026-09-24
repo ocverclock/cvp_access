@@ -664,3 +664,50 @@ Principes retenus :
 La touche dictaphone retenue est **F15**. Test matériel validé sur l'Apple Extended USB : `KEY_F15 1 / 2 / 0`. Le routeur commun accepte désormais F14/F15 et la carte clavier les affiche ; F15 est marquée « Réservé dictaphone MIDI 1.6 » tant que la fonction n'est pas activée.
 
 Architecture Recorder retenue : ne pas ouvrir un second port MIDI. Le `midi_receiver()` historique reçoit déjà le flux brut complet et parse les messages de canal. Un listener/tap interne protégé est maintenant présent ; le probe `CVP_RECORDER_PROBE=1` a été validé matériellement sur le CVP de référence : Note On / Note Off canal 1 correctement reçus, y compris notes chevauchées. Prochain checkpoint : confirmer l'absence de régression SysEx pendant que le tap est actif.
+
+
+## 21. CVP Access 1.6.0-RC1 — implémenté, validation matérielle en cours
+
+Frontend :
+
+```text
+cvp_access_1_6_0.py
+```
+
+Architecture :
+
+```text
+cvp_access_1_6_0.py
+ -> cvp_access_1_5_2.py
+ -> cvp_access_1_5_1_base.py
+ -> cvp_access_v1.5.py
+ -> cvp_access_v1.4.1.py
+```
+
+Recorder :
+
+- F15 court/long ;
+- CTRL+F15 = aide sans exécution ;
+- canal MIDI 1 ;
+- démarrage à la première Note On ;
+- fichiers `AAAA-MM-JJ_NNN.mid` ;
+- dossier `~/CVP_Recordings/` ;
+- lecture prévue via `aplaymidi` ;
+- sélection persistante partagée avec le portail Web ;
+- partage Samba `CVP_recordings` ;
+- keyboard map 1.6 avec F15 ;
+- annonces Recorder essentielles pré-générées.
+
+Validé matériellement avant RC1 :
+
+- F15 `KEY_F15 1/2/0` ;
+- Note On / Note Off canal 1 via le tap interne.
+
+À valider maintenant : armement, sauvegarde réelle, lecture, sélection Web/Samba et non-régression SysEx.
+
+Upgrade :
+
+```bash
+python3 VERIFY_PACKAGE_160.py
+sudo bash cvp_access_installer/upgrade_1_6_0.sh
+```
