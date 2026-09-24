@@ -147,7 +147,25 @@ dashboard / diagnostic / configuration
 
 ## Sécurité
 
-L'interface Web de maintenance est destinée au réseau local CVP-ACCESS. Les opérations modifiant la configuration doivent être protégées au minimum par une authentification locale ou un secret de session. Le service ne doit pas être exposé automatiquement sur une interface réseau publique.
+L'interface Web reste limitée aux réseaux locaux directement connectés au Raspberry.
+
+Pour la phase actuelle de mise au point, la demande de mot de passe sur les boutons de maintenance est **suspendue par défaut** :
+
+```text
+CVP_WEB_REQUIRE_AUTH=0
+```
+
+Les boutons Doctor, relance, sélection MIDI/clavier, connexion Wi-Fi et redémarrage sont donc utilisables directement depuis le portail local.
+
+Le mécanisme d'authentification n'est pas supprimé. Pour le réactiver :
+
+```text
+CVP_WEB_REQUIRE_AUTH=1
+```
+
+puis redémarrer `cvp-web.service`. Le mot de passe utilisé redevient celui stocké dans `/etc/cvp-access/hotspot-password`.
+
+Ce mode sans mot de passe ne doit pas conduire à exposer le portail sur Internet ou sur une interface non maîtrisée.
 
 ## État
 
@@ -214,7 +232,7 @@ Le dashboard permet :
 3. de saisir le mot de passe du réseau ;
 4. de lancer la tentative de connexion.
 
-La modification nécessite le mot de passe de maintenance, identique au mot de passe du hotspot `CVP-ACCESS`.
+En mode courant `CVP_WEB_REQUIRE_AUTH=0`, la connexion Wi-Fi depuis le portail ne demande pas de mot de passe de maintenance. Si l'authentification est réactivée, elle utilise le mot de passe du hotspot `CVP-ACCESS`.
 
 Séquence :
 
