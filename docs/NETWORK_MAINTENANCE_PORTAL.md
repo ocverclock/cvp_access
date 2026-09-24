@@ -34,13 +34,13 @@ NetworkManager profile: CVP-ACCESS
 Principe :
 
 ```text
-Wi-Fi connu disponible
-  -> NetworkManager se connecte normalement
+Ethernet ou Wi-Fi normal disponible
+  -> la connexion normale est prioritaire
   -> le hotspot reste arrêté
 
-aucun Wi-Fi connu
+aucun réseau normal disponible
   -> délai ~30 s
-  -> CVP-ACCESS est activé
+  -> CVP-ACCESS est activé si une interface Wi-Fi existe
   -> maintenance locale sur 10.42.0.1
 ```
 
@@ -168,7 +168,7 @@ cvp_access_installer/systemd/cvp-web.service.in
 cvp_access_installer/tools/cvp_web.py
 ```
 
-Le portail HTTP écoute sur le port 80 mais n'accepte que les clients du sous-réseau `10.42.0.0/24` et localhost.
+Le portail HTTP écoute sur le port 80. Il accepte localhost, le sous-réseau du hotspot `10.42.0.0/24` et les sous-réseaux IPv4 privés directement connectés au Raspberry, y compris Ethernet et Wi-Fi.
 
 Il expose :
 
@@ -205,7 +205,7 @@ Raspberry connecté à un Wi-Fi normal
 -> ou l'adresse IPv4 du Raspberry
 ```
 
-L'accès HTTP est limité à localhost, au sous-réseau du hotspot et au sous-réseau IPv4 directement connecté à `wlan0`.
+L'accès HTTP est limité à localhost, au sous-réseau du hotspot et aux sous-réseaux IPv4 privés directement connectés au Raspberry.
 
 Le dashboard permet :
 
@@ -241,11 +241,58 @@ Accès Web
 - http://10.42.0.1 en mode CVP-ACCESS
 
 Partages Samba
-- \\<hostname>.local\CVP_access
-- \\<hostname>.local\CVP_config
-- équivalents via 10.42.0.1 en mode hotspot
+- Mac / Linux : smb://<hostname>.local/CVP_access
+- Mac / Linux : smb://<hostname>.local/CVP_config
+- Mac / Linux hotspot : smb://10.42.0.1/CVP_access
+- Mac / Linux hotspot : smb://10.42.0.1/CVP_config
+- Windows : \\<hostname>.local\CVP_access
+- Windows : \\<hostname>.local\CVP_config
 ```
 
 Ces deux blocs sont aussi affichés dans le dashboard Web.
 
 La carte reste conçue pour tenir sur **une seule page A4 paysage**. Le CSS d'impression fixe la page à A4 landscape avec marge de 6 mm, limite la hauteur utile et empêche les blocs maintenance de se couper entre deux pages.
+
+
+## Samba et copie des adresses
+
+Les partages officiels sont :
+
+```text
+CVP_access -> dépôt/projet CVP Access
+CVP_config -> configuration client
+```
+
+Le dashboard affiche séparément les syntaxes adaptées aux systèmes :
+
+```text
+Mac / Linux :
+smb://<hostname>.local/CVP_access
+smb://<hostname>.local/CVP_config
+smb://10.42.0.1/CVP_access
+smb://10.42.0.1/CVP_config
+
+Windows :
+\\<hostname>.local\CVP_access
+\\<hostname>.local\CVP_config
+\\10.42.0.1\CVP_access
+\\10.42.0.1\CVP_config
+```
+
+Chaque adresse affichée dans le dashboard est cliquable pour la copier. La carte clavier offre la même fonction à l'écran ; les marqueurs interactifs sont masqués à l'impression.
+
+Sur macOS, utiliser Finder → **Aller → Se connecter au serveur…** (`Cmd + K`) et une URL `smb://...`. Sous Linux/GNOME/Zorin, utiliser également `smb://...`; si le gestionnaire de fichiers ne sait pas monter SMB, installer le backend `gvfs-backends`.
+
+## Intégration version 1.5.2-RC1
+
+La maintenance autonome fait partie du paquet officiel **CVP Access 1.5.2-RC1**.
+
+Les trois chemins d'installation convergent vers la même configuration :
+
+```text
+cvp_access_installer/install.sh
+cvp_access_installer/update.sh
+cvp_access_installer/upgrade_1_5_2.sh
+```
+
+Ils installent ou rafraîchissent le runtime courant, Samba, le portail Web, la carte clavier, le fallback réseau et les services systemd associés.
