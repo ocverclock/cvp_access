@@ -34,6 +34,9 @@ ADMIN_SECRET_FILE = CONFIG_DIR / "hotspot-password"
 WIFI_RESULT_FILE = Path("/run/cvp-wifi-connect-result.json")
 WIFI_CONNECT_HELPER = Path("/usr/local/sbin/cvp-wifi-connect")
 CVP_USER = os.environ.get("CVP_USER", "pi")
+AUTH_REQUIRED = os.environ.get("CVP_WEB_REQUIRE_AUTH", "0").strip().lower() in {
+    "1", "true", "yes", "on"
+}
 
 CAPTIVE_PATHS = {
     "/generate_204",
@@ -262,6 +265,9 @@ def admin_secret():
 
 
 def request_authorized(payload):
+    if not AUTH_REQUIRED:
+        return True
+
     expected = admin_secret()
     supplied = payload.get("admin_password", "")
     return (
@@ -421,6 +427,7 @@ def build_status():
         "keyboards": keyboards,
         "selected_keyboard": selected_keyboard_path(),
         "samba_user": CVP_USER,
+        "auth_required": AUTH_REQUIRED,
         "usb": usb_out.splitlines(),
         "events": recent_events(),
     }
@@ -541,7 +548,7 @@ details summary{cursor:pointer;font-weight:700}
       <div id="wifiResult" class="small" style="margin-top:9px"></div>
     </section>
 
-    <section class="panel span-12">
+    <section id="authSection" class="panel span-12">
       <h3>Accès maintenance</h3>
       <div id="authBox" class="notice auth">
         <div class="two">
@@ -587,6 +594,7 @@ details summary{cursor:pointer;font-weight:700}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const escAttr=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let unlocked=false;
+let authRequired=true;
 const admin=document.getElementById('adminPassword');
 admin.value=sessionStorage.getItem('cvpAdmin')||'';
 
@@ -707,7 +715,18 @@ async function refresh(){
   '<div style="margin-top:12px"><b>Clavier</b>'+kb+'</div>'+
   '<details style="margin-top:12px"><summary class="small">USB détectés</summary><div class="small" style="margin-top:8px">'+d.usb.map(esc).join('<br>')+'</div></details>';
  document.getElementById('events').textContent=d.events.join('\n')||'Aucun événement utile récent.';
- setProtected(unlocked);
+
+ authRequired=Boolean(d.auth_required);
+ const authSection=document.getElementById('authSection');
+ if(!authRequired){
+   unlocked=true;
+   sessionStorage.removeItem('cvpAdmin');
+   authSection.style.display='none';
+   setProtected(true);
+ }else{
+   authSection.style.display='';
+   setProtected(unlocked);
+ }
 }
 
 async function scanWifi(){
@@ -724,8 +743,8 @@ async function scanWifi(){
 }
 
 async function post(url,body={}){
- if(!unlocked){toast('Déverrouille d’abord la maintenance.');return null}
- body.admin_password=admin.value;
+ if(authRequired&&!unlocked){toast('Déverrouille d’abord la maintenance.');return null}
+ if(authRequired) body.admin_password=admin.value;
  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
  const d=await r.json();
  if(r.status===401){
@@ -743,7 +762,7 @@ async function post(url,body={}){
 function action(name){post('/api/action/'+name)}
 function selectMidi(name){post('/api/midi/select',{name})}
 function selectKeyboard(path){post('/api/keyboard/select',{path})}
-function rebootPi(){if(unlocked&&confirm('Redémarrer complètement le Raspberry ?'))post('/api/action/reboot')}
+function rebootPi(){if((!authRequired||unlocked)&&confirm('Redémarrer complètement le Raspberry ?'))post('/api/action/reboot')}
 async function connectWifi(){
  const manual=document.getElementById('manualSsid').value.trim();
  const listed=document.getElementById('wifiList').value;
@@ -754,8 +773,7 @@ async function connectWifi(){
  if(d&&d.message) document.getElementById('wifiResult').textContent=d.message+' La page peut se couper pendant le changement de réseau.';
 }
 setProtected(false);
-refresh();
-if(admin.value) unlock();
+refresh().then(()=>{if(authRequired&&admin.value) unlock();});
 setInterval(refresh,5000);
 </script>
 </body></html>
