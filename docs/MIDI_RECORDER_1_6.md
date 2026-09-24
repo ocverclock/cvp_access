@@ -242,21 +242,46 @@ canal MIDI 1
 
 L'architecture doit toutefois accepter une future extension aux 16 canaux.
 
-## Risque technique à valider avant codage complet
+## Architecture MIDI retenue
 
-CVP Access utilise déjà l'interface MIDI pour les échanges SysEx avec le piano. Il faut confirmer qu'un deuxième lecteur peut écouter les événements MIDI musicaux sans prendre le port en exclusivité ni perturber le contrôle SysEx.
+L'analyse du runtime 1.5.2 montre que `cvp_access_v1.4.1.py::midi_receiver()` lit déjà en permanence **le flux MIDI brut complet** via `amidi -d`.
 
-Checkpoint obligatoire avant implémentation :
+Ce récepteur sait déjà distinguer :
+
+- les SysEx Yamaha, envoyés vers `midi_queue` ;
+- les messages MIDI de canal et le running status ;
+- les Program Change utilisés pour détecter les changements de Style.
+
+Il n'est donc **pas nécessaire ni souhaitable d'ouvrir une deuxième fois le port ALSA MIDI** pour le Recorder.
+
+Architecture retenue pour 1.6 :
+
+```text
+interface MIDI physique
+        |
+        v
+midi_receiver() unique
+        |
+        +--> SysEx Yamaha -> moteur CVP Access existant
+        |
+        +--> messages MIDI canal -> listener/tap Recorder
+```
+
+Le Recorder recevra une copie des messages canal complets depuis le récepteur déjà actif. En l'absence de listener Recorder, le comportement 1.5.2 doit rester strictement inchangé.
+
+Le hook devra être léger et protégé : une exception du Recorder ne doit jamais arrêter `midi_receiver()`.
+
+Checkpoint obligatoire avant l'enregistrement de fichiers :
 
 ```text
 CVP Access actif
-+ écoute MIDI musicale parallèle
--> aucune perte de SysEx
--> aucune coupure de CVP Access
--> notes reçues correctement
+-> listener Recorder attaché au midi_receiver existant
+-> Note On / Note Off reçus correctement
+-> SysEx continue de fonctionner
+-> aucune ouverture ALSA MIDI supplémentaire
 ```
 
-Si le périphérique ne permet pas l'ouverture concurrente, il faudra centraliser l'entrée MIDI dans un seul service et distribuer les messages au moteur CVP Access et au Recorder, plutôt que d'ouvrir le même port deux fois.
+Cette architecture supprime le principal risque d'exclusivité/concurrence du port MIDI.
 
 ## Module cible
 
@@ -287,7 +312,7 @@ Le module doit rester indépendant du protocole Yamaha autant que possible.
 ## Priorités de réalisation
 
 1. ajouter F15 au routeur clavier et à la carte clavier, puis valider la détection physique ;
-2. tester l'écoute MIDI parallèle sans perturber CVP Access ;
+2. ajouter un listener/tap interne au récepteur MIDI existant et valider Note On / Note Off sans perturber les SysEx ;
 3. implémenter la machine d'états à une touche ;
 4. enregistrer un fichier canal 1 ;
 5. lecture / stop ;
