@@ -661,6 +661,6 @@ Principes retenus :
 - validation VoiceOver/macOS obligatoire ;
 - fiabilité de l'horloge hors ligne à traiter avant production.
 
-La touche dictaphone retenue est **F15**. Le routeur 1.5.2 ne déclare actuellement que F1 à F13 : la 1.6 devra donc ajouter F14/F15 au mapping evdev et F15 à la carte clavier avant d'activer le Recorder.
+La touche dictaphone retenue est **F15**. Test matériel validé sur l'Apple Extended USB : `KEY_F15 1 / 2 / 0`. Le routeur commun accepte désormais F14/F15 et la carte clavier les affiche ; F15 est marquée « Réservé dictaphone MIDI 1.6 » tant que la fonction n'est pas activée.
 
-Architecture Recorder retenue : ne pas ouvrir un second port MIDI. Le `midi_receiver()` historique reçoit déjà le flux brut complet et parse les messages de canal. La 1.6 ajoutera un listener/tap interne protégé qui recevra une copie des Note On/Note Off tandis que les SysEx continueront d'utiliser le chemin existant. Premier checkpoint : valider les notes reçues par ce tap sans régression SysEx.
+Architecture Recorder retenue : ne pas ouvrir un second port MIDI. Le `midi_receiver()` historique reçoit déjà le flux brut complet et parse les messages de canal. Un listener/tap interne protégé est maintenant présent ; le probe `CVP_RECORDER_PROBE=1` journalise les Note On/Note Off du canal 1. Prochain checkpoint : valider ces notes sur le CVP-905 sans régression SysEx.
