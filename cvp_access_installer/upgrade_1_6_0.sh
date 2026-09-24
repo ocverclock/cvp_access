@@ -17,6 +17,8 @@ install -m 0644 \
     "$REPO_DIR/cvp_access_1_5_2.py" \
     "$RUNTIME_DIR/cvp_access_1_5_2.py"
 
+systemctl unset-environment CVP_RECORDER_PROBE >/dev/null 2>&1 || true
+
 export CVP_FRONTEND_SOURCE="cvp_access_1_6_0.py"
 export CVP_TARGET_VERSION="1.6.0-RC1"
 
