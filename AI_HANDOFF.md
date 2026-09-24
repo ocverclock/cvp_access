@@ -1,25 +1,27 @@
 # AI_HANDOFF — CVP Access
 
-Dernière consolidation : **12 septembre 2026**.
+Dernière consolidation : **24 septembre 2026**.
 
 ## 1. À lire en premier
 
 Ordre de reprise :
 
 1. `PROJECT_STATE.md`
-2. `AI_HANDOFF.md`
-3. `docs/CVP_ACCESS_1_5_1.md`
-4. `docs/KEY_ACTIONS_1_5_1.md`
-5. `docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md`
-6. `CVP905_PROTOCOL_CHECKPOINT_RC4.md` pour le protocole historique
-7. `docs/FUNCTION_CATALOG.md`
+2. `docs/CVP_ACCESS_1_5_2.md`
+3. `docs/NETWORK_MAINTENANCE_PORTAL.md`
+4. `AI_HANDOFF.md`
+5. `docs/CVP_ACCESS_1_5_1.md` pour la base fonctionnelle
+6. `docs/KEY_ACTIONS_1_5_1.md`
+7. `docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md`
+8. `CVP905_PROTOCOL_CHECKPOINT_RC4.md` pour le protocole historique
+9. `docs/FUNCTION_CATALOG.md`
 
 Ne pas relancer les scans massifs déjà clôturés sans nouvelle hypothèse.
 
 ## 2. Point de départ obligatoire
 
 ```text
-CVP Access 1.5.1-RC3
+CVP Access 1.5.2-RC1
 Yamaha CVP-905 firmware 1.03
 Raspberry Pi / Debian 13 arm64
 ```
@@ -32,7 +34,7 @@ Ne pas repartir de RC1, de la couche Caps Lock ou du runtime expérimental `1.5-
 Repo            : ~/CVP_access
 Runtime         : /opt/cvp-access
 Entrée runtime  : /opt/cvp-access/cvp_access.py
-Source courante : cvp_access_1_5_1.py
+Source courante : cvp_access_1_5_2.py
 Base 1.5.1      : cvp_access_1_5_1_base.py
 Config active   : /etc/cvp-access/keyboard.toml
 Map             : /etc/cvp-access/keyboard-map.html
@@ -44,7 +46,7 @@ Mode            : hybrid
 Architecture :
 
 ```text
-cvp_access_1_5_1.py
+cvp_access_1_5_2.py
 -> cvp_access_1_5_1_base.py
 -> cvp_access_v1.5.py
 -> cvp_access_v1.4.1.py
@@ -327,3 +329,27 @@ sudo systemctl restart cvp-access
 ## 15. Règle de reprise
 
 **Le point de départ obligatoire est le HEAD `main` consolidé au 12 septembre 2026, basé sur CVP Access 1.5.1-RC3, avec Solo Song Maj validé matériellement.**
+
+
+## Maintenance autonome 1.5.2
+
+La maintenance réseau fait partie du paquet courant. Référence complète : `docs/CVP_ACCESS_1_5_2.md` et `docs/NETWORK_MAINTENANCE_PORTAL.md`.
+
+Règles à conserver :
+
+```text
+Ethernet ou Wi-Fi normal actif -> pas de CVP-ACCESS
+aucun réseau normal -> CVP-ACCESS après ~30 s
+hotspot -> Web http://10.42.0.1
+Mac/Linux Samba -> smb://...
+Windows Samba -> \\...
+```
+
+Le dashboard et la carte clavier doivent afficher les adresses Web/Samba copiables. La carte doit rester imprimable sur une seule page A4 paysage.
+
+Le chemin d'upgrade courant est :
+
+```bash
+python3 VERIFY_PACKAGE_152.py
+sudo bash cvp_access_installer/upgrade_1_5_2.sh
+```
