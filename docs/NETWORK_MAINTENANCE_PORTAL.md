@@ -190,3 +190,42 @@ Les sélections sont enregistrées dans `/etc/cvp-access/hardware.toml`.
 Le portail captif combine DNS wildcard sur le dnsmasq de la connexion partagée, redirections des URLs de détection usuelles et une API captive sur `/captive-portal` annoncée par DHCP option 114.
 
 La génération du mot de passe d'un hotspot neuf est aléatoire. Un profil `CVP-ACCESS` déjà présent conserve son mot de passe.
+
+
+## Connexion à un Wi-Fi depuis le portail
+
+Le portail est accessible dans deux situations :
+
+```text
+CVP-ACCESS
+-> http://10.42.0.1
+
+Raspberry connecté à un Wi-Fi normal
+-> http://<hostname>.local
+-> ou l'adresse IPv4 du Raspberry
+```
+
+L'accès HTTP est limité à localhost, au sous-réseau du hotspot et au sous-réseau IPv4 directement connecté à `wlan0`.
+
+Le dashboard permet :
+
+1. de lancer un scan des réseaux Wi-Fi ;
+2. de sélectionner un SSID ou d'en saisir un manuellement ;
+3. de saisir le mot de passe du réseau ;
+4. de lancer la tentative de connexion.
+
+La modification nécessite le mot de passe de maintenance, identique au mot de passe du hotspot `CVP-ACCESS`.
+
+Séquence :
+
+```text
+sélection SSID + mot de passe
+-> arrêt de CVP-ACCESS
+-> tentative de connexion au Wi-Fi demandé
+-> succès : profil CVP-WIFI-xxxxxxxx mémorisé + autoconnect
+-> échec : profil désactivé + réactivation immédiate de CVP-ACCESS
+```
+
+Le service `cvp-wifi-fallback.service` reste une deuxième sécurité si la réactivation immédiate du hotspot échoue.
+
+Le mot de passe du Wi-Fi cible est écrit uniquement dans une requête temporaire sous `/run`, mode 0600, supprimée après traitement. La connexion persistante est ensuite gérée par NetworkManager.
