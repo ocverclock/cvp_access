@@ -26,10 +26,33 @@ for rel in [
     "cvp_access_installer/tools/generate_configured_voices.py",
     "cvp_access_installer/tools/generate_151_voices.py",
     "cvp_access_installer/tools/cvp_doctor_151.py",
+    "cvp_access_installer/tools/cvp_web.py",
 ]:
     path = root / rel
     assert path.is_file(), f"Fichier requis absent : {rel}"
     py_compile.compile(str(path), doraise=True)
+
+maintenance_required = [
+    "cvp_access_installer/install_maintenance.sh",
+    "cvp_access_installer/network/cvp-wifi-fallback",
+    "cvp_access_installer/systemd/cvp-wifi-fallback.service.in",
+    "cvp_access_installer/systemd/cvp-web.service.in",
+]
+for rel in maintenance_required:
+    assert (root / rel).is_file(), f"Fichier maintenance absent : {rel}"
+
+core_source = (root / "cvp_access_v1.4.1.py").read_text(encoding="utf-8")
+assert "ProdipeMIDIlilo MIDI 1" in core_source
+assert "USB MIDI Interface MIDI 1" in core_source
+assert "configured_midi_name" in core_source
+assert "/etc/cvp-access/hardware.toml" in core_source
+
+portal_source = (
+    root / "cvp_access_installer/tools/cvp_web.py"
+).read_text(encoding="utf-8")
+assert "10.42.0.1" in portal_source
+assert "/api/midi/select" in portal_source
+assert "cvp-access.service" in portal_source
 
 speech_source = (root / "cvp_speech_151.py").read_text(encoding="utf-8")
 runtime_source = (root / "cvp_access_v1.5.py").read_text(encoding="utf-8")
