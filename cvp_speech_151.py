@@ -9,7 +9,8 @@ Réutilise le gestionnaire hybride existant et ajoute :
 - annonces Solo Song pré-générées ;
 - lecture audio sérialisée pour éviter les coupures/craquements entre annonces ;
 - mute logiciel du guide vocal, indépendant de son volume ;
-- annonces explicites des mutes de parties Style.
+- annonces explicites des mutes de parties Style ;
+- annonce vocale de disponibilité au démarrage.
 """
 
 from __future__ import annotations
@@ -139,6 +140,13 @@ def install_speech_hooks(core, speech_config):
     manager._speak_sequence_now = speak_sequence_now_guarded
     core.is_voice_guide_muted = is_voice_guide_muted
     core.set_voice_guide_muted = set_voice_guide_muted
+
+    def announce_startup_ready():
+        return manager.speak(
+            "Dispositif Melody Music CVP Access opérationnel.",
+            voice_dir / "system" / "startup_ready.wav",
+            replace_key="system_status",
+        )
 
     def number_file(value):
         value = int(value)
@@ -313,6 +321,7 @@ def install_speech_hooks(core, speech_config):
             replace_key="song_length",
         )
 
+    core.announce_startup_ready = announce_startup_ready
     core.announce_action_help = announce_action_help
     core.announce_boolean_state = announce_boolean_state
     core.announce_style_part = announce_style_part
