@@ -49,6 +49,10 @@ git_user() {
     runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" git "$@"
 }
 
+# Browsing the Samba project share from macOS can create harmless Finder /
+# AppleDouble metadata. Never let those files block a software update.
+find "$REPO_DIR" -type f \( -name '.DS_Store' -o -name '._*' \) -delete 2>/dev/null || true
+
 if [[ -n "$(git_user -C "$REPO_DIR" status --porcelain)" ]]; then
     echo "Des modifications locales sont presentes. Mise a jour annulee pour ne rien ecraser." >&2
     git_user -C "$REPO_DIR" status --short
