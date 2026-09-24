@@ -35,6 +35,7 @@ required=(
     cvp_access_installer/tools/generate_151_voices.py
     cvp_access_installer/tools/cvp_doctor_151.py
     cvp_access_installer/tools/cvp_web.py
+    cvp_access_installer/samba/cvp-access.conf.in
     cvp_access_installer/install_maintenance.sh
     cvp_access_installer/network/cvp-wifi-fallback
     cvp_access_installer/network/cvp-wifi-connect
@@ -170,6 +171,36 @@ if [[ -x "$PIPER_DIR/bin/python" ]]; then
     runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" CVP_RUNTIME_DIR="$RUNTIME_DIR" CVP_VOICE_DIR="$VOICE_DIR" CVP_PIPER_MODEL="$PIPER_MODEL" "$PIPER_DIR/bin/python" "$RUNTIME_DIR/generate_151_voices.py" --config "$CONFIG_FILE"
 else
     echo "WARNING: Piper environment absent; WAV generation skipped." >&2
+fi
+
+# Keep Samba part of the release upgrade, not only of a fresh installation.
+if command -v testparm >/dev/null 2>&1 && [[ -f /etc/samba/smb.conf ]]; then
+    echo "[CVP Access] Refreshing Samba shares"
+    SAMBA_FRAGMENT="/etc/samba/cvp-access.conf"
+    sed \
+        -e "s#@CVP_USER@#$CVP_USER#g" \
+        -e "s#@PROJECT_DIR@#$REPO_DIR#g" \
+        -e "s#@CONFIG_DIR@#$CONFIG_DIR#g" \
+        "$INSTALLER_DIR/samba/cvp-access.conf.in" > "$SAMBA_FRAGMENT"
+    chmod 0644 "$SAMBA_FRAGMENT"
+
+    INCLUDE_LINE="include = $SAMBA_FRAGMENT"
+    if ! grep -Fqx "$INCLUDE_LINE" /etc/samba/smb.conf; then
+        printf '\n%s\n' "$INCLUDE_LINE" >> /etc/samba/smb.conf
+    fi
+
+    if testparm -s >/dev/null; then
+        systemctl enable --now smbd >/dev/null 2>&1 || true
+        systemctl restart smbd >/dev/null 2>&1 || true
+        if command -v pdbedit >/dev/null 2>&1 && \
+           ! pdbedit -L 2>/dev/null | cut -d: -f1 | grep -Fxq "$CVP_USER"; then
+            echo "WARNING: Samba user '$CVP_USER' absent. Run: sudo smbpasswd -a $CVP_USER" >&2
+        fi
+    else
+        echo "WARNING: Samba configuration validation failed." >&2
+    fi
+else
+    echo "WARNING: Samba tools are absent; shares were not refreshed." >&2
 fi
 
 if [[ -f "$INSTALLER_DIR/install_maintenance.sh" ]]; then
