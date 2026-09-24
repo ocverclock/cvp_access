@@ -346,18 +346,21 @@ Sans Song chargé : annonce « Pas de Song chargé ».</div></div></aside></div>
   </div>
   <div class="maintenance-card">
     <h2>Partages Samba</h2>
-    Projet :
+    <strong>Mac / Linux :</strong>
+    <button class="copyvalue" data-copy="smb://{html.escape(hostname, quote=True)}.local/CVP_access"
+      onclick="copyValue(this)">smb://{html.escape(hostname)}.local/CVP_access</button>
+    &nbsp;•&nbsp;
+    <button class="copyvalue" data-copy="smb://10.42.0.1/CVP_access"
+      onclick="copyValue(this)">smb://10.42.0.1/CVP_access</button><br>
+    Config :
+    <button class="copyvalue" data-copy="smb://{html.escape(hostname, quote=True)}.local/CVP_config"
+      onclick="copyValue(this)">smb://{html.escape(hostname)}.local/CVP_config</button>
+    &nbsp;•&nbsp;
+    <button class="copyvalue" data-copy="smb://10.42.0.1/CVP_config"
+      onclick="copyValue(this)">smb://10.42.0.1/CVP_config</button><br>
+    <strong>Windows :</strong>
     <button class="copyvalue" data-copy="\\\\{html.escape(hostname, quote=True)}.local\\CVP_access"
       onclick="copyValue(this)">\\\\{html.escape(hostname)}.local\\CVP_access</button>
-    &nbsp;•&nbsp; hotspot :
-    <button class="copyvalue" data-copy="\\\\10.42.0.1\\CVP_access"
-      onclick="copyValue(this)">\\\\10.42.0.1\\CVP_access</button><br>
-    Config :
-    <button class="copyvalue" data-copy="\\\\{html.escape(hostname, quote=True)}.local\\CVP_config"
-      onclick="copyValue(this)">\\\\{html.escape(hostname)}.local\\CVP_config</button>
-    &nbsp;•&nbsp; hotspot :
-    <button class="copyvalue" data-copy="\\\\10.42.0.1\\CVP_config"
-      onclick="copyValue(this)">\\\\10.42.0.1\\CVP_config</button>
   </div>
 </section>
 
