@@ -392,3 +392,6 @@ KEY_F15 1 / KEY_F15 2 / KEY_F15 0
 Le routeur prend désormais F14/F15 en charge et la keyboard map affiche F15 comme réservée au dictaphone 1.6.
 
 Le moteur MIDI possède maintenant `register_midi_channel_listener()` et `dispatch_midi_channel_message()`. Le probe `CVP_RECORDER_PROBE=1` permet de vérifier les Note On/Note Off du canal 1 sans ouvrir un second port ALSA.
+
+
+Capture canal 1 validée matériellement le 24 septembre 2026 avec `CVP_RECORDER_PROBE=1` : Note On / Note Off reçus correctement sur le CVP de référence, sans second port ALSA. Il reste à confirmer explicitement une commande SysEx pendant que le probe est actif avant de passer à l'écriture SMF.
