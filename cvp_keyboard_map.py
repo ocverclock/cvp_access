@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import socket
 import tomllib
 from pathlib import Path
 
@@ -227,6 +228,7 @@ def render_key(key, bindings, grow=1.0, printed_label=None):
 
 def generate(config_path: Path, output_path: Path):
     general, bindings, raw_keys = load_config(config_path)
+    hostname = socket.gethostname() or "cvp-access"
     rows_html = [
         '<div class="keyboard-row">'
         + "".join(render_key(k, bindings, g) for k, g in row)
@@ -286,15 +288,25 @@ h1{margin:0;font-size:22px}
 .nav-grid .key,.arrow-grid .key{min-height:66px}
 .arrow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:8px}
 .callout{margin-top:9px;padding:7px;border:1px solid #999;border-radius:5px;font-size:9px;line-height:1.3}
-.unassigned{margin-top:10px;padding-top:7px;border-top:2px solid #555}
-.unassigned h2{font-size:14px;margin:0 0 6px}
-.unassigned-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-.unassigned-item{padding:5px 7px;border:1px solid #aaa;border-radius:5px;font-size:9px}
+.maintenance-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+.maintenance-card{padding:6px 8px;border:1px solid #777;border-radius:5px;font-size:8.2px;line-height:1.22;break-inside:avoid}
+.maintenance-card h2{font-size:10px;margin:0 0 3px}
+.maintenance-card code{font-size:7.8px;white-space:nowrap}
+.unassigned{margin-top:7px;padding-top:5px;border-top:2px solid #555}
+.unassigned h2{font-size:12px;margin:0 0 4px}
+.unassigned-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.unassigned-item{padding:4px 6px;border:1px solid #aaa;border-radius:5px;font-size:8px}
 .unassigned-item strong{display:block}
-.unassigned-item span{display:block;margin-top:2px;color:#666;font-size:7.5px}
-.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:9px}
-.footer{margin-top:6px;font-size:8px;color:#666}
-@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+.unassigned-item span{display:block;margin-top:1px;color:#666;font-size:7px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:5px;font-size:8px}
+.footer{margin-top:4px;font-size:7.5px;color:#666}
+@media print{
+  html,body{width:285mm;height:198mm;overflow:hidden}
+  body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .key{min-height:62px}
+  .nav-grid .key,.arrow-grid .key{min-height:62px}
+  .maintenance-grid,.unassigned{break-inside:avoid}
+}
 '''
 
     document = f'''<!doctype html>
@@ -317,6 +329,21 @@ Page ↑ / ↓ : Volume Style ±1.<br>Maj + Page ↑ / ↓ : ±5.<br>↑ / ↓ :
 <div class="callout"><strong>Informations</strong><br>
 W : nom Style.<br>X : nom Song.<br>C : longueur Song.<br>
 Sans Song chargé : annonce « Pas de Song chargé ».</div></div></aside></div>
+
+<section class="maintenance-grid">
+  <div class="maintenance-card">
+    <h2>Accès Web</h2>
+    Réseau local : <code>http://${html.escape(hostname)}.local</code><br>
+    Hotspot CVP-ACCESS : <code>http://10.42.0.1</code>
+  </div>
+  <div class="maintenance-card">
+    <h2>Partages Samba</h2>
+    Projet : <code>\\\\${html.escape(hostname)}.local\\CVP_access</code>
+    &nbsp;•&nbsp; hotspot : <code>\\\\10.42.0.1\\CVP_access</code><br>
+    Config : <code>\\\\${html.escape(hostname)}.local\\CVP_config</code>
+    &nbsp;•&nbsp; hotspot : <code>\\\\10.42.0.1\\CVP_config</code>
+  </div>
+</section>
 
 <section class="unassigned"><h2>Actions disponibles mais non attribuées</h2>
 <div class="unassigned-grid">{unassigned_html}</div></section>
