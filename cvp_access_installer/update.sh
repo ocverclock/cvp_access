@@ -58,10 +58,12 @@ SERVICE_FILE="/etc/systemd/system/cvp-access.service"
 SAMBA_FRAGMENT="/etc/samba/cvp-access.conf"
 CONFIG_DIR="/etc/cvp-access"
 CONFIG_FILE="$CONFIG_DIR/keyboard.toml"
+RECORDINGS_DIR="$CVP_HOME/CVP_Recordings"
 
 log "CVP Access updater $UPDATE_VERSION"
 printf 'Repository : %s\n' "$REPO_DIR"
 printf 'Installer  : %s\n' "$INSTALLER_DIR"
+install -d -o "$CVP_USER" -g "$CVP_USER" -m 0775 "$RECORDINGS_DIR"
 
 git_user() {
     runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" git "$@"
@@ -262,6 +264,7 @@ sed \
     -e "s#@CVP_USER@#$CVP_USER#g" \
     -e "s#@PROJECT_DIR@#$REPO_DIR#g" \
     -e "s#@CONFIG_DIR@#$CONFIG_DIR#g" \
+    -e "s#@RECORDINGS_DIR@#$RECORDINGS_DIR#g" \
     "$INSTALLER_DIR/samba/cvp-access.conf.in" > "$SAMBA_FRAGMENT"
 chmod 0644 "$SAMBA_FRAGMENT"
 
