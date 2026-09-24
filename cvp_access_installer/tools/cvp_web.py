@@ -581,11 +581,7 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "CVPAccessPortal/1.0"
 
     def allowed(self):
-        try:
-            ip = ipaddress.ip_address(self.client_address[0])
-            return ip.is_loopback or ip in HOTSPOT_NET
-        except ValueError:
-            return False
+        return client_allowed(self.client_address[0])
 
     def send_bytes(self, code, body, content_type="text/plain; charset=utf-8", extra=None):
         self.send_response(code)
@@ -614,7 +610,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if not self.allowed():
-            self.send_bytes(403, b"CVP Access portal: hotspot access only\n")
+            self.send_bytes(403, b"CVP Access portal: local Wi-Fi access only\n")
             return
 
         path = urlparse(self.path).path
@@ -635,6 +631,10 @@ class Handler(BaseHTTPRequestHandler):
                 body,
                 "application/captive+json",
             )
+            return
+
+        if path == "/api/wifi/scan":
+            self.send_json({"networks": scan_wifi_networks()})
             return
 
         if path == "/api/status":
