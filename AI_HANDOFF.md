@@ -395,3 +395,12 @@ Le moteur MIDI possède maintenant `register_midi_channel_listener()` et `dispat
 
 
 Capture canal 1 validée matériellement le 24 septembre 2026 avec `CVP_RECORDER_PROBE=1` : Note On / Note Off reçus correctement sur le CVP de référence, sans second port ALSA. Il reste à confirmer explicitement une commande SysEx pendant que le probe est actif avant de passer à l'écriture SMF.
+
+
+## CVP Access 1.6.0-RC1
+
+CVP Access 1.6.0-RC1 est maintenant implémenté dans le dépôt. Lire `docs/CVP_ACCESS_1_6.md` puis `docs/MIDI_RECORDER_1_6.md`.
+
+Le Recorder est dans `cvp_recorder.py`, activé uniquement par le frontend `cvp_access_1_6_0.py`. F15 est interceptée avant le routeur générique ; CTRL+F15 conserve l'aide vocale sans exécution.
+
+Le prochain travail est **validation matérielle**, pas redesign : installer via `VERIFY_PACKAGE_160.py` + `upgrade_1_6_0.sh`, tester F15 long/court, créer un .mid, vérifier la liste Web, puis tester lecture/stop et SysEx.
