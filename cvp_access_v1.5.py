@@ -1077,6 +1077,50 @@ class CVPActions:
         )
 
 
+def install_midi_recorder(core, port):
+    """Install the 1.6 recorder only when the frontend explicitly enables it."""
+    enabled = os.environ.get(
+        "CVP_RECORDER_ENABLED",
+        "0",
+    ).strip().lower() in {"1", "true", "yes", "on"}
+
+    if not enabled:
+        return None
+
+    try:
+        from cvp_recorder import RecorderController
+    except Exception as exc:
+        print("Recorder : module indisponible :", exc)
+        return None
+
+    register = getattr(
+        core,
+        "register_midi_channel_listener",
+        None,
+    )
+    if not callable(register):
+        print("Recorder : MIDI tap indisponible")
+        return None
+
+    recordings_dir = Path(
+        os.environ.get(
+            "CVP_RECORDINGS_DIR",
+            str(Path.home() / "CVP_Recordings"),
+        )
+    )
+
+    recorder = RecorderController(
+        core,
+        port,
+        recordings_dir=recordings_dir,
+    )
+    register(recorder.on_midi_message)
+
+    print("Recorder : F15 actif")
+    print("Recorder : dossier", recordings_dir)
+    return recorder
+
+
 def install_recorder_probe(core):
     """Optional development probe for the future 1.6 MIDI recorder."""
     enabled = os.environ.get(
@@ -1205,6 +1249,11 @@ def main():
 
     initialise_piano(core, port)
 
+    recorder = install_midi_recorder(
+        core,
+        port,
+    )
+
     keyboard = core.find_keyboard()
     router = KeyRouter(
         keyboard,
@@ -1234,32 +1283,52 @@ def main():
 
     print()
 
-    for event in keyboard.read_loop():
-        if actions.process_modal_event(
-            event,
-            router,
-        ):
-            continue
+    try:
+        for event in keyboard.read_loop():
+            # F15 belongs exclusively to the accessible MIDI recorder in 1.6.
+            # The recorder consumes press/release/autorepeat before the generic
+            # key router so short/long press semantics remain deterministic.
+            if (
+                recorder is not None
+                and recorder.handle_key_event(event)
+            ):
+                continue
 
-        invocation = router.process_event(event)
+            if actions.process_modal_event(
+                event,
+                router,
+            ):
+                continue
 
-        if invocation is None:
-            continue
+            invocation = router.process_event(event)
 
-        if invocation.help_only:
-            description = describe_invocation(invocation)
-            print("Aide :", description)
-            core.announce_action_help(description)
-            continue
+            if invocation is None:
+                continue
 
-        try:
-            actions.dispatch(invocation)
-        except Exception as exc:
-            # One bad command must not stop accessibility for all other keys.
-            print(
-                "Erreur pendant l'action "
-                f"{invocation.text} : {exc}"
+            if invocation.help_only:
+                description = describe_invocation(invocation)
+                print("Aide :", description)
+                core.announce_action_help(description)
+                continue
+
+            try:
+                actions.dispatch(invocation)
+            except Exception as exc:
+                # One bad command must not stop accessibility for all other keys.
+                print(
+                    "Erreur pendant l'action "
+                    f"{invocation.text} : {exc}"
+                )
+    finally:
+        if recorder is not None:
+            unregister = getattr(
+                core,
+                "unregister_midi_channel_listener",
+                None,
             )
+            if callable(unregister):
+                unregister(recorder.on_midi_message)
+            recorder.close()
 
 
 if __name__ == "__main__":
