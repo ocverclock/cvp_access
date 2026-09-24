@@ -461,6 +461,9 @@ h3{font-size:1rem;margin:0 0 14px}.sub{color:var(--muted);font-size:.88rem;margi
 button,.btn{appearance:none;border:0;border-radius:10px;padding:9px 12px;font-weight:650;cursor:pointer;background:#111827;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 button:hover,.btn:hover{filter:brightness(1.06)}button.secondary,.btn.secondary{background:#475467}button.primary{background:var(--accent)}button.danger{background:var(--bad)}
 button:disabled{opacity:.4;cursor:not-allowed}
+.copyvalue{appearance:none;border:0;background:transparent;color:var(--accent);padding:2px 4px;border-radius:6px;font:inherit;font-weight:700;cursor:pointer;text-align:right;word-break:break-all}
+.copyvalue:hover{background:#eff6ff;text-decoration:underline}
+.copyvalue::after{content:"  ⧉";font-size:.8em;color:#667085}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 input,select{width:100%;padding:10px 11px;border:1px solid #cfd6e3;border-radius:10px;background:#fff;color:var(--ink);outline:none}
 input:focus,select:focus{border-color:#8bb3ff;box-shadow:0 0 0 3px #dbeafe}
@@ -582,6 +585,7 @@ details summary{cursor:pointer;font-weight:700}
 
 <script>
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const escAttr=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let unlocked=false;
 const admin=document.getElementById('adminPassword');
 admin.value=sessionStorage.getItem('cvpAdmin')||'';
@@ -589,6 +593,22 @@ admin.value=sessionStorage.getItem('cvpAdmin')||'';
 function toast(msg){
  const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
  clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>t.style.display='none',3200);
+}
+async function copyText(value){
+ try{
+   if(navigator.clipboard&&window.isSecureContext){
+     await navigator.clipboard.writeText(value);
+   }else{
+     const area=document.createElement('textarea');
+     area.value=value; area.style.position='fixed'; area.style.opacity='0';
+     document.body.appendChild(area); area.focus(); area.select();
+     document.execCommand('copy'); area.remove();
+   }
+   toast('Copié : '+value);
+ }catch(e){toast('Copie impossible');}
+}
+function copyButton(value){
+ return '<button type="button" class="copyvalue" data-copy="'+escAttr(value)+'" onclick="copyText(this.dataset.copy)">'+esc(value)+'</button>';
 }
 function setProtected(enabled){
  document.querySelectorAll('.protected').forEach(x=>x.disabled=!enabled);
@@ -637,16 +657,23 @@ async function refresh(){
   '<div class="small" style="margin-top:8px">'+esc(d.network.address||'Aucune adresse Wi-Fi')+'</div>';
  if(result.status) document.getElementById('wifiResult').textContent=result.status+' · '+(result.ssid||'')+(result.detail?' · '+result.detail:'');
 
- const host=esc(d.network.hostname);
+ const rawHost=String(d.network.hostname||'cvp-access');
+ const localWeb='http://'+rawHost+'.local';
+ const hotspotWeb='http://10.42.0.1';
+ const sambaProject='\\\\'+rawHost+'.local\\CVP_access';
+ const sambaConfig='\\\\'+rawHost+'.local\\CVP_config';
+ const sambaHotspotProject='\\\\10.42.0.1\\CVP_access';
+ const sambaHotspotConfig='\\\\10.42.0.1\\CVP_config';
+
  document.getElementById('webAccess').innerHTML=
-  '<div class="row"><span class="label">Réseau local</span><span class="value">http://'+host+'.local</span></div>'+
-  '<div class="row"><span class="label">Hotspot CVP-ACCESS</span><span class="value">http://10.42.0.1</span></div>';
+  '<div class="row"><span class="label">Réseau local</span>'+copyButton(localWeb)+'</div>'+
+  '<div class="row"><span class="label">Hotspot CVP-ACCESS</span>'+copyButton(hotspotWeb)+'</div>';
 
  document.getElementById('sambaAccess').innerHTML=
-  '<div class="row"><span class="label">Projet</span><span class="value">\\\\'+host+'.local\\CVP_access</span></div>'+
-  '<div class="row"><span class="label">Configuration</span><span class="value">\\\\'+host+'.local\\CVP_config</span></div>'+
-  '<div class="row"><span class="label">Hotspot projet</span><span class="value">\\\\10.42.0.1\\CVP_access</span></div>'+
-  '<div class="row"><span class="label">Hotspot config</span><span class="value">\\\\10.42.0.1\\CVP_config</span></div>'+
+  '<div class="row"><span class="label">Projet</span>'+copyButton(sambaProject)+'</div>'+
+  '<div class="row"><span class="label">Configuration</span>'+copyButton(sambaConfig)+'</div>'+
+  '<div class="row"><span class="label">Hotspot projet</span>'+copyButton(sambaHotspotProject)+'</div>'+
+  '<div class="row"><span class="label">Hotspot config</span>'+copyButton(sambaHotspotConfig)+'</div>'+
   '<div class="small" style="margin-top:8px">Utilisateur Samba : '+esc(d.samba_user||'pi')+'</div>';
 
  let m='';
