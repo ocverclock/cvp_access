@@ -1142,7 +1142,7 @@ def main():
 
     port = core.find_midi_port()
     if port is None:
-        print("Prodipe MIDI introuvable.")
+        print("Interface MIDI compatible introuvable.")
         raise SystemExit(1)
 
     print("MIDI :", port, "-", core.MIDI_NAME)
