@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+REQUEST_FILE="${1:-}"
+DEV="${CVP_WIFI_DEVICE:-wlan0}"
+HOTSPOT="${CVP_HOTSPOT_NAME:-CVP-ACCESS}"
+RESULT_FILE="/run/cvp-wifi-connect-result.json"
+
+log() {
+    logger -t cvp-wifi-connect "$*"
+    printf '[cvp-wifi-connect] %s\n' "$*"
+}
+
+write_result() {
+    local status="$1"
+    local ssid="$2"
+    local detail="${3:-}"
+    python3 - "$RESULT_FILE" "$status" "$ssid" "$detail" <<'PY'
+import json
+import os
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+payload = {
+    "status": sys.argv[2],
+    "ssid": sys.argv[3],
+    "detail": sys.argv[4],
+}
+tmp = path.with_suffix(".tmp")
+tmp.write_text(json.dumps(payload, ensure_ascii=False) + "\n", encoding="utf-8")
+os.chmod(tmp, 0o600)
+tmp.replace(path)
+PY
+}
+
+[[ -n "$REQUEST_FILE" && -r "$REQUEST_FILE" ]] || {
+    log "Fichier de requête absent."
+    exit 2
+}
+
+trap 'rm -f -- "$REQUEST_FILE"' EXIT
+
+SSID="$(jq -r '.ssid // ""' "$REQUEST_FILE")"
+PASSWORD="$(jq -r '.password // ""' "$REQUEST_FILE")"
+HIDDEN="$(jq -r '.hidden // false' "$REQUEST_FILE")"
+
+[[ -n "$SSID" && "$SSID" != "null" ]] || {
+    write_result "failed" "" "SSID absent"
+    exit 2
+}
+
+HASH="$(printf '%s' "$SSID" | sha256sum | awk '{print substr($1,1,10)}')"
+CONNECTION="CVP-WIFI-$HASH"
+
+write_result "connecting" "$SSID" "Tentative en cours"
+log "Tentative de connexion à '$SSID'."
+
+# Quitter le hotspot avant d'associer la même radio au réseau demandé.
+nmcli connection down "$HOTSPOT" >/dev/null 2>&1 || true
+sleep 1
+
+# Le profil créé par CVP Access est le seul que nous remplaçons.
+nmcli connection delete "$CONNECTION" >/dev/null 2>&1 || true
+
+CONNECT_ARGS=(
+    nmcli --wait 25 device wifi connect "$SSID"
+    ifname "$DEV"
+    name "$CONNECTION"
+)
+
+if [[ "$HIDDEN" == "true" ]]; then
+    CONNECT_ARGS+=(hidden yes)
+fi
+
+if [[ -n "$PASSWORD" ]]; then
+    CONNECT_ARGS+=(password "$PASSWORD")
+fi
+
+if "${CONNECT_ARGS[@]}" >/tmp/cvp-wifi-connect.out 2>/tmp/cvp-wifi-connect.err; then
+    nmcli connection modify "$CONNECTION"         connection.autoconnect yes         connection.autoconnect-priority 100
+
+    ADDRESS="$(ip -4 -o addr show dev "$DEV" 2>/dev/null | awk 'NR==1 {print $4}' || true)"
+    write_result "connected" "$SSID" "$ADDRESS"
+    log "Connexion à '$SSID' réussie ($ADDRESS)."
+    rm -f /tmp/cvp-wifi-connect.out /tmp/cvp-wifi-connect.err
+    exit 0
+fi
+
+DETAIL="$(tr '\n' ' ' </tmp/cvp-wifi-connect.err | sed 's/[[:space:]]\+/ /g' | cut -c1-240)"
+rm -f /tmp/cvp-wifi-connect.out /tmp/cvp-wifi-connect.err
+
+# Un profil partiellement créé ne doit pas boucler en autoconnect.
+nmcli connection modify "$CONNECTION" connection.autoconnect no >/dev/null 2>&1 || true
+
+write_result "failed" "$SSID" "${DETAIL:-Connexion refusée}"
+log "Connexion à '$SSID' échouée. Retour immédiat au hotspot."
+
+# Retour immédiat au réseau de maintenance ; le fallback systemd reste une
+# deuxième sécurité si cette commande échoue.
+nmcli connection up "$HOTSPOT" ifname "$DEV" >/dev/null 2>&1 || true
+exit 1
