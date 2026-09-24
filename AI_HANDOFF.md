@@ -360,6 +360,6 @@ sudo bash cvp_access_installer/upgrade_1_5_2.sh
 
 La conception validée à ce stade est dans `docs/MIDI_RECORDER_1_6.md`.
 
-Ne pas réutiliser `ESC` pour le Recorder : `ESC` reste la relance système. Le Recorder doit fonctionner avec une seule touche dédiée, en distinguant appui court et appui long à partir des événements evdev bruts.
+Ne pas réutiliser `ESC` pour le Recorder : `ESC` reste la relance système. La touche Recorder retenue est **F15**. Le Recorder doit fonctionner avec cette seule touche, en distinguant appui court et appui long à partir des événements evdev bruts. Le routeur 1.5.2 ne couvre que F1..F13 ; ajouter F14/F15 dans la 1.6 avant tout binding.
 
 Avant de coder l'enregistrement complet, valider que l'écoute MIDI musicale parallèle n'entre pas en conflit avec le port utilisé pour les SysEx.
