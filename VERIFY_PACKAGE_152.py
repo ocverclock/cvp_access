@@ -97,6 +97,21 @@ assert "system/restart_device.wav" in generator_source
 assert "startup_ready.wav" in doctor_source
 assert "restart_device.wav" in doctor_source
 assert "WAV système" in doctor_source
+assert '("1.5.1", "1.5.2")' in doctor_source
+
+fresh_install_source = (
+    root / "cvp_access_installer/install.sh"
+).read_text(encoding="utf-8")
+update_source = (
+    root / "cvp_access_installer/update.sh"
+).read_text(encoding="utf-8")
+upgrade_152_source = (
+    root / "cvp_access_installer/upgrade_1_5_2.sh"
+).read_text(encoding="utf-8")
+assert "upgrade_1_5_2.sh" in fresh_install_source
+assert "upgrade_1_5_2.sh" in update_source
+assert 'CVP_FRONTEND_SOURCE="cvp_access_1_5_2.py"' in upgrade_152_source
+assert 'CVP_TARGET_VERSION="1.5.2-RC1"' in upgrade_152_source
 
 with (root / "config/default-1.5.1.toml").open("rb") as handle:
     cfg = tomllib.load(handle)
