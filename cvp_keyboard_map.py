@@ -72,7 +72,7 @@ MOD_LABELS = {
 MOD_ORDER = ("CAPS", "CTRL", "ALT", "ALTGR", "META", "SHIFT")
 
 ROWS = [
-    [("ESC", 1.25)] + [(f"F{i}", 1) for i in range(1, 14)],
+    [("ESC", 1.25)] + [(f"F{i}", 1) for i in range(1, 16)],
     [("TOP1",1),("TOP2",1),("TOP3",1),("TOP4",1),("TOP5",1),("TOP6",1),
      ("TOP7",1),("TOP8",1),("TOP9",1),("TOP0",1),("RPAREN",1),("EQUAL",1),("BACKSPACE",2)],
     [("TAB",1.5),("A",1),("Z",1),("E",1),("R",1),("T",1),("Y",1),("U",1),("I",1),
@@ -203,6 +203,14 @@ def render_key(key, bindings, grow=1.0, printed_label=None):
     items = bindings.get(key, [])
     group = group_for(items[0][1]) if items else "unused"
     body = []
+
+    if key == "F15" and not items:
+        return (
+            f'<div class="key unused" style="flex-grow:{grow}">'
+            f'<div class="keyname">{html.escape(label)}</div>'
+            '<div class="specialtext"><strong>Réservé dictaphone MIDI 1.6</strong><br>'
+            'Appui court / appui long en développement</div></div>'
+        )
     for mods, action in items:
         mod = ""
         if mods:
