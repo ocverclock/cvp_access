@@ -227,6 +227,28 @@ Solo piste 1
 Pas de Song chargé.
 ```
 
+## Maintenance autonome
+
+CVP Access peut être maintenu même chez un client sans box ni Wi-Fi.
+
+```text
+Wi-Fi connu disponible
+  -> connexion normale
+
+aucun Wi-Fi connu après ~30 s
+  -> point d'accès CVP-ACCESS
+  -> Raspberry : 10.42.0.1
+  -> portail : http://10.42.0.1
+```
+
+L'installateur crée le profil de secours, le service `cvp-wifi-fallback.service` et le portail Web local. Sur une installation neuve, un mot de passe Wi-Fi aléatoire est généré et conservé dans `/etc/cvp-access/hotspot-password`. Un profil CVP-ACCESS existant conserve son mot de passe.
+
+Le dashboard affiche l'état de CVP Access, le réseau, les interfaces MIDI, l'audio Yamaha, le clavier USB et les événements utiles. Il permet aussi de lancer le Doctor, relancer CVP Access et sélectionner l'interface MIDI à utiliser lorsqu'il existe plusieurs candidats.
+
+La préférence MIDI est mémorisée dans `/etc/cvp-access/hardware.toml` par nom de périphérique, et non par numéro ALSA `hw:X,Y,Z`.
+
+Le point d'accès fournit également les indications de portail captif destinées à proposer automatiquement le dashboard sur téléphone ou ordinateur. L'accès direct `http://10.42.0.1` reste toujours la référence.
+
 ## Installation / upgrade
 
 ```bash
