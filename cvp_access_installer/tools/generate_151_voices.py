@@ -127,6 +127,13 @@ def main():
             base / path
         ] = str(text).strip()
 
+    # Toujours disponible : l'annonce n'est jouée qu'une fois le MIDI,
+    # le clavier et le moteur vocal initialisés.
+    add(
+        "system/startup_ready.wav",
+        "Dispositif Melody Music CVP Access opérationnel.",
+    )
+
     song_numeric_actions = {
         "song_position",
         "song_measure_previous",
