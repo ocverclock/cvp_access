@@ -344,7 +344,7 @@ def main():
             elif name == "style_part_toggle" and parameter and 1 <= parameter <= 8:
                 stem = style_stems[parameter - 1]
                 paths.add(voices / "style_part" / f"{stem}_on.wav")
-                paths.add(voices / "style_part" / f"{stem}_off.wav")
+                paths.add(voices / "style_part" / f"{stem}_mute.wav")
             elif name == "layer_toggle":
                 paths.add(voices / "voice_part" / "layer_on.wav")
                 paths.add(voices / "voice_part" / "layer_off.wav")
