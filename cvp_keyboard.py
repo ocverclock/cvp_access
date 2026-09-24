@@ -57,7 +57,7 @@ KEY_NAME_TO_CODE = {
     "EXCLAMATION": ecodes.KEY_SLASH,
     "LESS": ecodes.KEY_102ND,
 
-    **{f"F{i}": getattr(ecodes, f"KEY_F{i}") for i in range(1, 14)},
+    **{f"F{i}": getattr(ecodes, f"KEY_F{i}") for i in range(1, 16)},
 
     "ESC": ecodes.KEY_ESC,
     "TAB": ecodes.KEY_TAB,
