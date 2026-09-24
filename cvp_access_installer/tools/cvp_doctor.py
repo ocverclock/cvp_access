@@ -406,11 +406,37 @@ def main():
             detail += f"; missing {len(missing)}: {sample}"
         check("Voice bank", voice_status, detail)
 
-    for service in ["cvp-access.service", "smbd.service",
+    for service in ["cvp-access.service", "cvp-wifi-fallback.service",
+                    "cvp-web.service", "smbd.service",
                     "avahi-daemon.service", "ssh.service"]:
         state = service_state(service)
         status = OK if state == "active" else WARN
         check(service, status, state)
+
+    rc, hotspot_out, hotspot_err = run(
+        [
+            "nmcli",
+            "-g",
+            "802-11-wireless.mode,ipv4.method,ipv4.addresses",
+            "connection",
+            "show",
+            "CVP-ACCESS",
+        ],
+        timeout=10,
+    )
+    hotspot_ok = (
+        rc == 0
+        and "ap" in hotspot_out
+        and "shared" in hotspot_out
+        and "10.42.0.1/24" in hotspot_out
+    )
+    check(
+        "CVP-ACCESS profile",
+        OK if hotspot_ok else WARN,
+        hotspot_out.replace("\n", " | ")
+        if hotspot_out
+        else (hotspot_err.strip() or "not configured"),
+    )
 
     rc, out, err = run(["testparm", "-s"], timeout=10)
     samba_ok = rc == 0 and "[CVP_access]" in out
