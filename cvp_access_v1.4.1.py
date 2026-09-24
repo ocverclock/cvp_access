@@ -26,7 +26,11 @@ from evdev import InputDevice, ecodes
 VOICE_DIR = Path("/home/pi/cvp_voice")
 
 AUDIO_DEVICE = "plughw:CARD=Clavinova,DEV=0"
-MIDI_NAME = "ProdipeMIDIlilo MIDI 1"
+MIDI_NAMES = [
+    "ProdipeMIDIlilo MIDI 1",
+    "USB MIDI Interface MIDI 1",
+]
+MIDI_NAME = None
 
 # Volume initial de la voix
 voice_volume = 80
@@ -249,23 +253,41 @@ atexit.register(cleanup)
 
 def find_midi_port():
 
+    global MIDI_NAME
+
     result = subprocess.run(
         ["amidi", "-l"],
         capture_output=True,
         text=True
     )
 
+    ports = []
+
     for line in result.stdout.splitlines():
 
-        if MIDI_NAME in line:
+        match = re.search(
+            r"^\s*IO\s+(hw:\d+,\d+,\d+)\s+(.+?)\s*$",
+            line
+        )
 
-            match = re.search(
-                r"(hw:\d+,\d+,\d+)",
-                line
+        if match:
+            ports.append(
+                (match.group(1), match.group(2))
             )
 
-            if match:
-                return match.group(1)
+    # Interfaces validées / prévues, par ordre de priorité.
+    for wanted_name in MIDI_NAMES:
+        for port, name in ports:
+            if wanted_name in name:
+                MIDI_NAME = name
+                return port
+
+    # Si une seule interface MIDI bidirectionnelle est présente,
+    # elle peut être utilisée sans ambiguïté même si son nom change.
+    if len(ports) == 1:
+        port, name = ports[0]
+        MIDI_NAME = name
+        return port
 
     return None
 
