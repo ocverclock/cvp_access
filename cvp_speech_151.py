@@ -148,6 +148,21 @@ def install_speech_hooks(core, speech_config):
             replace_key="system_status",
         )
 
+    def announce_device_restart():
+        # ESC redémarre le processus. L'annonce doit donc être synchrone :
+        # attendre la fin de aplay avant SystemExit, sinon cleanup() la coupe.
+        ok = original_speak_now(
+            "Relance du dispositif CVP Access.",
+            voice_dir / "system" / "restart_device.wav",
+        )
+        current = getattr(core, "audio_process", None)
+        if ok and current is not None and current.poll() is None:
+            try:
+                current.wait(timeout=10)
+            except Exception:
+                pass
+        return ok
+
     def number_file(value):
         value = int(value)
         if 0 <= value <= MAX_PREGENERATED_NUMBER:
@@ -322,6 +337,7 @@ def install_speech_hooks(core, speech_config):
         )
 
     core.announce_startup_ready = announce_startup_ready
+    core.announce_device_restart = announce_device_restart
     core.announce_action_help = announce_action_help
     core.announce_boolean_state = announce_boolean_state
     core.announce_style_part = announce_style_part
