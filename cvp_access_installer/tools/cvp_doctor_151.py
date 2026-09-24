@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contrôle de cohérence spécifique CVP Access 1.5.1."""
+"""Contrôle de cohérence CVP Access 1.5.x (1.5.1 / 1.5.2)."""
 
 from __future__ import annotations
 
@@ -101,7 +101,7 @@ def main():
         ).is_file()
     ]
     add(
-        "Runtime 1.5.1",
+        "Runtime 1.5.x",
         OK if not missing else FAIL,
         (
             "modules complets"
@@ -131,7 +131,7 @@ def main():
             (
                 OK
                 if str(version).startswith(
-                    "1.5.1"
+                    ("1.5.1", "1.5.2")
                 )
                 else FAIL
             ),
