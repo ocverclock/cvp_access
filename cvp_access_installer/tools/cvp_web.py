@@ -371,6 +371,20 @@ class Handler(BaseHTTPRequestHandler):
             self.redirect_portal()
             return
 
+        if path == "/captive-portal":
+            body = json.dumps(
+                {
+                    "captive": True,
+                    "user-portal-url": f"http://{HOTSPOT_IP}/",
+                }
+            ).encode("utf-8")
+            self.send_bytes(
+                200,
+                body,
+                "application/captive+json",
+            )
+            return
+
         if path == "/api/status":
             self.send_json(build_status())
             return
