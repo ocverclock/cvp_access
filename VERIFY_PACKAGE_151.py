@@ -49,6 +49,13 @@ assert "configured_midi_name" in core_source
 assert "configured_keyboard_path" in core_source
 assert "/etc/cvp-access/hardware.toml" in core_source
 
+keyboard_map_source = (root / "cvp_keyboard_map.py").read_text(encoding="utf-8")
+assert "maintenance-grid" in keyboard_map_source
+assert "Accès Web" in keyboard_map_source
+assert "Partages Samba" in keyboard_map_source
+assert "@page{size:A4 landscape" in keyboard_map_source
+assert "height:198mm" in keyboard_map_source
+
 portal_source = (
     root / "cvp_access_installer/tools/cvp_web.py"
 ).read_text(encoding="utf-8")
@@ -57,6 +64,8 @@ assert "/api/midi/select" in portal_source
 assert "/api/keyboard/select" in portal_source
 assert "/api/wifi/connect" in portal_source
 assert "/api/wifi/scan" in portal_source
+assert "webAccess" in portal_source
+assert "sambaAccess" in portal_source
 assert "request_authorized" in portal_source
 assert "cvp-access.service" in portal_source
 
