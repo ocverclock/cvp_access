@@ -627,6 +627,6 @@ Principes retenus :
 - validation VoiceOver/macOS obligatoire ;
 - fiabilité de l'horloge hors ligne à traiter avant production.
 
-F8 est le candidat principal pour la touche dictaphone car elle est libre dans le layout courant et repérable à l'extrémité du groupe F5-F8, mais ce choix n'est pas encore figé.
+La touche dictaphone retenue est **F15**. Le routeur 1.5.2 ne déclare actuellement que F1 à F13 : la 1.6 devra donc ajouter F14/F15 au mapping evdev et F15 à la carte clavier avant d'activer le Recorder.
 
 Checkpoint technique avant codage complet : vérifier qu'une écoute MIDI musicale parallèle peut fonctionner sans perturber les échanges SysEx de CVP Access.
