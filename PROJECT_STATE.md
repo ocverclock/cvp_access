@@ -194,6 +194,8 @@ Le WAV `system/startup_ready.wav` est pré-généré pendant l'installation et c
 
 `ESC` annonce synchroniquement `Relance du dispositif CVP Access.` via `system/restart_device.wav`, attend la fin de la lecture, puis quitte le processus afin que `systemd` le relance.
 
+**Validation matérielle — 24 septembre 2026 :** installation sur Raspberry Pi neuf Debian 13 arm64, annonce `Dispositif Melody Music CVP Access opérationnel.` et séquence `ESC -> annonce de relance -> redémarrage systemd -> annonce opérationnel` confirmées en fonctionnement réel.
+
 ## 4. Speech / Piper
 
 Configuration :
@@ -405,6 +407,7 @@ OK    Layout accessibilité      présente
 OK    WAV états 1.5.1           10 présents
 OK    WAV mute Style            8 présents
 OK    WAV Solo Song             16 présents
+OK    WAV système               démarrage + relance présents
 ```
 
 Les deux générateurs ont également confirmé que toutes les banques étaient déjà présentes :
@@ -427,6 +430,9 @@ restauration métronome pendant transport
 arrêt Piper propre
 lecture de plusieurs noms de Voice
 Maj + piste = Solo Song
+installation complète sur Raspberry Pi neuf Debian 13 arm64
+annonce vocale de démarrage « Dispositif Melody Music CVP Access opérationnel. »
+ESC : annonce de relance, redémarrage du service, puis annonce « opérationnel »
 ```
 
 ### Implémenté mais test fonctionnel encore requis
@@ -460,7 +466,7 @@ Ordre de priorité :
 4. tester `) / °` ;
 5. si la latence vocale reste perceptible malgré les WAV complets, identifier les annonces encore dynamiques et mesurer la latence playback/Piper ;
 6. compléter progressivement `cvp_voice_names.py` ;
-7. refaire un clone GitHub neuf + upgrade.
+7. maintenir le test d’installation depuis un Raspberry neuf lors des prochaines versions majeures.
 
 ## 19. Rollback
 
@@ -471,4 +477,4 @@ sudo systemctl restart cvp-access
 
 ## 20. Checkpoint
 
-**CVP Access 1.5.1-RC3, layout Solo Maj, installation et Solo matériellement validés sur CVP-905, est le point de référence au 12 septembre 2026.**
+**CVP Access 1.5.1-RC3 est le point de référence au 24 septembre 2026 : installation sur Raspberry Pi neuf Debian 13 arm64, Solo Song et annonces système démarrage/relance matériellement validés avec le CVP-905 de référence.**
