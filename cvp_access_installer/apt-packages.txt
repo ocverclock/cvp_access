@@ -25,3 +25,5 @@ nano
 tree
 htop
 libgomp1
+network-manager
+dnsmasq-base
