@@ -9,13 +9,15 @@ arbitrary LAN interfaces.
 from __future__ import annotations
 
 import glob
-import html
+import hmac
 import ipaddress
 import json
 import os
 import re
+import socket
 import subprocess
 import threading
+import time
 import tomllib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -28,6 +30,9 @@ RUNTIME = Path(os.environ.get("CVP_RUNTIME_DIR", "/opt/cvp-access"))
 CONFIG_DIR = Path(os.environ.get("CVP_CONFIG_DIR", "/etc/cvp-access"))
 HARDWARE_CONFIG = CONFIG_DIR / "hardware.toml"
 KEYBOARD_MAP = CONFIG_DIR / "keyboard-map.html"
+ADMIN_SECRET_FILE = CONFIG_DIR / "hotspot-password"
+WIFI_RESULT_FILE = Path("/run/cvp-wifi-connect-result.json")
+WIFI_CONNECT_HELPER = Path("/usr/local/sbin/cvp-wifi-connect")
 CVP_USER = os.environ.get("CVP_USER", "pi")
 
 CAPTIVE_PATHS = {
@@ -195,6 +200,176 @@ def recent_events():
     return lines[-30:]
 
 
+def connected_wifi_networks():
+    """Return the IPv4 networks directly attached to wlan0."""
+    rc, out, _ = run(["ip", "-j", "-4", "addr", "show", "dev", "wlan0"])
+    if rc != 0 or not out:
+        return []
+    try:
+        data = json.loads(out)
+    except json.JSONDecodeError:
+        return []
+
+    networks = []
+    for interface in data:
+        for info in interface.get("addr_info", []):
+            local = info.get("local")
+            prefix = info.get("prefixlen")
+            if not local or prefix is None:
+                continue
+            try:
+                networks.append(
+                    ipaddress.ip_network(f"{local}/{prefix}", strict=False)
+                )
+            except ValueError:
+                continue
+    return networks
+
+
+def client_allowed(address):
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+
+    if ip.is_loopback or ip in HOTSPOT_NET:
+        return True
+
+    if ip.version != 4:
+        return False
+
+    return any(ip in network for network in connected_wifi_networks())
+
+
+def admin_secret():
+    try:
+        return ADMIN_SECRET_FILE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def request_authorized(payload):
+    expected = admin_secret()
+    supplied = payload.get("admin_password", "")
+    return (
+        bool(expected)
+        and isinstance(supplied, str)
+        and hmac.compare_digest(supplied, expected)
+    )
+
+
+def split_nmcli_escaped(line):
+    fields = []
+    current = []
+    escaped = False
+    for char in line:
+        if escaped:
+            current.append(char)
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == ":":
+            fields.append("".join(current))
+            current = []
+        else:
+            current.append(char)
+    fields.append("".join(current))
+    return fields
+
+
+def scan_wifi_networks():
+    # Some drivers cannot rescan while acting as an AP. The command may still
+    # return cached BSS entries; the UI also offers manual SSID entry.
+    _, out, _ = run(
+        [
+            "nmcli",
+            "-t",
+            "--escape",
+            "yes",
+            "-f",
+            "SSID,SIGNAL,SECURITY",
+            "device",
+            "wifi",
+            "list",
+            "ifname",
+            "wlan0",
+            "--rescan",
+            "yes",
+        ],
+        timeout=12,
+    )
+
+    by_ssid = {}
+    for line in out.splitlines():
+        parts = split_nmcli_escaped(line)
+        if len(parts) < 3:
+            continue
+        ssid = parts[0].strip()
+        if not ssid:
+            continue
+        try:
+            signal = int(parts[1])
+        except ValueError:
+            signal = 0
+        security = parts[2].strip()
+        previous = by_ssid.get(ssid)
+        if previous is None or signal > previous["signal"]:
+            by_ssid[ssid] = {
+                "ssid": ssid,
+                "signal": signal,
+                "security": security,
+            }
+
+    return sorted(
+        by_ssid.values(),
+        key=lambda item: (-item["signal"], item["ssid"].lower()),
+    )
+
+
+def wifi_connect_result():
+    try:
+        data = json.loads(WIFI_RESULT_FILE.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def launch_wifi_connect(ssid, password, hidden=False):
+    if not WIFI_CONNECT_HELPER.is_file():
+        return False, "Assistant de connexion Wi-Fi absent"
+
+    request_file = Path(
+        f"/run/cvp-wifi-request-{os.getpid()}-{threading.get_ident()}.json"
+    )
+    request_file.write_text(
+        json.dumps(
+            {
+                "ssid": ssid,
+                "password": password,
+                "hidden": bool(hidden),
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    os.chmod(request_file, 0o600)
+
+    def worker():
+        # Leave enough time for the HTTP response to reach the browser before
+        # wlan0 leaves the hotspot.
+        time.sleep(0.8)
+        subprocess.run(
+            [str(WIFI_CONNECT_HELPER), str(request_file)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            start_new_session=True,
+        )
+
+    threading.Thread(target=worker, daemon=True).start()
+    return True, "Connexion Wi-Fi lancée"
+
+
 def network_status():
     _, active, _ = run(
         ["nmcli", "-g", "GENERAL.CONNECTION", "device", "show", "wlan0"]
@@ -204,6 +379,8 @@ def network_status():
         "connection": active or "--",
         "address": addr,
         "hotspot": active == "CVP-ACCESS",
+        "hostname": socket.gethostname(),
+        "wifi_result": wifi_connect_result(),
     }
 
 
