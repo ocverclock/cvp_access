@@ -463,6 +463,30 @@ Le moteur historique `cvp_access_v1.4.1.py` lit cette préférence avant les rè
 
 Le portail captif utilise le dnsmasq de la connexion partagée NetworkManager avec DNS wildcard vers `10.42.0.1` et l'option DHCP 114. Les endpoints usuels Apple/Android/Windows sont redirigés vers le dashboard. Cette ouverture automatique reste à valider sur les différents OS.
 
+### Mise à jour GitHub depuis le portail
+
+Le dashboard possède désormais le bouton **Mettre à jour depuis GitHub**.
+
+Fonctionnement :
+
+```text
+confirmation utilisateur
+-> service systemd transitoire cvp-access-github-update
+-> refus si le dépôt contient des modifications locales
+-> git pull --ff-only sous l'utilisateur CVP
+-> VERIFY_PACKAGE_* le plus récent
+-> upgrade_* le plus récent
+-> installation et redémarrage des services
+```
+
+Le processus continue même lorsque `cvp-web.service` est redémarré par l'upgrade. Le portail affiche ensuite l'état et les dernières lignes du journal `/run/cvp-access-update.log`.
+
+Fichier installé :
+
+```text
+/usr/local/sbin/cvp-update-from-github
+```
+
 ### Authentification portail — temporairement suspendue
 
 Pour faciliter les essais sur le Raspberry de référence, la protection par mot de passe des boutons du portail est suspendue par défaut :
