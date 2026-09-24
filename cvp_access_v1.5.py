@@ -1169,6 +1169,14 @@ def main():
             + ("oui" if config.caps_fallback_to_base else "non")
             + ")"
         )
+    startup_announcer = getattr(
+        core,
+        "announce_startup_ready",
+        None,
+    )
+    if callable(startup_announcer):
+        startup_announcer()
+
     print()
 
     for event in keyboard.read_loop():
