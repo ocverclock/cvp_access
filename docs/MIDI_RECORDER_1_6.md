@@ -362,3 +362,26 @@ Recorder probe : CH1 NOTE_OFF note=... velocity=...
 ```
 
 Ce probe ne sauvegarde encore aucun fichier. Il sert uniquement à valider le chemin de capture avant d'activer la machine d'états et l'écriture SMF.
+
+
+### Checkpoint capture MIDI canal 1 — validé matériellement
+
+Test réalisé le 24 septembre 2026 sur le CVP de référence avec le runtime 1.5.2-RC1 et `CVP_RECORDER_PROBE=1`.
+
+Résultat observé dans `journalctl -fu cvp-access.service` :
+
+```text
+Recorder probe : actif sur canal MIDI 1
+Recorder probe : CH1 NOTE_ON note=60 velocity=58
+Recorder probe : CH1 NOTE_ON note=62 velocity=73
+Recorder probe : CH1 NOTE_OFF note=60 velocity=77
+Recorder probe : CH1 NOTE_ON note=64 velocity=82
+Recorder probe : CH1 NOTE_OFF note=62 velocity=68
+...
+```
+
+Plusieurs Note On / Note Off successifs, accords et chevauchements ont été reçus correctement sur le canal 1.
+
+**Statut : capture MIDI canal 1 VALIDÉE MATÉRIELLEMENT.**
+
+Le prochain checkpoint reste la non-régression SysEx pendant que le tap Recorder est actif : lancer au moins une commande CVP Access qui fait une lecture/écriture Yamaha (par exemple annonce du tempo ou changement d'état d'une piste) et confirmer que le comportement reste normal.
