@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contrôle de cohérence CVP Access 1.5.x (1.5.1 / 1.5.2)."""
+"""Contrôle de cohérence CVP Access 1.5.x / 1.6.x."""
 
 from __future__ import annotations
 
@@ -69,6 +69,7 @@ def main():
         "cvp_access_v1.5.py",
         "cvp_access_v1.4.1.py",
         "cvp_keyboard.py",
+        "cvp_recorder.py",
         "cvp_song.py",
         "cvp_song_151.py",
         "cvp_speech.py",
@@ -101,7 +102,7 @@ def main():
         ).is_file()
     ]
     add(
-        "Runtime 1.5.x",
+        "Runtime CVP Access",
         OK if not missing else FAIL,
         (
             "modules complets"
@@ -131,7 +132,7 @@ def main():
             (
                 OK
                 if str(version).startswith(
-                    ("1.5.1", "1.5.2")
+                    ("1.5.1", "1.5.2", "1.6.0")
                 )
                 else FAIL
             ),
