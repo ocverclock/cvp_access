@@ -314,3 +314,31 @@ cvp_access_installer/upgrade_1_5_2.sh
 ```
 
 Ils installent ou rafraîchissent le runtime courant, Samba, le portail Web, la carte clavier, le fallback réseau et les services systemd associés.
+
+
+## Mise à jour depuis GitHub
+
+Le dashboard possède un bouton **Mettre à jour depuis GitHub**.
+
+Séquence :
+
+```text
+clic + confirmation
+-> lancement d'un service systemd transitoire
+-> vérification que le dépôt local est propre
+-> git pull --ff-only avec l'utilisateur CVP
+-> exécution du VERIFY_PACKAGE_* le plus récent
+-> exécution de l'upgrade_* le plus récent
+-> redémarrage des services par l'installateur de version
+```
+
+La mise à jour continue même si `cvp-web.service` se redémarre pendant l'installation. Le dashboard se reconnecte ensuite et affiche l'état ainsi que les dernières lignes du journal.
+
+Fichiers d'état temporaires :
+
+```text
+/run/cvp-access-update-state
+/run/cvp-access-update.log
+```
+
+Par sécurité, si le dépôt contient des modifications locales, le bouton refuse la mise à jour afin de ne rien écraser.
