@@ -15,6 +15,7 @@ Ordre de reprise :
 7. `docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md`
 8. `CVP905_PROTOCOL_CHECKPOINT_RC4.md` pour le protocole historique
 9. `docs/FUNCTION_CATALOG.md`
+10. `docs/MIDI_RECORDER_1_6.md` pour le projet dictaphone 1.6
 
 Ne pas relancer les scans massifs déjà clôturés sans nouvelle hypothèse.
 
@@ -353,3 +354,12 @@ Le chemin d'upgrade courant est :
 python3 VERIFY_PACKAGE_152.py
 sudo bash cvp_access_installer/upgrade_1_5_2.sh
 ```
+
+
+## Projet futur 1.6 — dictaphone MIDI
+
+La conception validée à ce stade est dans `docs/MIDI_RECORDER_1_6.md`.
+
+Ne pas réutiliser `ESC` pour le Recorder : `ESC` reste la relance système. Le Recorder doit fonctionner avec une seule touche dédiée, en distinguant appui court et appui long à partir des événements evdev bruts.
+
+Avant de coder l'enregistrement complet, valider que l'écoute MIDI musicale parallèle n'entre pas en conflit avec le port utilisé pour les SysEx.
