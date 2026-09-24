@@ -292,6 +292,8 @@ h1{margin:0;font-size:22px}
 .maintenance-card{padding:6px 8px;border:1px solid #777;border-radius:5px;font-size:8.2px;line-height:1.22;break-inside:avoid}
 .maintenance-card h2{font-size:10px;margin:0 0 3px}
 .maintenance-card code{font-size:7.8px;white-space:nowrap}
+.copyvalue{border:0;background:transparent;padding:0;color:#0645ad;text-decoration:underline dotted;cursor:pointer;font:inherit;font-family:monospace;font-size:7.8px;white-space:nowrap}
+.copyvalue::after{content:" ⧉";font-size:.85em;color:#666}
 .unassigned{margin-top:7px;padding-top:5px;border-top:2px solid #555}
 .unassigned h2{font-size:12px;margin:0 0 4px}
 .unassigned-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
@@ -306,6 +308,8 @@ h1{margin:0;font-size:22px}
   .key{min-height:62px}
   .nav-grid .key,.arrow-grid .key{min-height:62px}
   .maintenance-grid,.unassigned{break-inside:avoid}
+  .copyvalue{color:#111;text-decoration:none}
+  .copyvalue::after{content:""}
 }
 '''
 
@@ -333,15 +337,27 @@ Sans Song chargé : annonce « Pas de Song chargé ».</div></div></aside></div>
 <section class="maintenance-grid">
   <div class="maintenance-card">
     <h2>Accès Web</h2>
-    Réseau local : <code>http://{html.escape(hostname)}.local</code><br>
-    Hotspot CVP-ACCESS : <code>http://10.42.0.1</code>
+    Réseau local :
+    <button class="copyvalue" data-copy="http://{html.escape(hostname, quote=True)}.local"
+      onclick="copyValue(this)">http://{html.escape(hostname)}.local</button><br>
+    Hotspot CVP-ACCESS :
+    <button class="copyvalue" data-copy="http://10.42.0.1"
+      onclick="copyValue(this)">http://10.42.0.1</button>
   </div>
   <div class="maintenance-card">
     <h2>Partages Samba</h2>
-    Projet : <code>\\\\{html.escape(hostname)}.local\\CVP_access</code>
-    &nbsp;•&nbsp; hotspot : <code>\\\\10.42.0.1\\CVP_access</code><br>
-    Config : <code>\\\\{html.escape(hostname)}.local\\CVP_config</code>
-    &nbsp;•&nbsp; hotspot : <code>\\\\10.42.0.1\\CVP_config</code>
+    Projet :
+    <button class="copyvalue" data-copy="\\\\{html.escape(hostname, quote=True)}.local\\CVP_access"
+      onclick="copyValue(this)">\\\\{html.escape(hostname)}.local\\CVP_access</button>
+    &nbsp;•&nbsp; hotspot :
+    <button class="copyvalue" data-copy="\\\\10.42.0.1\\CVP_access"
+      onclick="copyValue(this)">\\\\10.42.0.1\\CVP_access</button><br>
+    Config :
+    <button class="copyvalue" data-copy="\\\\{html.escape(hostname, quote=True)}.local\\CVP_config"
+      onclick="copyValue(this)">\\\\{html.escape(hostname)}.local\\CVP_config</button>
+    &nbsp;•&nbsp; hotspot :
+    <button class="copyvalue" data-copy="\\\\10.42.0.1\\CVP_config"
+      onclick="copyValue(this)">\\\\10.42.0.1\\CVP_config</button>
   </div>
 </section>
 
@@ -350,6 +366,31 @@ Sans Song chargé : annonce « Pas de Song chargé ».</div></div></aside></div>
 
 <div class="legend">Song / informations • Style / accompagnement • Guide vocal • Système</div>
 <div class="footer">Les actions non attribuées restent disponibles dans le catalogue et peuvent être affectées ultérieurement dans keyboard.toml.</div>
+<script>
+async function copyValue(button) {{
+  const value = button.dataset.copy || button.textContent.trim();
+  try {{
+    if (navigator.clipboard && window.isSecureContext) {{
+      await navigator.clipboard.writeText(value);
+    }} else {{
+      const area = document.createElement("textarea");
+      area.value = value;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.focus();
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+    }}
+    const previous = button.textContent;
+    button.textContent = "Copié !";
+    setTimeout(() => button.textContent = previous, 900);
+  }} catch (error) {{
+    window.prompt("Copier :", value);
+  }}
+}}
+</script>
 </body></html>'''
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
