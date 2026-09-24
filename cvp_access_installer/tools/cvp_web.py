@@ -13,6 +13,7 @@ import hmac
 import ipaddress
 import json
 import os
+import pwd
 import re
 import socket
 import subprocess
@@ -44,6 +45,13 @@ REPO_DIR = Path(
         f"/home/{CVP_USER}/CVP_access",
     )
 )
+RECORDINGS_DIR = Path(
+    os.environ.get(
+        "CVP_RECORDINGS_DIR",
+        f"/home/{CVP_USER}/CVP_Recordings",
+    )
+)
+RECORDING_SELECTION_FILE = RECORDINGS_DIR / ".cvp-selection.json"
 AUTH_REQUIRED = os.environ.get("CVP_WEB_REQUIRE_AUTH", "0").strip().lower() in {
     "1", "true", "yes", "on"
 }
@@ -400,6 +408,79 @@ def launch_wifi_connect(ssid, password, hidden=False):
     return True, "Connexion Wi-Fi lancée"
 
 
+def recording_catalog():
+    selected = None
+    try:
+        data = json.loads(
+            RECORDING_SELECTION_FILE.read_text(encoding="utf-8")
+        )
+        value = data.get("selected")
+        if isinstance(value, str) and Path(value).name == value:
+            if (RECORDINGS_DIR / value).is_file():
+                selected = value
+    except (OSError, json.JSONDecodeError):
+        pass
+
+    files = []
+    try:
+        paths = sorted(
+            (
+                path
+                for path in RECORDINGS_DIR.glob("*.mid")
+                if path.is_file()
+            ),
+            key=lambda path: path.name,
+            reverse=True,
+        )
+    except OSError:
+        paths = []
+
+    for path in paths[:100]:
+        try:
+            stat = path.stat()
+        except OSError:
+            continue
+
+        files.append(
+            {
+                "name": path.name,
+                "size": stat.st_size,
+                "mtime": int(stat.st_mtime),
+            }
+        )
+
+    return {
+        "selected": selected,
+        "files": files,
+    }
+
+
+def save_recording_selection(name):
+    if not isinstance(name, str) or Path(name).name != name:
+        return False
+
+    target = RECORDINGS_DIR / name
+    if not target.is_file() or target.suffix.lower() != ".mid":
+        return False
+
+    RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = RECORDING_SELECTION_FILE.with_suffix(".tmp")
+    tmp.write_text(
+        json.dumps({"selected": name}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(tmp, 0o664)
+
+    try:
+        account = pwd.getpwnam(CVP_USER)
+        os.chown(tmp, account.pw_uid, account.pw_gid)
+    except (KeyError, OSError):
+        pass
+
+    tmp.replace(RECORDING_SELECTION_FILE)
+    return True
+
+
 def update_status():
     state = "idle"
     try:
@@ -489,6 +570,7 @@ def build_status():
         },
         "network": network_status(),
         "update": update_status(),
+        "recordings": recording_catalog(),
         "midi": midi,
         "selected_midi": selected_midi_name(),
         "audio": audio_lines,
@@ -595,6 +677,12 @@ details summary{cursor:pointer;font-weight:700}
       <h3>Partages Samba</h3>
       <p class="sub">Accès au projet et à la configuration depuis un ordinateur.</p>
       <div id="sambaAccess">Chargement…</div>
+    </section>
+
+    <section class="panel span-12">
+      <h3>Enregistrements MIDI</h3>
+      <p class="sub">Morceau sélectionné pour la lecture avec F15.</p>
+      <div id="recordings">Chargement…</div>
     </section>
 
     <section class="panel span-6">
@@ -768,6 +856,9 @@ async function refresh(){
  const smbConfig='smb://'+rawHost+'.local/CVP_config';
  const smbHotspotProject='smb://10.42.0.1/CVP_access';
  const smbHotspotConfig='smb://10.42.0.1/CVP_config';
+ const smbRecordings='smb://'+rawHost+'.local/CVP_recordings';
+ const smbHotspotRecordings='smb://10.42.0.1/CVP_recordings';
+ const sambaRecordings='\\\\'+rawHost+'.local\\CVP_recordings';
 
  document.getElementById('webAccess').innerHTML=
   '<div class="row"><span class="label">Réseau local</span>'+copyButton(localWeb)+'</div>'+
@@ -777,12 +868,31 @@ async function refresh(){
   '<div class="small" style="margin-bottom:6px"><b>Mac / Linux</b> — utiliser <code>smb://</code></div>'+
   '<div class="row"><span class="label">Projet</span>'+copyButton(smbProject)+'</div>'+
   '<div class="row"><span class="label">Configuration</span>'+copyButton(smbConfig)+'</div>'+
+  '<div class="row"><span class="label">Enregistrements</span>'+copyButton(smbRecordings)+'</div>'+
   '<div class="row"><span class="label">Hotspot projet</span>'+copyButton(smbHotspotProject)+'</div>'+
   '<div class="row"><span class="label">Hotspot config</span>'+copyButton(smbHotspotConfig)+'</div>'+
+  '<div class="row"><span class="label">Hotspot enregistrements</span>'+copyButton(smbHotspotRecordings)+'</div>'+
   '<div class="small" style="margin:10px 0 4px"><b>Windows</b> — utiliser <code>\\\\</code></div>'+
   '<div class="row"><span class="label">Projet</span>'+copyButton(sambaProject)+'</div>'+
   '<div class="row"><span class="label">Configuration</span>'+copyButton(sambaConfig)+'</div>'+
+  '<div class="row"><span class="label">Enregistrements</span>'+copyButton(sambaRecordings)+'</div>'+
   '<div class="small" style="margin-top:8px">Utilisateur Samba : '+esc(d.samba_user||'pi')+'</div>';
+
+ const rec=d.recordings||{};
+ const recFiles=rec.files||[];
+ let recHtml='';
+ if(!recFiles.length){
+   recHtml='<span class="small">Aucun enregistrement MIDI pour le moment.</span>';
+ }else{
+   for(const f of recFiles){
+     const selected=rec.selected===f.name;
+     recHtml+='<div class="device"><div class="device-name '+(selected?'selected':'')+'">'+esc(f.name)+'</div>'+
+       '<div class="small">'+Math.max(1,Math.round((f.size||0)/1024))+' Ko'+(selected?' · sélectionné':'')+'</div>'+
+       '<button class="secondary protected" style="margin-top:8px" onclick=\'selectRecording('+JSON.stringify(f.name)+')\'>'+
+       (selected?'Sélectionné':'Sélectionner')+'</button></div>';
+   }
+ }
+ document.getElementById('recordings').innerHTML=recHtml;
 
  let m='';
  if(!d.midi.length)m='<span class="pill bad">Aucune interface MIDI</span>';
@@ -857,6 +967,7 @@ async function post(url,body={}){
 function action(name){post('/api/action/'+name)}
 function selectMidi(name){post('/api/midi/select',{name})}
 function selectKeyboard(path){post('/api/keyboard/select',{path})}
+function selectRecording(name){post('/api/recordings/select',{name})}
 async function updateGithub(){
  if(!confirm('Récupérer la dernière version depuis GitHub et l’installer ?'))return;
  const button=document.getElementById('updateButton');
@@ -1039,6 +1150,19 @@ class Handler(BaseHTTPRequestHandler):
             save_midi_name(name)
             run(["systemctl", "restart", "cvp-access.service"], timeout=8)
             self.send_json({"message": f"Interface MIDI sélectionnée : {name}"})
+            return
+
+        if path == "/api/recordings/select":
+            name = payload.get("name")
+            if not save_recording_selection(name):
+                self.send_json(
+                    {"error": "Enregistrement MIDI non disponible"},
+                    400,
+                )
+                return
+            self.send_json(
+                {"message": "Enregistrement sélectionné : " + name}
+            )
             return
 
         if path == "/api/keyboard/select":
