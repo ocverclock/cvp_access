@@ -522,6 +522,14 @@ def midi_receiver(port):
                 style_change_channels.clear()
                 style_change_started = None
 
+        # Expose une copie du message canal aux modules optionnels
+        # (Recorder 1.6, diagnostics) sans toucher au chemin SysEx.
+        dispatch_midi_channel_message(
+            running_status,
+            tuple(channel_data),
+            now,
+        )
+
         # Running status reste valide.
         channel_data.clear()
 
