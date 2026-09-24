@@ -1288,11 +1288,19 @@ def main():
             # F15 belongs exclusively to the accessible MIDI recorder in 1.6.
             # The recorder consumes press/release/autorepeat before the generic
             # key router so short/long press semantics remain deterministic.
-            if (
-                recorder is not None
-                and recorder.handle_key_event(event)
-            ):
-                continue
+            if recorder is not None:
+                recorder_help = any(
+                    code in {
+                        ecodes.KEY_LEFTCTRL,
+                        ecodes.KEY_RIGHTCTRL,
+                    }
+                    for code in router.pressed_modifier_codes
+                )
+                if recorder.handle_key_event(
+                    event,
+                    help_requested=recorder_help,
+                ):
+                    continue
 
             if actions.process_modal_event(
                 event,
