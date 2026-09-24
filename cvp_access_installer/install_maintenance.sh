@@ -89,8 +89,10 @@ if [[ -f /etc/avahi/hosts ]]; then
 fi
 
 systemctl daemon-reload
-systemctl enable --now cvp-wifi-fallback.service
-systemctl enable --now cvp-web.service
+systemctl enable cvp-wifi-fallback.service
+systemctl enable cvp-web.service
+systemctl restart cvp-wifi-fallback.service
+systemctl restart cvp-web.service
 systemctl try-restart avahi-daemon.service >/dev/null 2>&1 || true
 
 echo
