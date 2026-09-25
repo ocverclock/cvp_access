@@ -164,6 +164,7 @@ assert '("1.5.1", "1.5.2", "1.6.0", "1.6.1")' in doctor_source
 assert "WAV Recorder" in doctor_source
 assert "WAV nombres 0..150" in doctor_source
 assert "Recorder stockage" in doctor_source
+assert "disk_usage" in doctor_source
 assert "Interface Wi-Fi" in doctor_source
 assert "Touches Recorder réservées" in doctor_source
 assert "cvp_access_1_5_2.py" in doctor_source
@@ -198,6 +199,7 @@ assert "announce_recorder_stop_now" in recorder_source
 assert "playback_port_cache" in recorder_source
 assert "recording_files_cache" in recorder_source
 assert "recording_files_cache_seconds = 2.0" in recorder_source
+assert r"^(\d{4})-(\d{2})-(\d{2})_(\d{3,})\.mid$" in recorder_source
 
 samba_source = (
     root / "cvp_access_installer/samba/cvp-access.conf.in"
