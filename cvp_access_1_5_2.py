@@ -13,8 +13,6 @@ La couche runtime conserve également les ajouts 1.5.1 :
 
 from __future__ import annotations
 
-import cvp_keyboard
-from cvp_keyboard import ActionSpec
 import cvp_access_1_5_1_base as base
 
 
