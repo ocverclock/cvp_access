@@ -2,6 +2,7 @@
 from pathlib import Path
 import py_compile
 import re
+import subprocess
 import tomllib
 
 root = Path(__file__).resolve().parent
@@ -51,6 +52,35 @@ maintenance_required = [
 ]
 for rel in maintenance_required:
     assert (root / rel).is_file(), f"Fichier maintenance absent : {rel}"
+
+# Regression guard: malformed shell scripts can make Web/fresh updates unusable
+# even when every Python file compiles correctly.
+shell_syntax_files = [
+    "cvp_access_installer/install.sh",
+    "cvp_access_installer/update.sh",
+    "cvp_access_installer/upgrade_1_5_1.sh",
+    "cvp_access_installer/upgrade_1_5_1_base.sh",
+    "cvp_access_installer/upgrade_1_5_2.sh",
+    "cvp_access_installer/upgrade_1_6_0.sh",
+    "cvp_access_installer/upgrade_1_6_1.sh",
+    "cvp_access_installer/install_maintenance.sh",
+    "cvp_access_installer/network/cvp-wifi-fallback",
+    "cvp_access_installer/network/cvp-wifi-connect",
+    "cvp_access_installer/tools/cvp_update_from_github",
+    "cvp_access_installer/tools/generate_recorder_cues.sh",
+]
+for rel in shell_syntax_files:
+    path = root / rel
+    assert path.is_file(), f"Script shell absent : {rel}"
+    result = subprocess.run(
+        ["bash", "-n", str(path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"Syntaxe shell invalide : {rel}\n{result.stderr}"
+    )
 
 frontend_161_source = (root / "cvp_access_1_6_1.py").read_text(encoding="utf-8")
 assert 'VERSION = "1.6.1-RC1"' in frontend_161_source
