@@ -106,6 +106,8 @@ assert "launch_github_update" in portal_source
 assert "/api/recordings/select" in portal_source
 assert '"recordings": recording_catalog()' in portal_source
 assert "CVP_recordings" in portal_source
+assert "total_count" in portal_source
+assert "displayed_count" in portal_source
 
 service_template_source = (
     root / "cvp_access_installer/systemd/cvp-web.service.in"
@@ -144,14 +146,18 @@ assert "recorder/numero.wav" in generator_source
 assert "startup_ready.wav" in doctor_source
 assert "restart_device.wav" in doctor_source
 assert "WAV système" in doctor_source
-assert '("1.5.1", "1.5.2", "1.6.0")' in doctor_source
+assert '("1.5.1", "1.5.2", "1.6.0", "1.6.1")' in doctor_source
+assert "WAV Recorder" in doctor_source
+assert "WAV nombres 0..150" in doctor_source
+assert "Recorder stockage" in doctor_source
 
 updater_helper_source = (
     root / "cvp_access_installer/tools/cvp_update_from_github"
 ).read_text(encoding="utf-8")
 assert "git_user -C \"$REPO_DIR\" pull --ff-only" in updater_helper_source
-assert "VERIFY_PACKAGE_" in updater_helper_source
-assert "upgrade_[0-9]" in updater_helper_source
+assert "release.env" in updater_helper_source
+assert "CVP_RELEASE_VERIFIER" in updater_helper_source
+assert "CVP_RELEASE_UPGRADER" in updater_helper_source
 
 recorder_source = (root / "cvp_recorder.py").read_text(encoding="utf-8")
 assert "class RecorderController" in recorder_source
@@ -165,6 +171,7 @@ assert "mido.MidiFile" in recorder_source
 assert "aplaymidi" in recorder_source
 assert ".cvp-selection.json" in recorder_source
 assert "announce_recorder_stop_now" in recorder_source
+assert "playback_port_cache" in recorder_source
 
 samba_source = (
     root / "cvp_access_installer/samba/cvp-access.conf.in"
@@ -190,8 +197,8 @@ upgrade_152_source = (
 upgrade_161_source = (
     root / "cvp_access_installer/upgrade_1_6_1.sh"
 ).read_text(encoding="utf-8")
-assert "upgrade_1_6_1.sh" in fresh_install_source
-assert "upgrade_1_6_1.sh" in update_source
+assert 'RELEASE_MANIFEST="$INSTALLER_DIR/release.env"' in fresh_install_source
+assert 'RELEASE_MANIFEST="$INSTALLER_DIR/release.env"' in update_source
 assert 'CVP_FRONTEND_SOURCE="cvp_access_1_5_2.py"' in upgrade_152_source
 assert 'CVP_TARGET_VERSION="1.5.2-RC1"' in upgrade_152_source
 assert 'CVP_FRONTEND_SOURCE="cvp_access_1_6_1.py"' in upgrade_161_source
