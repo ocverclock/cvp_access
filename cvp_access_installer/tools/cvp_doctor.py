@@ -359,6 +359,8 @@ def main():
             "output_missing.wav",
             "save_error.wav",
             "stop.wav",
+            "enregistrement_du.wav",
+            "sauvegarde.wav",
             "previous.wav",
             "next.wav",
             "numero.wav",
