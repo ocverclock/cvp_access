@@ -2,7 +2,7 @@
 
 Dernière consolidation : **25 septembre 2026**.
 
-Version de référence : **CVP Access 1.6.1-RC1**.
+Version de référence : **CVP Access 1.6.1-RC2**.
 
 Instrument de référence : **Yamaha CVP-905 firmware 1.03**.
 
@@ -746,7 +746,7 @@ Ajustement UX Recorder 25 septembre 2026 : F14/F16 long : aucun bip. La sélecti
 Consolidation 1.6.1 : Wi-Fi maintenance : détection dynamique de l'interface (profil CVP-ACCESS, `CVP_WIFI_DEVICE`, puis première radio Wi-Fi disponible), ce qui supprime la dépendance runtime à `wlan0`. `cvp_doctor.py` est désormais le Doctor canonique ; le suffixe historique `_151` reste uniquement pour compatibilité de dépôt.
 
 
-## Audit consolidation 1.6.1-RC1 — 25 septembre 2026
+## Audit consolidation 1.6.1-RC2 — 25 septembre 2026
 
 Revue globale effectuée : nomenclature publique stabilisée (Dictaphone MIDI / Enregistrements MIDI / Morceau / Guide vocal), politique voix-son-silence explicitée, sauvegarde Recorder rendue normalement indépendante de Piper via fragments WAV, portail enrichi du nombre total + taille cumulée, gestion des index >999 conservée sans écrasement.
 
