@@ -83,7 +83,7 @@ for rel in shell_syntax_files:
     )
 
 frontend_161_source = (root / "cvp_access_1_6_1.py").read_text(encoding="utf-8")
-assert 'VERSION = "1.6.1-RC1"' in frontend_161_source
+assert 'VERSION = "1.6.1-RC2"' in frontend_161_source
 assert 'CVP_RECORDER_ENABLED' in frontend_161_source
 assert "cvp_access_1_5_2" in frontend_161_source
 
@@ -114,7 +114,7 @@ assert "${html.escape(hostname)}" not in keyboard_map_source
 assert "copyValue(this)" in keyboard_map_source
 assert "smb://" in keyboard_map_source
 assert "Dictaphone MIDI" in keyboard_map_source
-assert "Layout accessibilité 1.6.1 RC1" in keyboard_map_source
+assert "Layout accessibilité 1.6.1 RC2" in keyboard_map_source
 assert "CVP_recordings" in keyboard_map_source
 assert "Morceau précédent" in keyboard_map_source
 assert "Morceau suivant" in keyboard_map_source
@@ -276,7 +276,7 @@ assert 'RELEASE_MANIFEST="$INSTALLER_DIR/release.env"' in update_source
 assert 'CVP_FRONTEND_SOURCE="cvp_access_1_5_2.py"' in upgrade_152_source
 assert 'CVP_TARGET_VERSION="1.5.2-RC1"' in upgrade_152_source
 assert 'CVP_FRONTEND_SOURCE="cvp_access_1_6_1.py"' in upgrade_161_source
-assert 'CVP_TARGET_VERSION="1.6.1-RC1"' in upgrade_161_source
+assert 'CVP_TARGET_VERSION="1.6.1-RC2"' in upgrade_161_source
 assert "unset-environment CVP_RECORDER_PROBE" in upgrade_161_source
 
 with (root / "config/default-1.5.1.toml").open("rb") as handle:
@@ -409,11 +409,11 @@ assert resolve_voice_name(CVPVoiceId(108, 0, 1)) == "CFX Concert Grand"
 assert resolve_voice_name(CVPVoiceId(8, 33, 50)) == "Seattle Strings"
 assert resolve_voice_name(CVPVoiceId(104, 7, 5)) == "Suitcase Soft"
 
-print("CVP Access 1.6.1 RC1 package: OK")
+print("CVP Access 1.6.1 RC2 package: OK")
 
 
 release_manifest = (root / "cvp_access_installer/release.env").read_text(encoding="utf-8")
-assert "CVP_RELEASE_VERSION=1.6.1-RC1" in release_manifest
+assert "CVP_RELEASE_VERSION=1.6.1-RC2" in release_manifest
 assert "CVP_RELEASE_FRONTEND=cvp_access_1_6_1.py" in release_manifest
 assert "CVP_RELEASE_UPGRADER=upgrade_1_6_1.sh" in release_manifest
 assert "CVP_RELEASE_VERIFIER=VERIFY_PACKAGE_161.py" in release_manifest
