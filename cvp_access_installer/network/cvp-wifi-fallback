@@ -12,8 +12,8 @@ detect_wifi_device() {
 
     local profile_dev=""
     profile_dev="$(nmcli -g connection.interface-name connection show "$HOTSPOT" 2>/dev/null || true)"
-    if [[ -n "$profile_dev" ]] && nmcli -t -f DEVICE,TYPE device status 2>/dev/null |
-        awk -F: -v dev="$profile_dev" '$1 == dev && $2 == "wifi" { found=1 } END { exit(found ? 0 : 1) }'; then
+    if [[ -n "$profile_dev" ]] && nmcli -t -f DEVICE,TYPE,STATE device status 2>/dev/null |
+        awk -F: -v dev="$profile_dev" '$1 == dev && $2 == "wifi" && $3 != "unavailable" { found=1 } END { exit(found ? 0 : 1) }'; then
         printf '%s\n' "$profile_dev"
         return
     fi
