@@ -21,6 +21,9 @@ from typing import Optional
 
 from evdev import ecodes
 
+from cvp_action_catalog import ACTION_SPECS, ActionSpec, action_help
+from cvp_keyboard_layout import MODIFIER_ORDER as SHARED_MODIFIER_ORDER
+
 
 # ---------------------------------------------------------------------------
 # AZERTY logical names -> Linux evdev physical codes
@@ -130,133 +133,16 @@ MODIFIER_CODES = {
     ecodes.KEY_RIGHTMETA: "META",
 }
 
-MODIFIER_ORDER = ("CTRL", "ALT", "ALTGR", "SHIFT", "META", "CAPS")
+MODIFIER_ORDER = SHARED_MODIFIER_ORDER
 VALID_MODIFIERS = set(MODIFIER_ORDER)
 
 
 # ---------------------------------------------------------------------------
 # Action catalogue
 # ---------------------------------------------------------------------------
-
-@dataclass(frozen=True)
-class ActionSpec:
-    parameter_required: bool = False
-    minimum: Optional[int] = None
-    maximum: Optional[int] = None
-    description: str = ""
-
-
-ACTION_SPECS = {
-    "song_track_toggle": ActionSpec(
-        True, 1, 16, "Bascule ON/OFF d'une piste Song"
-    ),
-    "style_part_toggle": ActionSpec(
-        True, 1, 8, "Bascule ON/OFF d'une partie Style"
-    ),
-    "layer_toggle": ActionSpec(description="Bascule Layer / Dual"),
-    "left_toggle": ActionSpec(description="Bascule Left"),
-    "announce_tempo": ActionSpec(description="Annonce le tempo courant"),
-    "announce_transpose": ActionSpec(description="Annonce le transpose courant"),
-    "song_play_pause": ActionSpec(description="Lecture / pause du Song"),
-    "song_stop": ActionSpec(description="Stop du Song"),
-    "song_position": ActionSpec(description="Annonce mesure et temps"),
-    "song_measure_previous": ActionSpec(
-        description="Recule le Song d'une mesure"
-    ),
-    "song_measure_next": ActionSpec(
-        description="Avance le Song d'une mesure"
-    ),
-    "song_measure_previous_5": ActionSpec(
-        description="Recule le Song de cinq mesures"
-    ),
-    "song_measure_next_5": ActionSpec(
-        description="Avance le Song de cinq mesures"
-    ),
-    "song_goto_measure": ActionSpec(
-        description="Saisie directe d'une mesure"
-    ),
-    "song_loop_point_a": ActionSpec(
-        description="Mémorise le point A à la mesure courante"
-    ),
-    "song_loop_point_b": ActionSpec(
-        description="Mémorise le point B à la mesure courante"
-    ),
-    "song_loop_toggle": ActionSpec(
-        description="Active ou désactive la boucle A/B"
-    ),
-    "style_start_stop": ActionSpec(
-        description="Démarre ou arrête le Style"
-    ),
-
-    # CVP Access 1.5.1 — actions accessibilité
-    "announce_style_name": ActionSpec(
-        description="Annonce le Style actuellement sélectionné"
-    ),
-    "announce_song_name": ActionSpec(
-        description="Annonce le Song actuellement chargé"
-    ),
-    "announce_song_length": ActionSpec(
-        description="Annonce la longueur du Song"
-    ),
-    "announce_main_voice_name": ActionSpec(
-        description="Annonce le nom du son Main"
-    ),
-    "announce_layer_voice_name": ActionSpec(
-        description="Annonce le nom du son Layer"
-    ),
-    "announce_left_voice_name": ActionSpec(
-        description="Annonce le nom du son Left"
-    ),
-    "sync_start_toggle": ActionSpec(
-        description="Active ou désactive Syncro Start"
-    ),
-    "guide_toggle": ActionSpec(
-        description="Active ou désactive Guide"
-    ),
-    "stream_lights_toggle": ActionSpec(
-        description="Active ou désactive Stream Lights"
-    ),
-    "metronome_toggle": ActionSpec(
-        description="Active ou désactive le métronome"
-    ),
-    "style_volume_change": ActionSpec(
-        True, -5, 5, "Modifie le volume Style"
-    ),
-
-    # RC4 — Yamaha Section Control
-    "style_intro": ActionSpec(
-        True, 1, 3, "Sélectionne une Intro Style"
-    ),
-    "style_main": ActionSpec(
-        True, 1, 4, "Sélectionne une variation Main Style"
-    ),
-    "style_fill": ActionSpec(
-        True, 1, 4, "Déclenche un Fill Style"
-    ),
-    "style_ending": ActionSpec(
-        True, 1, 3, "Déclenche un Ending Style"
-    ),
-    "style_break": ActionSpec(
-        description="Déclenche le Break Style"
-    ),
-    "registration_recall": ActionSpec(
-        True, 1, 8, "Rappelle une Registration Memory"
-    ),
-
-    "song_volume_change": ActionSpec(
-        True, -5, 5, "Modifie le volume Song / MidiMaster"
-    ),
-    "main_volume_change": ActionSpec(
-        True, -5, 5, "Modifie le volume Main"
-    ),
-    "voice_volume_up": ActionSpec(description="Augmente le volume du guide vocal"),
-    "voice_volume_down": ActionSpec(description="Diminue le volume du guide vocal"),
-    "style_volume_up": ActionSpec(description="Augmente le volume Style"),
-    "style_volume_down": ActionSpec(description="Diminue le volume Style"),
-    "restart": ActionSpec(
-        description="Quitte CVP Access pour redémarrage systemd"
-    ),
-}
+#
+# ACTION_SPECS and ActionSpec are imported from cvp_action_catalog so the
+# runtime, Web editor and printable map share exactly the same definitions.
 
 
 @dataclass(frozen=True)
@@ -273,55 +159,7 @@ class ActionInvocation:
 
 
 def describe_invocation(invocation: ActionInvocation) -> str:
-    name = invocation.name
-    parameter = invocation.parameter
-
-    if name == "song_track_toggle":
-        return f"Piste {parameter} du Song, activer ou couper."
-
-    if name == "style_part_toggle":
-        return f"Partie Style {parameter}, activer ou couper."
-
-    if name == "song_volume_change":
-        if parameter is not None and parameter > 0:
-            return f"Augmenter le volume Song de {parameter}."
-        return f"Diminuer le volume Song de {abs(parameter or 0)}."
-
-    if name == "main_volume_change":
-        if parameter is not None and parameter > 0:
-            return f"Augmenter le volume Main de {parameter}."
-        return f"Diminuer le volume Main de {abs(parameter or 0)}."
-
-    if name == "style_volume_change":
-        if parameter is not None and parameter > 0:
-            return f"Augmenter le volume Style de {parameter}."
-        return f"Diminuer le volume Style de {abs(parameter or 0)}."
-
-    if name == "style_intro":
-        return f"Intro {parameter}."
-
-    if name == "style_main":
-        letter = "ABCD"[(parameter or 1) - 1]
-        return f"Main {letter}."
-
-    if name == "style_fill":
-        letter = "ABCD"[(parameter or 1) - 1]
-        return f"Fill {letter}."
-
-    if name == "style_ending":
-        return f"Ending {parameter}."
-
-    if name == "style_break":
-        return "Break Style."
-
-    if name == "registration_recall":
-        return f"Rappeler la Registration {parameter}."
-
-    spec = ACTION_SPECS.get(name)
-    if spec is not None and spec.description:
-        return spec.description + "."
-
-    return name.replace("_", " ") + "."
+    return action_help(invocation.name, invocation.parameter)
 
 
 @dataclass(frozen=True)
@@ -337,7 +175,7 @@ class SpeechConfig:
 class KeyboardConfig:
     bindings: dict[str, ActionInvocation]
     source: Path
-    caps_lock_layer: bool = True
+    caps_lock_layer: bool = False
     caps_fallback_to_base: bool = True
     speech: SpeechConfig = SpeechConfig()
     issues: list[str] | None = None
@@ -534,8 +372,8 @@ def builtin_config() -> KeyboardConfig:
     parsed, issues = _parse_bindings(BUILTIN_BINDINGS)
     return KeyboardConfig(
         bindings=parsed,
-        source=Path("<builtin-RC4>"),
-        caps_lock_layer=True,
+        source=Path("<builtin-1.7>"),
+        caps_lock_layer=False,
         caps_fallback_to_base=True,
         issues=issues,
     )
@@ -570,12 +408,12 @@ def read_config_file(path: Path) -> KeyboardConfig:
             "general.layout : seule la valeur azerty est supportée actuellement"
         )
 
-    caps_lock_layer = general.get("caps_lock_layer", True)
+    caps_lock_layer = general.get("caps_lock_layer", False)
     caps_fallback_to_base = general.get("caps_fallback_to_base", True)
 
     if not isinstance(caps_lock_layer, bool):
         issues.append("general.caps_lock_layer doit être true ou false")
-        caps_lock_layer = True
+        caps_lock_layer = False
 
     if not isinstance(caps_fallback_to_base, bool):
         issues.append("general.caps_fallback_to_base doit être true ou false")
@@ -635,9 +473,8 @@ def read_config_file(path: Path) -> KeyboardConfig:
         length_scale=length_scale,
     )
 
-    if not bindings:
-        issues.append("aucune affectation clavier valide")
-
+    # An empty [keys] table is valid in 1.7: the user may deliberately
+    # unassign every shortcut. Missing/invalid files still use fallback.
     return KeyboardConfig(
         bindings=bindings,
         source=path,
@@ -680,12 +517,15 @@ def load_keyboard_config(
             failures.append(f"{candidate}: {exc}")
             continue
 
-        if config.bindings:
+        if not config.issues:
             if failures:
-                config.issues = failures + (config.issues or [])
+                config.issues = failures
             return config
 
-        failures.extend(config.issues or [])
+        failures.extend(
+            f"{candidate}: {issue}"
+            for issue in (config.issues or [])
+        )
 
     config = builtin_config()
     config.issues = failures + (config.issues or [])
