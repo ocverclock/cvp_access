@@ -735,3 +735,6 @@ Navigation Recorder F14/F16 implémentée : F14 précédent avec glissando desce
 
 
 Checkpoint 25 septembre 2026 : F14/F16 physiquement validés sur le clavier de référence. Les changements de sélection apparaissent correctement dans le journal (`2026-09-25_002.mid` puis `2026-09-25_003.mid`) et les glissandos précédent/suivant sont jugés très réactifs et clairement distincts.
+
+
+Ajustement UX Recorder 25 septembre 2026 : F14/F16 long : aucun bip. La sélection se fait dès l'enfoncement ; le bip n'est joué qu'au relâchement d'un appui court. Si la touche reste maintenue ~0,8 s, seule l'annonce du morceau sélectionné est entendue.
