@@ -267,9 +267,18 @@ def install_speech_hooks(core, speech_config):
         month_file = voice_dir / "recorder" / f"month_{month:02d}.wav"
         numero_file = voice_dir / "recorder" / "numero.wav"
 
+        month_names = (
+            "", "janvier", "février", "mars", "avril", "mai", "juin",
+            "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+        )
+        if not 1 <= month < len(month_names):
+            return manager.speak(
+                f"Enregistrement numéro {number}.",
+                replace_key="recorder_selection",
+            )
+
         text = (
-            f"{day} "
-            f"{['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][month]}, "
+            f"{day} {month_names[month]}, "
             f"numéro {number}."
         )
 
