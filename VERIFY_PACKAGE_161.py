@@ -83,6 +83,7 @@ assert "Layout accessibilité 1.6.1 RC1" in keyboard_map_source
 assert "CVP_recordings" in keyboard_map_source
 assert "Morceau précédent" in keyboard_map_source
 assert "Morceau suivant" in keyboard_map_source
+assert "Affectation TOML ignorée" in keyboard_map_source
 
 portal_source = (
     root / "cvp_access_installer/tools/cvp_web.py"
@@ -164,6 +165,7 @@ assert "WAV Recorder" in doctor_source
 assert "WAV nombres 0..150" in doctor_source
 assert "Recorder stockage" in doctor_source
 assert "Interface Wi-Fi" in doctor_source
+assert "Touches Recorder réservées" in doctor_source
 assert "cvp_access_1_5_2.py" in doctor_source
 assert "cvp_access_1_5_1_base.py" in doctor_source
 assert "detect_wifi_device()" in wifi_connect_source
@@ -194,6 +196,8 @@ assert "aplaymidi" in recorder_source
 assert ".cvp-selection.json" in recorder_source
 assert "announce_recorder_stop_now" in recorder_source
 assert "playback_port_cache" in recorder_source
+assert "recording_files_cache" in recorder_source
+assert "recording_files_cache_seconds = 2.0" in recorder_source
 
 samba_source = (
     root / "cvp_access_installer/samba/cvp-access.conf.in"
