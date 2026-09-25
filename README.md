@@ -85,7 +85,7 @@ Les sections Style restent disponibles comme actions configurables même lorsqu�
 ### Accessibilité et voix
 
 - au démarrage, une fois MIDI + clavier + moteur vocal prêts : **« Dispositif Melody Music CVP Access opérationnel. »** ;
-- `ESC` : annonce **« Relance du dispositif CVP Access. »**, attend la fin de l’annonce, puis relance le service ;
+- `ESC` : annonce **« Relance du dispositif CVP Access. »** si le guide vocal est actif, puis relance le service ;
 - clavier USB AZERTY configurable par TOML ;
 - `CTRL + touche` = aide vocale sans exécution ;
 - **M = mute/réactivation du guide vocal CVP Access** ;
@@ -279,6 +279,8 @@ Le portail est également accessible lorsque le Raspberry est connecté à un Wi
 
 Depuis le dashboard, un technicien peut rechercher les réseaux Wi-Fi, sélectionner un SSID et saisir son mot de passe. CVP Access quitte alors le hotspot pour tenter la connexion. En cas d'échec, `CVP-ACCESS` est immédiatement réactivé ; le service de fallback reste une deuxième sécurité.
 
+L'interface Wi-Fi de maintenance est détectée dynamiquement : `wlan0`, une interface USB de type `wlx...`, ou une interface explicitement fournie par `CVP_WIFI_DEVICE`. Le portail affiche l'interface effectivement utilisée.
+
 Les préférences matérielles sont mémorisées dans `/etc/cvp-access/hardware.toml` par identité stable, et non par numéro ALSA `hw:X,Y,Z`.
 
 Le dashboard affiche aussi les accès de maintenance sous forme **cliquable pour copie** :
@@ -319,7 +321,7 @@ sudo bash cvp_access_installer/upgrade_1_6_1.sh
 
 L’upgrade conserve les personnalisations existantes et n’ajoute les nouveaux raccourcis que si les combinaisons sont libres.
 
-Le Doctor vérifie notamment le runtime, le layout, les WAV d’états, les WAV de mute Style, les 16 bindings Solo, les WAV du Recorder, les 151 nombres pré-générés, le dossier d'enregistrements et les commandes `aplaymidi` / `sox`.
+Le Doctor canonique est désormais `cvp_doctor.py`. Il vérifie notamment le runtime, le layout, les WAV d’états, les WAV de mute Style, les 16 bindings Solo, les WAV du Recorder, les 151 nombres pré-générés, le dossier d'enregistrements, l'interface Wi-Fi et les commandes `aplaymidi` / `sox`.
 
 ## État de validation matérielle
 
