@@ -1,0 +1,17 @@
+name: Verify CVP Access 1.7
+
+on:
+  push:
+    branches:
+      - feature/cvp-access-1.7-mapping-ui
+  pull_request:
+
+jobs:
+  verify-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify CVP Access 1.7 package
+        run: python3 VERIFY_PACKAGE_170.py
