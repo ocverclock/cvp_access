@@ -301,30 +301,7 @@ if [[ -f "$RELEASE_MANIFEST" ]]; then
 else
     RELEASE_UPGRADER="$(
         find "$INSTALLER_DIR" -maxdepth 1 -type f -name 'upgrade_*.sh' -printf '%p\n' \
-        | grep -E '/upgrade_[0-9]+(_[0-9]+){1,2}\.sh
-
-# -----------------------------------------------------------------------------
-# Diagnostic
-# -----------------------------------------------------------------------------
-log "Running CVP Doctor"
-runuser -u "$CVP_USER" -- env \
-    HOME="$CVP_HOME" \
-    CVP_PROJECT_DIR="$REPO_DIR" \
-    CVP_RUNTIME_DIR="$RUNTIME_DIR" \
-    CVP_VOICE_DIR="$VOICE_DIR" \
-    CVP_PIPER_MODEL="$PIPER_MODEL" \
-    CVP_CONFIG_FILE="$CONFIG_FILE" \
-    python3 "$INSTALLER_DIR/tools/cvp_doctor.py" || true
-
-apt-get clean
-
-if [[ -f /var/run/reboot-required ]]; then
-    warn "A reboot is required by the OS update: sudo reboot"
-fi
-
-rm -f -- "${BASH_SOURCE[0]}" 2>/dev/null || true
-log "Update complete"
- \
+        | grep -E '/upgrade_[0-9]+(_[0-9]+){1,2}\.sh$' \
         | sort -V \
         | tail -n 1
     )"
