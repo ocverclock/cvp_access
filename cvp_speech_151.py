@@ -65,6 +65,7 @@ def install_speech_hooks(core, speech_config):
             return original_start_audio(filename)
 
         core.start_audio = start_audio_serialized
+        core._cvp_original_start_audio = original_start_audio
         core._cvp_audio_serialized = True
 
     # Mute logiciel : le niveau voice_volume reste inchangé. Les annonces sont
@@ -210,6 +211,83 @@ def install_speech_hooks(core, speech_config):
         return original_speak_now(
             "Stop.",
             voice_dir / "recorder" / "stop.wav",
+        )
+
+    def play_recorder_navigation_cue(direction):
+        if manager._cvp_voice_guide_muted:
+            return False
+
+        filename = {
+            "previous": "previous.wav",
+            "next": "next.wav",
+        }.get(str(direction))
+
+        if filename is None:
+            return False
+
+        path = voice_dir / "recorder" / filename
+        if not path.is_file():
+            return False
+
+        # Les repères de navigation doivent être plus rapides que la parole.
+        # On coupe l'éventuelle annonce précédente et on lance directement le
+        # WAV via le start_audio historique, sans attendre la file vocale.
+        current = getattr(core, "audio_process", None)
+        if current is not None and current.poll() is None:
+            try:
+                current.terminate()
+            except Exception:
+                pass
+
+        scaled = core.create_scaled_wav(
+            path,
+            core.voice_volume,
+        )
+        starter = getattr(
+            core,
+            "_cvp_original_start_audio",
+            core.start_audio,
+        )
+        starter(scaled)
+        return True
+
+    def announce_recorder_selection_now(day, month, number):
+        day = int(day)
+        month = int(month)
+        number = int(number)
+
+        day_file = number_file(day)
+        number_path = number_file(number)
+        month_file = voice_dir / "recorder" / f"month_{month:02d}.wav"
+        numero_file = voice_dir / "recorder" / "numero.wav"
+
+        text = (
+            f"{day} "
+            f"{['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][month]}, "
+            f"numéro {number}."
+        )
+
+        if (
+            day_file is not None
+            and number_path is not None
+            and month_file.is_file()
+            and numero_file.is_file()
+        ):
+            return original_speak_sequence_now(
+                text,
+                [
+                    day_file,
+                    month_file,
+                    numero_file,
+                    number_path,
+                ],
+            )
+
+        # Cas rare : plus de 150 enregistrements le même jour. Piper reste
+        # alors un filet de sécurité, pas le chemin normal de navigation.
+        return manager.speak(
+            text,
+            replace_key="recorder_selection",
         )
 
     def announce_device_restart():
@@ -410,6 +488,8 @@ def install_speech_hooks(core, speech_config):
     core.announce_recorder_output_missing = announce_recorder_output_missing
     core.announce_recorder_save_error = announce_recorder_save_error
     core.announce_recorder_stop_now = announce_recorder_stop_now
+    core.play_recorder_navigation_cue = play_recorder_navigation_cue
+    core.announce_recorder_selection_now = announce_recorder_selection_now
     core.announce_device_restart = announce_device_restart
     core.announce_action_help = announce_action_help
     core.announce_boolean_state = announce_boolean_state
