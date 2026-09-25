@@ -199,7 +199,8 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}bu
    <label for="searchAction">Rechercher une fonction</label>
    <input id="searchAction" type="search" placeholder="Ex. solo 8, Main C, volume Song" oninput="renderActions()">
    <div class="categories" id="categories"></div>
-   <div class="actions" id="actions" aria-live="polite"></div>\n   <div id="parameters" style="margin-top:10px" aria-live="polite"></div>
+   <div class="actions" id="actions" aria-live="polite"></div>
+   <div id="parameters" style="margin-top:10px" aria-live="polite"></div>
   </aside>
  </div>
 
@@ -334,7 +335,8 @@ function renderCategories(){
  const entries=[["all","Toutes"],...Object.entries(catalog.categories)];
  for(const [id,label] of entries){
   const b=document.createElement("button");b.type="button";b.textContent=label;b.className=category===id?"active":"";
-  b.setAttribute("aria-pressed",String(category===id));\n  b.onclick=()=>{category=id;renderCategories();renderActions()};root.appendChild(b);
+  b.setAttribute("aria-pressed",String(category===id));
+  b.onclick=()=>{category=id;renderCategories();renderActions()};root.appendChild(b);
  }
 }
 function renderActions(){
