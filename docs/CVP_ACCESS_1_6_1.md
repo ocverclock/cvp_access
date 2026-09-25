@@ -154,3 +154,17 @@ adaptateurs USB nommés `wlx...`.
 courante. Le fichier historique `cvp_doctor_151.py` est conservé dans le dépôt
 pour compatibilité avec les anciens vérificateurs, mais les nouveaux upgrades et
 le portail utilisent le nom générique.
+
+
+## Robustesse du nombre d'enregistrements
+
+Le suffixe quotidien reste affiché avec au moins trois chiffres
+(`001`, `002`, etc.) mais le parseur accepte désormais trois chiffres ou
+plus. Au-delà de 999 enregistrements dans une même journée, le Recorder produit
+donc `1000`, `1001`, etc. sans revenir à `1000` ni écraser un fichier.
+
+Le Doctor indique également le nombre de fichiers MIDI, leur taille cumulée et
+l'espace disque libre. La navigation F14/F16 conserve pendant deux secondes le
+catalogue trié en mémoire afin que des centaines de fichiers n'imposent pas un
+`glob + sort` à chaque pression ; les modifications externes par Samba sont
+réévaluées périodiquement.
