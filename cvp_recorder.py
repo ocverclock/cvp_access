@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Accessible one-button MIDI recorder for CVP Access 1.6.
+"""Accessible MIDI recorder for CVP Access 1.6.x.
 
 The recorder never opens the MIDI input device itself. It receives copies of
 already parsed channel messages from the permanent CVP Access MIDI receiver.
 
 Initial 1.6 scope:
 - channel 1 recording;
-- F15 short/long state machine;
+- F14/F16 accessible recording selection;
+- F15 short/long record/play state machine;
 - Standard MIDI File type 0 output;
 - fixed tempo captured when arming;
 - selection shared with the maintenance Web portal;
@@ -301,7 +302,7 @@ class RecorderController:
         return self.recordings_dir / f"{prefix}_{number:03d}.mid", number
 
     # ------------------------------------------------------------------
-    # F15 short / long press
+    # F14 / F15 / F16 controls
     # ------------------------------------------------------------------
 
     def handle_key_event(self, event, *, help_requested=False):
