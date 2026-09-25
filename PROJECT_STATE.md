@@ -723,3 +723,6 @@ Amélioration ergonomique Recorder 25 septembre 2026 : ajout d'un « Stop. » pr
 
 
 Ergonomie Recorder 25 septembre 2026 : relecture F15 sans annonce « Lecture ». Le fichier MIDI démarre immédiatement pour éviter toute latence ou masquage des premières notes.
+
+
+Ergonomie portail 25 septembre 2026 : liste MIDI Web compactée en tableau scrollable avec filtre, compteur et sélection mise en évidence pour éviter l'allongement de la page quand le nombre de fichiers augmente.
