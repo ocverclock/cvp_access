@@ -204,6 +204,14 @@ def install_speech_hooks(core, speech_config):
             replace_key="recorder_status",
         )
 
+    def announce_recorder_stop_now():
+        # Feedback critique : lecture directe, hors file d'attente, pour que
+        # l'utilisateur sache immédiatement que l'enregistrement est arrêté.
+        return original_speak_now(
+            "Stop.",
+            voice_dir / "recorder" / "stop.wav",
+        )
+
     def announce_device_restart():
         # ESC redémarre le processus. L'annonce doit donc être synchrone :
         # attendre la fin de aplay avant SystemExit, sinon cleanup() la coupe.
@@ -401,6 +409,7 @@ def install_speech_hooks(core, speech_config):
     core.announce_recorder_play_finished = announce_recorder_play_finished
     core.announce_recorder_output_missing = announce_recorder_output_missing
     core.announce_recorder_save_error = announce_recorder_save_error
+    core.announce_recorder_stop_now = announce_recorder_stop_now
     core.announce_device_restart = announce_device_restart
     core.announce_action_help = announce_action_help
     core.announce_boolean_state = announce_boolean_state
