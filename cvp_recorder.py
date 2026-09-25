@@ -101,6 +101,22 @@ class RecorderController:
             except Exception as exc:
                 print("Recorder : erreur annonce :", exc)
 
+    def _stop_feedback_now(self):
+        print("Recorder : Stop.")
+        announcer = getattr(
+            self.core,
+            "announce_recorder_stop_now",
+            None,
+        )
+        if callable(announcer):
+            try:
+                announcer()
+                return
+            except Exception as exc:
+                print("Recorder : erreur annonce Stop :", exc)
+
+        self._speak("Stop.")
+
     # ------------------------------------------------------------------
     # Selection / filenames
     # ------------------------------------------------------------------
@@ -412,6 +428,10 @@ class RecorderController:
         if not events:
             self._speak("Enregistrement annulé.")
             return
+
+        # Retour instantané à l'utilisateur avant toute écriture disque ou
+        # annonce dynamique de date/numéro.
+        self._stop_feedback_now()
 
         path, number = self._next_recording_path()
 
