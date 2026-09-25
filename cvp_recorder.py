@@ -70,6 +70,7 @@ class RecorderController:
 
         self.play_process: subprocess.Popen | None = None
         self.play_generation = 0
+        self.playback_port_cache: str | None = None
 
         self.recordings_dir.mkdir(parents=True, exist_ok=True)
         self._ensure_selection()
@@ -753,7 +754,10 @@ class RecorderController:
     # Playback
     # ------------------------------------------------------------------
 
-    def _resolve_aplaymidi_port(self):
+    def _resolve_aplaymidi_port(self, *, refresh=False):
+        if not refresh and self.playback_port_cache:
+            return self.playback_port_cache
+
         try:
             proc = subprocess.run(
                 ["aplaymidi", "-l"],
@@ -794,6 +798,7 @@ class RecorderController:
             return None
 
         print("Recorder : sortie lecture ->", best[1], best[2])
+        self.playback_port_cache = best[1]
         return best[1]
 
     def play_selected(self):
@@ -855,6 +860,9 @@ class RecorderController:
         if proc.returncode == 0:
             self._speak("Lecture terminée.")
         else:
+            # Le port ALSA peut avoir changé après un débranchement USB.
+            # Invalider le cache : la prochaine lecture refera la détection.
+            self.playback_port_cache = None
             if err:
                 print("Recorder : aplaymidi :", err.strip())
             self._speak("Lecture interrompue.")
