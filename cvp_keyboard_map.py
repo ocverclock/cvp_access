@@ -269,7 +269,7 @@ h1{margin:0;font-size:22px}
 <body>
 <div class="header"><div><h1>CVP Access — Carte des commandes</h1>
 <div class="subtitle">Générée depuis {html.escape(str(config_path))}</div></div>
-<div class="stats">{mapped} affectation(s)<br>Layout accessibilité 1.6.1 RC2</div></div>
+<div class="stats">{mapped} affectation(s)<br>Layout accessibilité 1.7 RC1</div></div>
 
 <div class="help-banner"><strong>CTRL = AIDE VOCALE.</strong>
 Maintenir CTRL puis appuyer sur une touche attribuée :
@@ -323,7 +323,7 @@ Sans Song chargé : annonce « Pas de Song chargé ».</div></div></aside></div>
 <div class="unassigned-grid">{unassigned_html}</div></section>
 
 <div class="legend">Song / informations • Style / accompagnement • Guide vocal • Système</div>
-<div class="footer">Les actions non attribuées restent disponibles dans le catalogue et peuvent être affectées ultérieurement dans keyboard.toml.</div>
+<div class="footer">Les actions non attribuées restent disponibles dans le catalogue et peuvent être affectées depuis l’éditeur Web.</div>
 <script>
 async function copyValue(button) {{
   const value = button.dataset.copy || button.textContent.trim();
