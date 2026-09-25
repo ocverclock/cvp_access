@@ -89,11 +89,7 @@ else
 
     mapfile -t UPGRADERS < <(
         find "$REPO_DIR/cvp_access_installer" -maxdepth 1 -type f -name 'upgrade_*.sh' -printf '%f\n' \
-        | grep -E '^upgrade_[0-9]+(_[0-9]+){1,2}\.sh
-echo
-echo "[CVP Access update] Installation : $(basename "$UPGRADE_SCRIPT")"
-CVP_USER="$CVP_USER" bash "$UPGRADE_SCRIPT"
- \
+        | grep -E '^upgrade_[0-9]+(_[0-9]+){1,2}\.sh$' \
         | sort -V
     )
 
