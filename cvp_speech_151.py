@@ -296,6 +296,55 @@ def install_speech_hooks(core, speech_config):
             replace_key="recorder_selection",
         )
 
+    def announce_recorder_saved_now(day, month, number):
+        if manager._cvp_voice_guide_muted:
+            return False
+
+        day = int(day)
+        month = int(month)
+        number = int(number)
+
+        day_file = number_file(day)
+        number_path = number_file(number)
+        month_file = voice_dir / "recorder" / f"month_{month:02d}.wav"
+        prefix_file = voice_dir / "recorder" / "enregistrement_du.wav"
+        numero_file = voice_dir / "recorder" / "numero.wav"
+        saved_file = voice_dir / "recorder" / "sauvegarde.wav"
+
+        month_names = (
+            "", "janvier", "février", "mars", "avril", "mai", "juin",
+            "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+        )
+        if not 1 <= month < len(month_names):
+            return manager.speak(
+                f"Enregistrement numéro {number}, sauvegardé.",
+                replace_key="recorder_saved",
+            )
+
+        text = (
+            f"Enregistrement du {day} {month_names[month]}, "
+            f"numéro {number}, sauvegardé."
+        )
+
+        files = [
+            prefix_file,
+            day_file,
+            month_file,
+            numero_file,
+            number_path,
+            saved_file,
+        ]
+        if all(path is not None and Path(path).is_file() for path in files):
+            return original_speak_sequence_now(
+                text,
+                [Path(path) for path in files],
+            )
+
+        return manager.speak(
+            text,
+            replace_key="recorder_saved",
+        )
+
     def announce_device_restart():
         if manager._cvp_voice_guide_muted:
             return False
@@ -499,6 +548,7 @@ def install_speech_hooks(core, speech_config):
     core.announce_recorder_stop_now = announce_recorder_stop_now
     core.play_recorder_navigation_cue = play_recorder_navigation_cue
     core.announce_recorder_selection_now = announce_recorder_selection_now
+    core.announce_recorder_saved_now = announce_recorder_saved_now
     core.announce_device_restart = announce_device_restart
     core.announce_action_help = announce_action_help
     core.announce_boolean_state = announce_boolean_state
