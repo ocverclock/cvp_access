@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import py_compile
+import re
 import tomllib
 
 root = Path(__file__).resolve().parent
@@ -59,6 +60,10 @@ assert "cvp_access_1_5_2" in frontend_161_source
 frontend_152_source = (root / "cvp_access_1_5_2.py").read_text(encoding="utf-8")
 assert 'VERSION = "1.5.2-RC1"' in frontend_152_source
 assert "cvp_access_1_5_1_base" in frontend_152_source
+
+base_151_source = (
+    root / "cvp_access_1_5_1_base.py"
+).read_text(encoding="utf-8")
 
 core_source = (root / "cvp_access_v1.4.1.py").read_text(encoding="utf-8")
 assert "ProdipeMIDIlilo MIDI 1" in core_source
@@ -284,11 +289,54 @@ assert not any(
     for combo, value in keys.items()
 )
 
+# Release coherence: every configured action must be declared and implemented.
+assert len(keys) == 83, f"Nombre d'affectations inattendu : {len(keys)}"
+
 assigned_actions = {
     str(value).split(":", 1)[0]
     for value in keys.values()
     if isinstance(value, str)
 }
+assert len(assigned_actions) == 37, (
+    f"Nombre d'actions configurées inattendu : {len(assigned_actions)}"
+)
+
+catalog_sources = "\n".join(
+    (
+        keyboard_source,
+        base_151_source,
+        frontend_152_source,
+    )
+)
+declared_actions = set(
+    re.findall(
+        r'["\']([a-z][a-z0-9_]+)["\']\s*:\s*ActionSpec\s*\(',
+        catalog_sources,
+    )
+)
+missing_declared = sorted(assigned_actions - declared_actions)
+assert not missing_declared, (
+    "Actions configurées absentes du catalogue : "
+    + ", ".join(missing_declared)
+)
+
+implementation_sources = "\n".join(
+    (
+        runtime_source,
+        base_151_source,
+        frontend_152_source,
+    )
+)
+missing_handlers = sorted(
+    action
+    for action in assigned_actions
+    if f"def {action}(" not in implementation_sources
+)
+assert not missing_handlers, (
+    "Actions configurées sans méthode d'exécution : "
+    + ", ".join(missing_handlers)
+)
+
 for action in (
     "style_intro",
     "style_main",
