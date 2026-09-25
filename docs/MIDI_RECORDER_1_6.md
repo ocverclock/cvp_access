@@ -1,8 +1,8 @@
 # CVP Access 1.6 — dictaphone MIDI accessible
 
-État : **conception**, 24 septembre 2026.
+État : **implémenté / consolidation 1.6.1-RC1**, 25 septembre 2026.
 
-La version 1.6 est prévue comme une évolution fonctionnelle majeure. Elle ne doit pas modifier le comportement validé de CVP Access 1.5.2 hors fonction dictaphone.
+La branche 1.6 a été implémentée sans modifier le chemin Yamaha/SysEx validé de CVP Access 1.5.2. La consolidation courante est décrite dans `docs/CVP_ACCESS_1_6_1.md`.
 
 ## Objectif
 
@@ -10,20 +10,21 @@ Ajouter un dictaphone MIDI utilisable par une personne non voyante avec un minim
 
 Le principe retenu pour la première version est volontairement simple :
 
-- **une seule touche dédiée** pour armer, annuler, arrêter, sauvegarder, lire et arrêter la lecture ;
+- **F15** pour armer, annuler, arrêter, sauvegarder, lire et arrêter la lecture ;
+- **F14/F16** pour sélectionner rapidement l'enregistrement précédent/suivant ;
 - démarrage réel de l'enregistrement au **premier événement musical** ;
 - fichiers MIDI enregistrés dans un dossier dédié ;
 - noms de fichiers contenant la date ;
 - liste des enregistrements visible et sélectionnable depuis le portail Web ;
 - accès au dossier depuis macOS/Linux/Windows via Samba.
 
-## Touche unique — machine d'états
+## F15 — machine d'états
 
 La touche dédiée retenue est **F15**.
 
 F15 ne doit servir qu'au dictaphone MIDI dans le layout 1.6. Le comportement appui court / appui long décrit ci-dessous lui est exclusivement associé.
 
-**Point technique :** le routeur clavier 1.5.2 ne déclare actuellement que F1 à F13. L'implémentation 1.6 devra donc ajouter explicitement F14/F15 au catalogue evdev et faire apparaître F15 sur la carte clavier avant d'activer le Recorder.
+**Point technique consolidé :** le routeur clavier accepte désormais F1 à F16. F14/F15/F16 sont interceptées par le Recorder avant le routeur générique afin de gérer correctement les appuis courts/longs.
 
 ### Checkpoint matériel F15 — validé
 
@@ -43,7 +44,7 @@ Interprétation :
 
 F15 est donc **VALIDÉE MATÉRIELLEMENT** comme touche exploitable pour le dictaphone. L'implémentation devra ignorer les événements `value=2` pour éviter les doubles commandes.
 
-Le routeur commun accepte maintenant F14 et F15. La carte clavier affiche aussi F14/F15 ; tant que la 1.6 n'est pas activée, F15 porte la mention « Réservé dictaphone MIDI 1.6 ».
+Le routeur commun accepte F14, F15 et F16. La carte clavier 1.6.1 affiche les trois fonctions Recorder.
 
 ### État repos
 
