@@ -316,7 +316,7 @@ function renderCategories(){
  const entries=[["all","Toutes"],...Object.entries(catalog.categories)];
  for(const [id,label] of entries){
   const b=document.createElement("button");b.type="button";b.textContent=label;b.className=category===id?"active":"";
-  b.onclick=()=>{category=id;renderCategories();renderActions()};root.appendChild(b);
+  b.setAttribute("aria-pressed",String(category===id));\n  b.onclick=()=>{category=id;renderCategories();renderActions()};root.appendChild(b);
  }
 }
 function renderActions(){
@@ -351,11 +351,19 @@ function chooseAction(a){
  params.appendChild(box);
 }
 
+function confirmRecoveryKey(){
+ if(selectedKey!=="ESC")return true;
+ return confirm("Échap sert de raccourci de récupération pour relancer CVP Access. Modifier cette affectation supprimera ce raccourci physique. Continuer ?");
+}
 function assign(raw){
  const combo=currentCombo();if(!combo){status("Sélectionne d’abord une touche.",true);return}
+ if(!confirmRecoveryKey())return;
  pending[combo]=raw;renderAll();
 }
-function unassign(){const combo=currentCombo();if(combo){pending[combo]=null;renderAll()}}
+function unassign(){
+ const combo=currentCombo();
+ if(combo&&confirmRecoveryKey()){pending[combo]=null;renderAll()}
+}
 function renderChanges(){
  const root=$("changes"),entries=Object.entries(pending);
  $("dirtyCount").textContent=entries.length+" modification"+(entries.length>1?"s":"")+" en attente";
