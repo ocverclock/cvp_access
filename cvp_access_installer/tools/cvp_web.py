@@ -348,22 +348,6 @@ def request_authorized(payload):
     )
 
 
-def keyboard_write_authorized(payload):
-    """Keyboard/profile writes always require the maintenance secret.
-
-    This intentionally ignores CVP_WEB_REQUIRE_AUTH so development mode can
-    leave the read-only maintenance portal open without exposing configuration
-    writes on the LAN.
-    """
-    expected = admin_secret()
-    supplied = payload.get("admin_password", "")
-    return (
-        bool(expected)
-        and isinstance(supplied, str)
-        and hmac.compare_digest(supplied, expected)
-    )
-
-
 def split_nmcli_escaped(line):
     fields = []
     current = []
@@ -1304,12 +1288,6 @@ class Handler(BaseHTTPRequestHandler):
             "/api/keyboard/profiles/import-active",
         }
         if path in keyboard_editor_writes:
-            if not keyboard_write_authorized(payload):
-                self.send_json(
-                    {"error": "Mot de passe maintenance requis pour modifier le clavier"},
-                    401,
-                )
-                return
             body, status = keyboard_handle_write(path, payload)
             self.send_json(body, status)
             return
