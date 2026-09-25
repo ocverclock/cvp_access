@@ -211,7 +211,7 @@ Introduction du Recorder :
 - sélection partagée avec le portail Web ;
 - partage Samba `CVP_recordings`.
 
-## v1.6.1-RC1 — consolidation Recorder et maintenance
+## v1.6.1-RC2 — consolidation Recorder et maintenance
 
 Date de consolidation : **25 septembre 2026**.
 
@@ -228,6 +228,7 @@ Date de consolidation : **25 septembre 2026**.
 - confirmation de sauvegarde assemblée depuis des WAV, sans Piper dans le cas normal ;
 - compteur + taille cumulée des enregistrements dans le portail ;
 - audit des scripts d'installation/update et contrôle `bash -n` intégré au vérificateur ;
+- absence d'interface Wi-Fi ne bloque plus installation / mise à jour : seul le hotspot est ignoré ;
 - manifeste unique `cvp_access_installer/release.env` ;
 - frontend `cvp_access_1_6_1.py` ;
 - vérificateur `VERIFY_PACKAGE_161.py` ;
