@@ -452,8 +452,8 @@ Version de travail : `1.7.0-RC1`.
 - migrations « touche absente => recréer » désactivées par l'upgrader 1.7 ;
 - Doctor compatible avec les profils personnalisés ;
 - endpoint matériel `/api/keyboard/select` conservé ;
-- écritures mapping/profils toujours authentifiées ;
-- `/etc/cvp-access/maintenance-password` disponible même sans Wi-Fi, avec fallback hotspot historique ;
+- édition mapping/profils volontairement sans code ni mot de passe sur le portail local ;
+- `/etc/cvp-access/maintenance-password` reste disponible pour les autres opérations de maintenance, mais n'est plus utilisé par l'éditeur clavier ;
 - `VERIFY_PACKAGE_170.py` propre ;
 - `TEST_KEYBOARD_PROFILES_170.py` ajouté ;
 - workflow CI ajouté, mais aucun run GitHub n'est actuellement exposé : ne pas considérer la CI comme validée.
