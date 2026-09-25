@@ -11,7 +11,7 @@ CVP Access permet de piloter et d’interroger des fonctions importantes d’un 
 Version de référence :
 
 ```text
-CVP Access 1.6.1-RC1
+CVP Access 1.6.1-RC2
 Consolidation : 25 septembre 2026
 ```
 
@@ -99,7 +99,7 @@ Les sections Style restent disponibles comme actions configurables même lorsqu�
 
 Les annonces prévisibles sont composées de WAV. La banque de nombres `0..150` sert aux mesures et aux annonces du Recorder. Les 12 mois, le mot « numéro », les 16 annonces `Solo piste N` et les retours courts du Recorder sont pré-générés.
 
-## Layout clavier 1.6.1-RC1
+## Layout clavier 1.6.1-RC2
 
 ### Parties Style / clavier
 
