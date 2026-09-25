@@ -148,6 +148,7 @@ def main():
         "recorder/play_finished.wav": "Lecture terminée.",
         "recorder/output_missing.wav": "Sortie MIDI de lecture introuvable.",
         "recorder/save_error.wav": "Erreur pendant la sauvegarde.",
+        "recorder/stop.wav": "Stop.",
     }.items():
         add(path, text)
 
