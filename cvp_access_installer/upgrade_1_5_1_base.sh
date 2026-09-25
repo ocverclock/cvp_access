@@ -35,7 +35,7 @@ required=(
     cvp_access_installer/tools/generate_configured_voices.py
     cvp_access_installer/tools/generate_151_voices.py
     cvp_access_installer/tools/generate_recorder_cues.sh
-    cvp_access_installer/tools/cvp_doctor_151.py
+    cvp_access_installer/tools/cvp_doctor.py
     cvp_access_installer/tools/cvp_web.py
     cvp_access_installer/tools/cvp_update_from_github
     cvp_access_installer/samba/cvp-access.conf.in
@@ -60,7 +60,7 @@ install -m 0755 "$REPO_DIR/cvp_keyboard_map.py" "$RUNTIME_DIR/cvp_keyboard_map.p
 install -m 0644 "$REPO_DIR/config/default-1.5.1.toml" "$RUNTIME_DIR/default-keyboard-1.5.1.toml"
 install -m 0755 "$REPO_DIR/cvp_access_installer/tools/generate_configured_voices.py" "$RUNTIME_DIR/generate_configured_voices.py"
 install -m 0755 "$REPO_DIR/cvp_access_installer/tools/generate_151_voices.py" "$RUNTIME_DIR/generate_151_voices.py"
-install -m 0755 "$REPO_DIR/cvp_access_installer/tools/cvp_doctor_151.py" "$RUNTIME_DIR/cvp_doctor_151.py"
+install -m 0755 "$REPO_DIR/cvp_access_installer/tools/cvp_doctor.py" "$RUNTIME_DIR/cvp_doctor.py"
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
     install -d -o "$CVP_USER" -g "$CVP_USER" -m 0770 "$CONFIG_DIR"
@@ -220,7 +220,7 @@ else
     echo "WARNING: maintenance network installer absent." >&2
 fi
 
-runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" CVP_RUNTIME_DIR="$RUNTIME_DIR" CVP_VOICE_DIR="$VOICE_DIR" CVP_CONFIG_FILE="$CONFIG_FILE" python3 "$RUNTIME_DIR/cvp_doctor_151.py"
+runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" CVP_RUNTIME_DIR="$RUNTIME_DIR" CVP_VOICE_DIR="$VOICE_DIR" CVP_CONFIG_FILE="$CONFIG_FILE" python3 "$RUNTIME_DIR/cvp_doctor.py"
 systemctl restart cvp-access.service
 
 echo
