@@ -1,4 +1,4 @@
-# Configuration CVP Access v1.5 RC2
+# Configuration clavier — CVP Access 1.6.1-RC2
 
 Le fichier principal est volontairement auto-documenté :
 
@@ -27,18 +27,32 @@ sudo cp /etc/cvp-access/keyboard.toml \
   /etc/cvp-access/keyboard.toml.backup
 ```
 
-## Validation
+## Régénération après modification manuelle
+
+Valider d'abord la configuration :
 
 ```bash
 python3 /opt/cvp-access/cvp_keyboard.py \
   --check /etc/cvp-access/keyboard.toml
 ```
 
-## Pré-génération vocale selon le TOML
+Régénérer ensuite la carte clavier :
+
+```bash
+python3 /opt/cvp-access/cvp_keyboard_map.py \
+  --config /etc/cvp-access/keyboard.toml \
+  --output /etc/cvp-access/keyboard-map.html
+```
+
+Puis les annonces vocales nécessaires :
 
 ```bash
 ~/.local/share/cvp-access/piper-env/bin/python \
   /opt/cvp-access/generate_configured_voices.py \
+  --config /etc/cvp-access/keyboard.toml
+
+~/.local/share/cvp-access/piper-env/bin/python \
+  /opt/cvp-access/generate_151_voices.py \
   --config /etc/cvp-access/keyboard.toml
 ```
 
@@ -86,12 +100,17 @@ sudo systemctl restart cvp-access
 
 ## Conservation lors des mises à jour
 
-`install.sh` et `update.sh` ne remplacent pas un `keyboard.toml` client déjà
-présent. Le modèle de la version courante reste disponible ici :
+`install.sh` et `update.sh` ne remplacent pas un `keyboard.toml` client déjà présent.
+
+Pour la chaîne consolidée 1.6.1-RC2, le profil usine courant installé par l'upgrade est :
 
 ```text
-/opt/cvp-access/default-keyboard.toml
+/opt/cvp-access/default-keyboard-1.5.1.toml
 ```
+
+Un fichier historique `/opt/cvp-access/default-keyboard.toml` peut aussi être présent car `install.sh` / `update.sh` passent encore par l'ancien bootstrap v1.5 avant de déployer la release courante. **Ne pas utiliser ce fichier historique comme référence de restauration RC2.**
+
+Le chantier 1.7 doit supprimer cette ambiguïté et définir un seul mapping usine canonique.
 
 ## Sécurité
 
