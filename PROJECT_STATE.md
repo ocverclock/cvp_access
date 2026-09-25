@@ -741,3 +741,6 @@ Checkpoint 25 septembre 2026 : F14/F16 physiquement validés sur le clavier de r
 
 
 Ajustement UX Recorder 25 septembre 2026 : F14/F16 long : aucun bip. La sélection se fait dès l'enfoncement ; le bip n'est joué qu'au relâchement d'un appui court. Si la touche reste maintenue ~0,8 s, seule l'annonce du morceau sélectionné est entendue.
+
+
+Consolidation 1.6.1 : Wi-Fi maintenance : détection dynamique de l'interface (profil CVP-ACCESS, `CVP_WIFI_DEVICE`, puis première radio Wi-Fi disponible), ce qui supprime la dépendance runtime à `wlan0`. `cvp_doctor.py` est désormais le Doctor canonique ; le suffixe historique `_151` reste uniquement pour compatibilité de dépôt.
