@@ -250,6 +250,9 @@ assert "_write_user_file(ACTIVE_CONFIG" in profiles
 # ---------------------------------------------------------------------------
 
 web_helper = read("cvp_keyboard_web.py")
+assert r"\n" not in web_helper, (
+    "L'éditeur Web contient un \\n littéral susceptible de casser le JavaScript/HTML"
+)
 for marker in (
     "KEYBOARD_EDITOR",
     "/api/keyboard/apply",
@@ -270,6 +273,7 @@ for marker in (
     assert marker in web_helper, f"Éditeur Web incomplet : {marker}"
 
 portal = read("cvp_access_installer/tools/cvp_web.py")
+assert '</a>\\n        <a class="btn secondary" href="/keyboard-map">' not in portal
 for marker in (
     "/keyboard",
     "/api/keyboard/catalog",
