@@ -7,17 +7,18 @@ Dernière consolidation : **25 septembre 2026**.
 Ordre de reprise :
 
 1. `PROJECT_STATE.md`
-2. `docs/CVP_ACCESS_1_6_1.md`
-3. `docs/FEEDBACK_POLICY_1_6_1.md`
-4. `docs/CVP_ACCESS_1_5_2.md`
-5. `docs/NETWORK_MAINTENANCE_PORTAL.md`
-6. `AI_HANDOFF.md`
-7. `docs/CVP_ACCESS_1_5_1.md` pour la base fonctionnelle
-8. `docs/KEY_ACTIONS_1_5_1.md`
-9. `docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md`
-10. `CVP905_PROTOCOL_CHECKPOINT_RC4.md` pour le protocole historique
-11. `docs/FUNCTION_CATALOG.md`
-12. `docs/MIDI_RECORDER_1_6.md` pour l'historique du dictaphone 1.6
+2. `docs/CVP_ACCESS_1_7_MAPPING_UI_DESIGN.md` pour le chantier courant 1.7
+3. `docs/CVP_ACCESS_1_6_1.md`
+4. `docs/FEEDBACK_POLICY_1_6_1.md`
+5. `docs/CVP_ACCESS_1_5_2.md`
+6. `docs/NETWORK_MAINTENANCE_PORTAL.md`
+7. `AI_HANDOFF.md`
+8. `docs/CVP_ACCESS_1_5_1.md` pour la base fonctionnelle
+9. `docs/KEY_ACTIONS_1_5_1.md`
+10. `docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md`
+11. `CVP905_PROTOCOL_CHECKPOINT_RC4.md` pour le protocole historique
+12. `docs/FUNCTION_CATALOG.md`
+13. `docs/MIDI_RECORDER_1_6.md` pour l'historique du dictaphone 1.6
 
 Ne pas relancer les scans massifs déjà clôturés sans nouvelle hypothèse.
 
@@ -228,19 +229,11 @@ Correspondances physiquement validées :
 ```bash
 cd ~/CVP_access
 git pull --ff-only origin main
-python3 VERIFY_PACKAGE_151.py
-sudo bash cvp_access_installer/upgrade_1_5_1.sh
+python3 VERIFY_PACKAGE_161.py
+sudo bash cvp_access_installer/upgrade_1_6_1.sh
 ```
 
-L'upgrade :
-
-- préserve les personnalisations ;
-- migre les anciens Solo ALT officiels vers Maj ;
-- ajoute M, L, RPAREN et les 16 bindings SHIFT seulement si libres ;
-- copie wrapper + base ;
-- génère map et WAV ;
-- lance Doctor ;
-- redémarre le service.
+L'upgrade RC2 réutilise encore les migrations historiques 1.5.1/1.5.2, génère la carte et les WAV, installe la maintenance, lance le Doctor et redémarre le service. Attention pour le chantier 1.7 : ces migrations ajoutent encore certaines affectations officielles lorsqu'elles sont absentes. Ce comportement devra être remplacé avant de considérer une désaffectation Web comme persistante.
 
 ## 9. Doctor — checkpoint confirmé le 12 septembre 2026
 
@@ -332,7 +325,7 @@ sudo systemctl restart cvp-access
 
 ## 15. Règle de reprise
 
-**Le point de départ obligatoire est le HEAD `main` consolidé au 12 septembre 2026, basé sur CVP Access 1.5.1-RC3, avec Solo Song Maj validé matériellement.**
+**Le point de départ obligatoire est CVP Access 1.6.1-RC2 consolidé le 25 septembre 2026. Pour le chantier courant, lire ensuite `docs/CVP_ACCESS_1_7_MAPPING_UI_DESIGN.md`. Ne pas repartir de 1.5.1-RC3 comme version courante.**
 
 
 ## Maintenance autonome 1.5.2
@@ -359,13 +352,9 @@ sudo bash cvp_access_installer/upgrade_1_5_2.sh
 ```
 
 
-## Projet futur 1.6 — dictaphone MIDI
+## Historique de conception 1.6 — ne pas utiliser comme état courant
 
-La conception validée à ce stade est dans `docs/MIDI_RECORDER_1_6.md`.
-
-Ne pas réutiliser `ESC` pour le Recorder : `ESC` reste la relance système. La touche Recorder retenue est **F15**. Le Recorder doit fonctionner avec cette seule touche, en distinguant appui court et appui long à partir des événements evdev bruts. Le routeur 1.5.2 ne couvre que F1..F13 ; ajouter F14/F15 dans la 1.6 avant tout binding.
-
-Ne pas ouvrir un second port MIDI pour le Recorder. Le `midi_receiver()` existant lit déjà le flux brut complet et parse les messages canal. La 1.6 doit ajouter un listener/tap interne protégé sur ce récepteur, puis valider Note On/Note Off et l'absence de régression SysEx avant l'enregistrement complet.
+La conception initiale du Dictaphone est conservée dans `docs/MIDI_RECORDER_1_6.md`. L'état courant est désormais 1.6.1-RC2 : F14/F15/F16 sont implémentées et réservées, et le listener MIDI interne est intégré. Cette section est historique ; ne pas réappliquer ses anciennes étapes de développement.
 
 
 ## Mise à jour depuis le portail
@@ -410,3 +399,23 @@ Le prochain travail est **validation matérielle**, pas redesign : installer via
 
 
 F14/F16 servent maintenant à la navigation Recorder : F14 précédent (glissando descendant), F16 suivant (glissando montant), action dès l'enfoncement ; maintien ~0,8 s annonce la sélection depuis fragments WAV. Les cues sont générés par SoX pendant l'upgrade. F16 est supportée dans `cvp_keyboard.py` et la keyboard map, mais F14/F16 doivent être validées physiquement avant de déclarer ce checkpoint terminé.
+
+
+## Projet 1.7 — chantier courant
+
+Référence de conception :
+
+```text
+docs/CVP_ACCESS_1_7_MAPPING_UI_DESIGN.md
+```
+
+Audit préalable effectué sur 1.6.1-RC2. Points à traiter avant toute écriture Web :
+
+- centraliser catalogue d'actions et métadonnées clavier ;
+- conserver F14/F15/F16 comme touches réservées et CTRL comme aide ;
+- ne pas exposer Caps Lock dans l'éditeur simple RC1 ;
+- rendre les désaffectations persistantes face aux futures mises à jour ;
+- définir un unique mapping usine canonique ;
+- adapter le Doctor aux mappings personnalisés ;
+- protéger obligatoirement les endpoints d'écriture Web ;
+- conserver le moteur Yamaha/SysEx validé sans refonte simultanée.
