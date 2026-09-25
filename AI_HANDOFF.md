@@ -1,14 +1,16 @@
 # AI_HANDOFF — CVP Access
 
-Dernière consolidation : **24 septembre 2026**.
+Dernière consolidation : **25 septembre 2026**.
 
 ## 1. À lire en premier
 
 Ordre de reprise :
 
 1. `PROJECT_STATE.md`
-2. `docs/CVP_ACCESS_1_5_2.md`
-3. `docs/NETWORK_MAINTENANCE_PORTAL.md`
+2. `docs/CVP_ACCESS_1_6_1.md`
+3. `docs/FEEDBACK_POLICY_1_6_1.md`
+4. `docs/CVP_ACCESS_1_5_2.md`
+5. `docs/NETWORK_MAINTENANCE_PORTAL.md`
 4. `AI_HANDOFF.md`
 5. `docs/CVP_ACCESS_1_5_1.md` pour la base fonctionnelle
 6. `docs/KEY_ACTIONS_1_5_1.md`
@@ -22,7 +24,7 @@ Ne pas relancer les scans massifs déjà clôturés sans nouvelle hypothèse.
 ## 2. Point de départ obligatoire
 
 ```text
-CVP Access 1.5.2-RC1
+CVP Access 1.6.1-RC1
 Yamaha CVP-905 firmware 1.03
 Raspberry Pi / Debian 13 arm64
 ```
@@ -35,7 +37,7 @@ Ne pas repartir de RC1, de la couche Caps Lock ou du runtime expérimental `1.5-
 Repo            : ~/CVP_access
 Runtime         : /opt/cvp-access
 Entrée runtime  : /opt/cvp-access/cvp_access.py
-Source courante : cvp_access_1_5_2.py
+Source courante : cvp_access_1_6_1.py
 Base 1.5.1      : cvp_access_1_5_1_base.py
 Config active   : /etc/cvp-access/keyboard.toml
 Map             : /etc/cvp-access/keyboard-map.html
@@ -47,13 +49,14 @@ Mode            : hybrid
 Architecture :
 
 ```text
-cvp_access_1_5_2.py
+cvp_access_1_6_1.py
+-> cvp_access_1_5_2.py
 -> cvp_access_1_5_1_base.py
 -> cvp_access_v1.5.py
 -> cvp_access_v1.4.1.py
 ```
 
-Le wrapper courant ajoute les commandes globales L / RPAREN et le Solo Maj. La base contient les correctifs Song, Piper, Voice Name, Guide Yamaha, métronome et accessibilité.
+Le wrapper 1.6.1 active le Recorder F14/F15/F16. La couche 1.5.2 ajoute les commandes globales L / RPAREN et le Solo Maj. La base contient les correctifs Song, Piper, Voice Name, Guide Yamaha, métronome et accessibilité. La release courante est déclarée dans `cvp_access_installer/release.env`.
 
 ## 4. Layout de référence
 
