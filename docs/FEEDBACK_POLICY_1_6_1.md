@@ -53,7 +53,7 @@ La touche **M** coupe ou réactive uniquement le guide vocal CVP Access.
 - passage vers OFF : **pas d'annonce** ; le silence immédiat est la confirmation ;
 - retour vers ON : annonce « Guide vocal activé ».
 
-Les bips de navigation du Recorder suivent le mute du guide vocal.
+Les bips de navigation du Recorder suivent le mute du guide vocal. Les retours directs « Stop », l'annonce de sélection et l'annonce de relance ESC respectent également ce mute ; aucune voie de lecture directe ne doit le contourner.
 
 ## Aide CTRL
 
