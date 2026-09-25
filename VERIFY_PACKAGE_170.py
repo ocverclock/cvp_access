@@ -175,6 +175,126 @@ assert "caps_lock_layer=False" in keyboard
 assert "An empty [keys] table is valid in 1.7" in keyboard
 assert "if not config.issues:" in keyboard
 
+# The built-in recovery mapping must mirror the canonical factory profile.
+builtin_block = re.search(
+    r"BUILTIN_BINDINGS\s*=\s*\{(.*?)\n\}",
+    keyboard,
+    flags=re.S,
+)
+assert builtin_block, "BUILTIN_BINDINGS absent"
+builtin_pairs = dict(
+    re.findall(
+        r'^\s*"([^"]+)"\s*:\s*"([^"]+)"\s*,?\s*
+profiles = (root / "cvp_keyboard_profiles.py").read_text(encoding="utf-8")
+for marker in (
+    "keyboard-profiles.json",
+    'RESERVED_KEYS = {"F14", "F15", "F16"}',
+    "RevisionConflict",
+    "def create_profile(",
+    "def duplicate_profile(",
+    "def rename_profile(",
+    "def delete_profile(",
+    "def activate_profile(",
+    "def save_profile(",
+    "runuser",
+    "systemctl",
+    "restart",
+    "cvp-access.service",
+):
+    assert marker.lower() in profiles.lower(), f"Gestion profils incomplète : {marker}"
+assert 'if "CTRL" in parts[:-1]' in profiles
+assert "active_revision != current_revision" in profiles
+assert "MAX_BACKUPS = 10" in profiles
+assert "ancienne configuration a été restaurée" in profiles
+assert "_write_user_file(ACTIVE_CONFIG" in profiles
+
+web_helper = (root / "cvp_keyboard_web.py").read_text(encoding="utf-8")
+for marker in (
+    "KEYBOARD_EDITOR",
+    "/api/keyboard/apply",
+    "/api/keyboard/profiles/create",
+    "/api/keyboard/profiles/duplicate",
+    "/api/keyboard/profiles/rename",
+    "/api/keyboard/profiles/delete",
+    "/api/keyboard/profiles/activate",
+    "Enregistrer sous",
+    "Activer cette configuration",
+    "Rechercher une fonction",
+    "Modifications en attente",
+    "Choisir : ",
+    "confirmRecoveryKey",
+):
+    assert marker in web_helper, f"Éditeur Web incomplet : {marker}"
+
+portal = (
+    root / "cvp_access_installer/tools/cvp_web.py"
+).read_text(encoding="utf-8")
+for marker in (
+    "/keyboard",
+    "/api/keyboard/catalog",
+    "/api/keyboard/config",
+    "/api/keyboard/profiles",
+    "keyboard_write_authorized",
+    "Configuration clavier",
+):
+    assert marker in portal, f"Portail 1.7 incomplet : {marker}"
+assert "if not AUTH_REQUIRED" in portal
+strict_auth = re.search(
+    r"def keyboard_write_authorized\(payload\):(.*?)(?=\ndef )",
+    portal,
+    flags=re.S,
+)
+assert strict_auth, "Fonction d'autorisation clavier absente"
+assert "if not AUTH_REQUIRED" not in strict_auth.group(1)
+assert "hmac.compare_digest" in strict_auth.group(1)
+
+doctor = (
+    root / "cvp_access_installer/tools/cvp_doctor.py"
+).read_text(encoding="utf-8")
+assert "profil personnalisé" in doctor
+assert "Configuration clavier" in doctor
+assert "default-keyboard-current.toml" in doctor
+assert "expected_caps" not in doctor
+
+keyboard_map = (root / "cvp_keyboard_map.py").read_text(encoding="utf-8")
+assert "from cvp_action_catalog import ACTION_CATALOG, action_text" in keyboard_map
+assert "from cvp_keyboard_layout import (" in keyboard_map
+assert "ACTION_LABELS =" not in keyboard_map
+assert "KEY_LABELS = {" not in keyboard_map
+assert "ROWS = [" not in keyboard_map
+
+layout = (root / "cvp_keyboard_layout.py").read_text(encoding="utf-8")
+assert '("CTRL", "ALT", "ALTGR", "SHIFT", "META", "CAPS")' in layout
+assert '"F14": "Morceau précédent / Recorder"' in layout
+assert '"F15": "Dictaphone MIDI"' in layout
+assert '"F16": "Morceau suivant / Recorder"' in layout
+assert "EDITOR_NAV_ROWS" in layout
+assert '("INSERT",1),("HOME",1),("PAGEUP",1)' in layout
+assert '("LEFT",1),("DOWN",1),("RIGHT",1)' in layout
+
+service = (
+    root / "cvp_access_installer/systemd/cvp-web.service.in"
+).read_text(encoding="utf-8")
+# Global dev auth may remain disabled in RC1; keyboard writes are independently
+# protected server-side and the verifier checks that strict path above.
+assert "Environment=CVP_WEB_REQUIRE_AUTH=0" in service
+
+print("CVP Access 1.7.0 RC1 package: OK")
+,
+        builtin_block.group(1),
+        flags=re.M,
+    )
+)
+assert builtin_pairs == factory_keys, (
+    "Le mapping built-in diffère du profil usine canonique"
+)
+
+for wrapper_name in ("cvp_access_1_5_1_base.py", "cvp_access_1_5_2.py"):
+    wrapper_source = (root / wrapper_name).read_text(encoding="utf-8")
+    assert "NEW_ACTION_SPECS" not in wrapper_source
+    assert "ACTION_SPECS.update" not in wrapper_source
+    assert "from cvp_keyboard import ActionSpec" not in wrapper_source
+
 profiles = (root / "cvp_keyboard_profiles.py").read_text(encoding="utf-8")
 for marker in (
     "keyboard-profiles.json",
