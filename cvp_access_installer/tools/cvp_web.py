@@ -88,6 +88,45 @@ def service_state(name):
     return out or ("active" if rc == 0 else "inactive")
 
 
+def wifi_device():
+    """Return the Wi-Fi interface used for maintenance, without assuming wlan0."""
+    explicit = os.environ.get("CVP_WIFI_DEVICE", "").strip()
+    if explicit:
+        return explicit
+
+    # Prefer the interface already bound to the maintenance hotspot profile.
+    _, profile_dev, _ = run(
+        [
+            "nmcli",
+            "-g",
+            "connection.interface-name",
+            "connection",
+            "show",
+            "CVP-ACCESS",
+        ]
+    )
+    profile_dev = profile_dev.strip()
+    if profile_dev:
+        _, status, _ = run(
+            ["nmcli", "-t", "-f", "DEVICE,TYPE", "device", "status"]
+        )
+        for line in status.splitlines():
+            fields = line.split(":", 1)
+            if len(fields) == 2 and fields[0] == profile_dev and fields[1] == "wifi":
+                return profile_dev
+
+    # Fall back to the first usable NetworkManager Wi-Fi device.
+    _, status, _ = run(
+        ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "device", "status"]
+    )
+    for line in status.splitlines():
+        fields = line.split(":")
+        if len(fields) >= 3 and fields[1] == "wifi" and fields[2] != "unavailable":
+            return fields[0]
+
+    return None
+
+
 def parse_midi_devices():
     _, out, _ = run(["amidi", "-l"])
     devices = []
@@ -318,22 +357,24 @@ def split_nmcli_escaped(line):
 def scan_wifi_networks():
     # Some drivers cannot rescan while acting as an AP. The command may still
     # return cached BSS entries; the UI also offers manual SSID entry.
+    args = [
+        "nmcli",
+        "-t",
+        "--escape",
+        "yes",
+        "-f",
+        "SSID,SIGNAL,SECURITY",
+        "device",
+        "wifi",
+        "list",
+    ]
+    device = wifi_device()
+    if device:
+        args += ["ifname", device]
+    args += ["--rescan", "yes"]
+
     _, out, _ = run(
-        [
-            "nmcli",
-            "-t",
-            "--escape",
-            "yes",
-            "-f",
-            "SSID,SIGNAL,SECURITY",
-            "device",
-            "wifi",
-            "list",
-            "ifname",
-            "wlan0",
-            "--rescan",
-            "yes",
-        ],
+        args,
         timeout=12,
     )
 
@@ -394,7 +435,7 @@ def launch_wifi_connect(ssid, password, hidden=False):
 
     def worker():
         # Leave enough time for the HTTP response to reach the browser before
-        # wlan0 leaves the hotspot.
+        # the Wi-Fi interface leaves the hotspot.
         time.sleep(0.8)
         subprocess.run(
             [str(WIFI_CONNECT_HELPER), str(request_file)],
@@ -550,11 +591,20 @@ def launch_github_update():
 
 
 def network_status():
-    _, active, _ = run(
-        ["nmcli", "-g", "GENERAL.CONNECTION", "device", "show", "wlan0"]
-    )
-    _, addr, _ = run(["ip", "-4", "-o", "addr", "show", "dev", "wlan0"])
+    device = wifi_device()
+    active = ""
+    addr = ""
+
+    if device:
+        _, active, _ = run(
+            ["nmcli", "-g", "GENERAL.CONNECTION", "device", "show", device]
+        )
+        _, addr, _ = run(
+            ["ip", "-4", "-o", "addr", "show", "dev", device]
+        )
+
     return {
+        "interface": device or "--",
         "connection": active or "--",
         "address": addr,
         "hotspot": active == "CVP-ACCESS",
@@ -865,6 +915,7 @@ async function refresh(){
 
  let result=d.network.wifi_result||{};
  document.getElementById('network').innerHTML=
+  '<div class="row"><span class="label">Interface Wi-Fi</span><span class="value">'+esc(d.network.interface||'--')+'</span></div>'+
   '<div class="row"><span class="label">Connexion</span><span class="value">'+esc(d.network.connection)+'</span></div>'+
   '<div class="row"><span class="label">Hotspot</span><span class="value">'+(d.network.hotspot?'CVP-ACCESS':'Non')+'</span></div>'+
   '<div class="row"><span class="label">Nom local</span><span class="value">'+esc(d.network.hostname)+'.local</span></div>'+
