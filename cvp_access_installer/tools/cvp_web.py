@@ -108,11 +108,16 @@ def wifi_device():
     profile_dev = profile_dev.strip()
     if profile_dev:
         _, status, _ = run(
-            ["nmcli", "-t", "-f", "DEVICE,TYPE", "device", "status"]
+            ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "device", "status"]
         )
         for line in status.splitlines():
-            fields = line.split(":", 1)
-            if len(fields) == 2 and fields[0] == profile_dev and fields[1] == "wifi":
+            fields = line.split(":")
+            if (
+                len(fields) >= 3
+                and fields[0] == profile_dev
+                and fields[1] == "wifi"
+                and fields[2] != "unavailable"
+            ):
                 return profile_dev
 
     # Fall back to the first usable NetworkManager Wi-Fi device.
