@@ -73,6 +73,13 @@ class RecorderController:
         self.play_generation = 0
         self.playback_port_cache: str | None = None
 
+        # Rapid F14/F16 navigation must not glob/sort the directory for every
+        # keystroke. Refresh periodically so Samba/Web file changes still
+        # become visible without restarting the service.
+        self.recording_files_cache: tuple[Path, ...] = ()
+        self.recording_files_cache_at = 0.0
+        self.recording_files_cache_seconds = 2.0
+
         self.recordings_dir.mkdir(parents=True, exist_ok=True)
         self._ensure_selection()
 
@@ -131,15 +138,41 @@ class RecorderController:
     # Selection / filenames
     # ------------------------------------------------------------------
 
-    def _recording_files(self):
-        return sorted(
-            (
-                path
-                for path in self.recordings_dir.glob("*.mid")
-                if path.is_file()
-            ),
-            key=lambda path: path.name,
+    def _recording_files(self, *, refresh=False):
+        now = time.monotonic()
+
+        with self.lock:
+            if (
+                not refresh
+                and self.recording_files_cache
+                and (
+                    now - self.recording_files_cache_at
+                    < self.recording_files_cache_seconds
+                )
+            ):
+                return list(self.recording_files_cache)
+
+        files = tuple(
+            sorted(
+                (
+                    path
+                    for path in self.recordings_dir.glob("*.mid")
+                    if path.is_file()
+                ),
+                key=lambda path: path.name,
+            )
         )
+
+        with self.lock:
+            self.recording_files_cache = files
+            self.recording_files_cache_at = now
+
+        return list(files)
+
+    def _invalidate_recording_files_cache(self):
+        with self.lock:
+            self.recording_files_cache = ()
+            self.recording_files_cache_at = 0.0
 
     def _read_selected_name(self):
         try:
@@ -634,6 +667,7 @@ class RecorderController:
                 active_notes,
                 tempo_bpm,
             )
+            self._invalidate_recording_files_cache()
             self._write_selected_name(path.name)
         except Exception as exc:
             print("Recorder : erreur sauvegarde :", exc)
