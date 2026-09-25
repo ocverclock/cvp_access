@@ -629,6 +629,9 @@ input:focus,select:focus{border-color:#8bb3ff;box-shadow:0 0 0 3px #dbeafe}
 .auth{background:#fff8eb;border:1px solid #fde2a7}.auth.ok{background:#ecfdf3;border-color:#b7ebc6}
 pre{white-space:pre-wrap;word-break:break-word;background:#0f172a;color:#e5e7eb;padding:14px;border-radius:12px;max-height:320px;overflow:auto;font-size:.82rem}
 details summary{cursor:pointer;font-weight:700}
+.panel-details>summary{font-size:1rem;list-style-position:outside}
+.panel-details>summary::marker{color:var(--muted)}
+.panel-details[open]>summary{margin-bottom:14px}
 .small{font-size:.82rem;color:var(--muted)}
 #toast{position:fixed;right:18px;bottom:18px;max-width:360px;background:#111827;color:#fff;border-radius:12px;padding:11px 14px;box-shadow:0 12px 30px #0003;display:none;z-index:100}
 .recordings-head{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -675,7 +678,12 @@ details summary{cursor:pointer;font-weight:700}
   <div class="grid">
     <section class="panel span-4"><h3>Système</h3><div id="system">Chargement…</div></section>
     <section class="panel span-4"><h3>Réseau</h3><div id="network">Chargement…</div></section>
-    <section class="panel span-4"><h3>MIDI</h3><div id="midi">Chargement…</div></section>
+    <section class="panel span-4">
+      <details class="panel-details">
+        <summary>Interfaces MIDI</summary>
+        <div id="midi">Chargement…</div>
+      </details>
+    </section>
 
     <section class="panel span-6">
       <h3>Accès Web</h3>
@@ -684,40 +692,48 @@ details summary{cursor:pointer;font-weight:700}
     </section>
 
     <section class="panel span-6">
-      <h3>Partages Samba</h3>
-      <p class="sub">Accès au projet et à la configuration depuis un ordinateur.</p>
-      <div id="sambaAccess">Chargement…</div>
+      <details class="panel-details">
+        <summary>Partages Samba</summary>
+        <p class="sub">Accès au projet et à la configuration depuis un ordinateur.</p>
+        <div id="sambaAccess">Chargement…</div>
+      </details>
     </section>
 
     <section class="panel span-12">
-      <h3>Enregistrements MIDI</h3>
-      <p class="sub">Morceau sélectionné pour la lecture avec F15.</p>
-      <div class="recordings-head">
-        <div id="recordingsSummary" class="recordings-summary">Chargement…</div>
-        <input id="recordingsFilter" type="search" placeholder="Filtrer les fichiers MIDI" oninput="renderRecordings()">
-      </div>
-      <div class="recordings-list">
-        <div id="recordings">Chargement…</div>
-      </div>
+      <details class="panel-details">
+        <summary>Enregistrements MIDI</summary>
+        <p class="sub">Morceau sélectionné pour la lecture avec F15.</p>
+        <div class="recordings-head">
+          <div id="recordingsSummary" class="recordings-summary">Chargement…</div>
+          <input id="recordingsFilter" type="search" placeholder="Filtrer les fichiers MIDI" oninput="renderRecordings()">
+        </div>
+        <div class="recordings-list">
+          <div id="recordings">Chargement…</div>
+        </div>
+      </details>
     </section>
 
     <section class="panel span-6">
-      <h3>Périphériques</h3>
-      <p class="sub">Audio Yamaha, clavier USB et périphériques détectés.</p>
-      <div id="devices">Chargement…</div>
+      <details class="panel-details">
+        <summary>Périphériques</summary>
+        <p class="sub">Audio Yamaha, clavier USB et périphériques détectés.</p>
+        <div id="devices">Chargement…</div>
+      </details>
     </section>
 
     <section class="panel span-6">
-      <h3>Connexion Wi-Fi</h3>
-      <p class="sub">Si la connexion échoue, CVP-ACCESS est réactivé automatiquement.</p>
-      <div class="actions" style="margin-bottom:10px"><button class="secondary" onclick="scanWifi()">Rechercher les réseaux</button></div>
-      <select id="wifiList"><option value="">Recherche en attente…</option></select>
-      <div class="two" style="margin-top:9px">
-        <input id="manualSsid" placeholder="SSID manuel / réseau caché">
-        <input id="wifiPassword" type="password" placeholder="Mot de passe du Wi-Fi">
-      </div>
-      <div class="actions" style="margin-top:10px"><button class="primary protected" onclick="connectWifi()">Connecter le Raspberry</button></div>
-      <div id="wifiResult" class="small" style="margin-top:9px"></div>
+      <details class="panel-details">
+        <summary>Connexion Wi-Fi</summary>
+        <p class="sub">Si la connexion échoue, CVP-ACCESS est réactivé automatiquement.</p>
+        <div class="actions" style="margin-bottom:10px"><button class="secondary" onclick="scanWifi()">Rechercher les réseaux</button></div>
+        <select id="wifiList"><option value="">Recherche en attente…</option></select>
+        <div class="two" style="margin-top:9px">
+          <input id="manualSsid" placeholder="SSID manuel / réseau caché">
+          <input id="wifiPassword" type="password" placeholder="Mot de passe du Wi-Fi">
+        </div>
+        <div class="actions" style="margin-top:10px"><button class="primary protected" onclick="connectWifi()">Connecter le Raspberry</button></div>
+        <div id="wifiResult" class="small" style="margin-top:9px"></div>
+      </details>
     </section>
 
     <section id="authSection" class="panel span-12">
