@@ -726,3 +726,6 @@ Ergonomie Recorder 25 septembre 2026 : relecture F15 sans annonce « Lecture ».
 
 
 Ergonomie portail 25 septembre 2026 : liste MIDI Web compactée en tableau scrollable avec filtre, compteur et sélection mise en évidence pour éviter l'allongement de la page quand le nombre de fichiers augmente.
+
+
+Ergonomie portail 25 septembre 2026 : les panneaux Samba, MIDI, Enregistrements MIDI, Périphériques et Connexion Wi-Fi sont rétractables afin de garder la page de maintenance compacte. Ils sont repliés par défaut et restent entièrement accessibles via les éléments HTML `details/summary`.
