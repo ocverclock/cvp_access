@@ -41,12 +41,14 @@ class RecorderController:
         *,
         recordings_dir: Path,
         long_press_seconds: float = 1.2,
+        navigation_hold_seconds: float = 0.8,
     ):
         self.core = core
         self.port = port
         self.recordings_dir = Path(recordings_dir)
         self.selection_file = self.recordings_dir / ".cvp-selection.json"
         self.long_press_seconds = float(long_press_seconds)
+        self.navigation_hold_seconds = float(navigation_hold_seconds)
 
         self.lock = threading.RLock()
         self.state = STATE_IDLE
@@ -59,6 +61,11 @@ class RecorderController:
         self.long_press_fired = False
         self.press_generation = 0
         self.press_timer: threading.Timer | None = None
+
+        self.navigation_pressed = {}
+        self.navigation_long_fired = {}
+        self.navigation_generation = {}
+        self.navigation_timers = {}
 
         self.play_process: subprocess.Popen | None = None
         self.play_generation = 0
@@ -188,6 +195,90 @@ class RecorderController:
             name = self._ensure_selection()
         return self.recordings_dir / name if name else None
 
+    def _navigate_selection(self, delta, cue):
+        files = self._recording_files()
+        if not files:
+            self._speak("Aucun enregistrement disponible.")
+            return False
+
+        selected = self._read_selected_name()
+        names = [path.name for path in files]
+
+        if selected in names:
+            index = names.index(selected)
+        else:
+            index = len(names) - 1
+
+        index = (index + int(delta)) % len(names)
+        name = names[index]
+
+        if not self._write_selected_name(name):
+            return False
+
+        print("Recorder : sélection", name)
+
+        player = getattr(
+            self.core,
+            "play_recorder_navigation_cue",
+            None,
+        )
+        if callable(player):
+            try:
+                player(cue)
+            except Exception as exc:
+                print("Recorder : erreur son navigation :", exc)
+
+        return True
+
+    def _announce_selected_recording(self):
+        path = self.selected_path()
+        if path is None:
+            self._speak("Aucun enregistrement disponible.")
+            return
+
+        match = re.match(
+            r"^(\d{4})-(\d{2})-(\d{2})_(\d{3})\.mid$",
+            path.name,
+            re.IGNORECASE,
+        )
+        if match is None:
+            self._speak(path.stem)
+            return
+
+        _year, month, day, number = (
+            int(value)
+            for value in match.groups()
+        )
+
+        print(
+            "Recorder : morceau sélectionné",
+            path.name,
+        )
+
+        announcer = getattr(
+            self.core,
+            "announce_recorder_selection_now",
+            None,
+        )
+        if callable(announcer):
+            try:
+                announcer(
+                    day,
+                    month,
+                    number,
+                )
+                return
+            except Exception as exc:
+                print(
+                    "Recorder : erreur annonce sélection :",
+                    exc,
+                )
+
+        self._speak(
+            f"{day} {self._month_name(month)}, "
+            f"numéro {number}."
+        )
+
     def _next_recording_path(self):
         prefix = datetime.now().strftime("%Y-%m-%d")
         used = set()
@@ -212,7 +303,37 @@ class RecorderController:
     # ------------------------------------------------------------------
 
     def handle_key_event(self, event, *, help_requested=False):
-        if event.type != ecodes.EV_KEY or event.code != ecodes.KEY_F15:
+        if event.type != ecodes.EV_KEY:
+            return False
+
+        navigation = {
+            ecodes.KEY_F14: (-1, "previous", "Morceau précédent"),
+            ecodes.KEY_F16: (1, "next", "Morceau suivant"),
+        }
+
+        if event.code in navigation:
+            delta, cue, label = navigation[event.code]
+
+            if help_requested:
+                if event.value == 1:
+                    self._speak(
+                        f"{label}. Maintenir pour annoncer "
+                        "le morceau sélectionné."
+                    )
+                return True
+
+            if event.value == 1:
+                self._navigation_key_down(
+                    event.code,
+                    delta,
+                    cue,
+                )
+            elif event.value == 0:
+                self._navigation_key_up(event.code)
+            # Autorepeat is consumed and ignored.
+            return True
+
+        if event.code != ecodes.KEY_F15:
             return False
 
         # CTRL keeps the global CVP Access accessibility convention:
@@ -234,6 +355,62 @@ class RecorderController:
         # Autorepeat is deliberately consumed and ignored.
 
         return True
+
+    def _navigation_key_down(self, code, delta, cue):
+        with self.lock:
+            if self.navigation_pressed.get(code):
+                return
+
+            state = self.state
+            if state in {STATE_ARMED, STATE_RECORDING}:
+                return
+
+            self.navigation_pressed[code] = True
+            self.navigation_long_fired[code] = False
+            generation = self.navigation_generation.get(code, 0) + 1
+            self.navigation_generation[code] = generation
+
+        if state == STATE_PLAYING:
+            self.stop_playback(announce=False)
+
+        if not self._navigate_selection(delta, cue):
+            return
+
+        timer = threading.Timer(
+            self.navigation_hold_seconds,
+            self._fire_navigation_long_press,
+            args=(code, generation),
+        )
+        timer.daemon = True
+
+        with self.lock:
+            if not self.navigation_pressed.get(code):
+                return
+            self.navigation_timers[code] = timer
+
+        timer.start()
+
+    def _navigation_key_up(self, code):
+        with self.lock:
+            self.navigation_pressed[code] = False
+            timer = self.navigation_timers.pop(code, None)
+
+        if timer is not None:
+            timer.cancel()
+
+    def _fire_navigation_long_press(self, code, generation):
+        with self.lock:
+            if (
+                not self.navigation_pressed.get(code)
+                or generation
+                != self.navigation_generation.get(code)
+                or self.navigation_long_fired.get(code)
+            ):
+                return
+
+            self.navigation_long_fired[code] = True
+
+        self._announce_selected_recording()
 
     def _key_down(self):
         with self.lock:
@@ -705,7 +882,16 @@ class RecorderController:
             self.press_timer = None
             self.key_pressed = False
 
+            navigation_timers = list(
+                self.navigation_timers.values()
+            )
+            self.navigation_timers.clear()
+            self.navigation_pressed.clear()
+
         if timer is not None:
+            timer.cancel()
+
+        for timer in navigation_timers:
             timer.cancel()
 
         self.stop_playback(announce=False)
