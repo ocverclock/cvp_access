@@ -21,25 +21,7 @@ import cvp_access_1_5_1_base as base
 VERSION = "1.5.2-RC1"
 
 
-NEW_ACTION_SPECS = {
-    "song_all_tracks_on": ActionSpec(
-        description="Toutes les pistes Song activées"
-    ),
-    "style_all_parts_on": ActionSpec(
-        description="Toutes les parties Style activées"
-    ),
-    "song_track_solo": ActionSpec(
-        True,
-        1,
-        16,
-        "Solo d'une piste Song",
-    ),
-}
-
-cvp_keyboard.ACTION_SPECS.update(NEW_ACTION_SPECS)
-
-
-class CVPActions151(base.CVPActions151):
+# Action metadata is centralised in cvp_action_catalog.py (1.7).\nclass CVPActions151(base.CVPActions151):
     """Ajoute les commandes globales et le Solo sans modifier les toggles."""
 
     def dispatch(self, invocation):
