@@ -275,3 +275,64 @@ La liste des enregistrements a été compactée pour rester exploitable avec bea
 - compteur total et rappel du morceau sélectionné.
 
 Cette présentation évite qu'une longue collection d'enregistrements allonge toute la page de maintenance.
+
+
+## Navigation F14 / F16
+
+Organisation retenue :
+
+```text
+F14 = morceau précédent
+F15 = dictaphone / lecture / stop
+F16 = morceau suivant
+```
+
+La navigation est optimisée pour éviter Piper sur le chemin rapide.
+
+### Appui F14 / F16
+
+L'action est déclenchée dès l'enfoncement de la touche, pas au relâchement :
+
+```text
+F14 -> sélection précédente + glissando descendant
+F16 -> sélection suivante   + glissando montant
+```
+
+Les deux repères font environ 90 ms. Ils sont générés localement par SoX :
+
+```text
+previous.wav : sinus 880 -> 600 Hz
+next.wav     : sinus 600 -> 880 Hz
+durée        : 90 ms
+format       : mono, 22.05 kHz, 16 bit
+gain         : -14 dB
+```
+
+Ils sont créés automatiquement à chaque installation / mise à jour par :
+
+```text
+cvp_access_installer/tools/generate_recorder_cues.sh
+```
+
+Les WAV sont placés dans :
+
+```text
+~/cvp_voice/recorder/previous.wav
+~/cvp_voice/recorder/next.wav
+```
+
+La lecture du bip est directe et peut interrompre une annonce vocale précédente afin que la navigation reste instantanée.
+
+### Maintien F14 / F16
+
+Après environ 0,8 seconde de maintien, CVP Access annonce le morceau sélectionné sous la forme :
+
+```text
+25 septembre, numéro 3
+```
+
+Cette annonce normale n'utilise pas Piper : elle assemble des fragments pré-générés (jour, mois, « numéro », index). Les nombres 0 à 150 et les douze mois sont préparés pendant l'installation. Au-delà de 150 enregistrements dans une même journée, Piper reste uniquement un fallback.
+
+La navigation boucle : précédent depuis le premier fichier revient au dernier, suivant depuis le dernier revient au premier.
+
+Pendant une lecture MIDI, F14/F16 arrêtent silencieusement la lecture avant de changer de sélection. Pendant un armement ou un enregistrement, F14/F16 sont ignorées.
