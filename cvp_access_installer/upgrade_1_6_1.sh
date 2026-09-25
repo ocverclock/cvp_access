@@ -21,6 +21,6 @@ install -m 0644 \
 systemctl unset-environment CVP_RECORDER_PROBE >/dev/null 2>&1 || true
 
 export CVP_FRONTEND_SOURCE="cvp_access_1_6_1.py"
-export CVP_TARGET_VERSION="1.6.1-RC1"
+export CVP_TARGET_VERSION="1.6.1-RC2"
 
 exec bash "$INSTALLER_DIR/upgrade_1_5_1.sh"
