@@ -631,6 +631,16 @@ pre{white-space:pre-wrap;word-break:break-word;background:#0f172a;color:#e5e7eb;
 details summary{cursor:pointer;font-weight:700}
 .small{font-size:.82rem;color:var(--muted)}
 #toast{position:fixed;right:18px;bottom:18px;max-width:360px;background:#111827;color:#fff;border-radius:12px;padding:11px 14px;box-shadow:0 12px 30px #0003;display:none;z-index:100}
+.recordings-head{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.recordings-head input{max-width:360px}
+.recordings-list{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.recordings-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.recordings-table th,.recordings-table td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+.recordings-table th{position:sticky;top:0;background:#f8fafc;z-index:1}
+.recordings-table tr:last-child td{border-bottom:0}
+.recordings-table .selected-row{background:#ecfdf3}
+.recordings-table .actions-cell{text-align:right;white-space:nowrap}
+.recordings-summary{font-size:.82rem;color:var(--muted);margin-bottom:8px}
 @media(max-width:900px){.hero{grid-template-columns:1fr}.span-4,.span-6,.span-8{grid-column:1/-1}}
 @media(max-width:600px){main{padding:12px}.header-inner{padding:16px}.two{grid-template-columns:1fr}.actions>*{flex:1 1 100%}}
 </style>
@@ -682,7 +692,13 @@ details summary{cursor:pointer;font-weight:700}
     <section class="panel span-12">
       <h3>Enregistrements MIDI</h3>
       <p class="sub">Morceau sélectionné pour la lecture avec F15.</p>
-      <div id="recordings">Chargement…</div>
+      <div class="recordings-head">
+        <div id="recordingsSummary" class="recordings-summary">Chargement…</div>
+        <input id="recordingsFilter" type="search" placeholder="Filtrer les fichiers MIDI" oninput="renderRecordings()">
+      </div>
+      <div class="recordings-list">
+        <div id="recordings">Chargement…</div>
+      </div>
     </section>
 
     <section class="panel span-6">
@@ -878,21 +894,8 @@ async function refresh(){
   '<div class="row"><span class="label">Enregistrements</span>'+copyButton(sambaRecordings)+'</div>'+
   '<div class="small" style="margin-top:8px">Utilisateur Samba : '+esc(d.samba_user||'pi')+'</div>';
 
- const rec=d.recordings||{};
- const recFiles=rec.files||[];
- let recHtml='';
- if(!recFiles.length){
-   recHtml='<span class="small">Aucun enregistrement MIDI pour le moment.</span>';
- }else{
-   for(const f of recFiles){
-     const selected=rec.selected===f.name;
-     recHtml+='<div class="device"><div class="device-name '+(selected?'selected':'')+'">'+esc(f.name)+'</div>'+
-       '<div class="small">'+Math.max(1,Math.round((f.size||0)/1024))+' Ko'+(selected?' · sélectionné':'')+'</div>'+
-       '<button class="secondary protected" style="margin-top:8px" onclick=\'selectRecording('+JSON.stringify(f.name)+')\'>'+
-       (selected?'Sélectionné':'Sélectionner')+'</button></div>';
-   }
- }
- document.getElementById('recordings').innerHTML=recHtml;
+ window.__recordings=d.recordings||{files:[],selected:null};
+ renderRecordings();
 
  let m='';
  if(!d.midi.length)m='<span class="pill bad">Aucune interface MIDI</span>';
@@ -967,6 +970,37 @@ async function post(url,body={}){
 function action(name){post('/api/action/'+name)}
 function selectMidi(name){post('/api/midi/select',{name})}
 function selectKeyboard(path){post('/api/keyboard/select',{path})}
+function renderRecordings(){
+ const rec=window.__recordings||{files:[],selected:null};
+ const all=rec.files||[];
+ const q=(document.getElementById('recordingsFilter')?.value||'').trim().toLowerCase();
+ const files=q ? all.filter(f=>String(f.name||'').toLowerCase().includes(q)) : all;
+ const selected=rec.selected||'';
+ const summary=document.getElementById('recordingsSummary');
+ if(summary){
+   summary.textContent=all.length
+     ? all.length+' fichier(s) · sélectionné : '+(selected||'aucun')
+     : 'Aucun enregistrement MIDI';
+ }
+ let html='';
+ if(!files.length){
+   html='<div class="small" style="padding:12px">'+(all.length?'Aucun résultat.':'Aucun enregistrement MIDI pour le moment.')+'</div>';
+ }else{
+   html='<table class="recordings-table"><thead><tr><th>Fichier</th><th>Taille</th><th class="actions-cell">Action</th></tr></thead><tbody>';
+   for(const f of files){
+     const isSelected=selected===f.name;
+     html+='<tr class="'+(isSelected?'selected-row':'')+'">'+
+       '<td><strong>'+esc(f.name)+'</strong>'+(isSelected?' <span class="pill ok">Sélectionné</span>':'')+'</td>'+
+       '<td>'+Math.max(1,Math.round((f.size||0)/1024))+' Ko</td>'+
+       '<td class="actions-cell"><button class="secondary protected" '+(isSelected?'disabled ':'')+
+       'onclick=\'selectRecording('+JSON.stringify(f.name)+')\'>'+
+       (isSelected?'Sélectionné':'Sélectionner')+'</button></td></tr>';
+   }
+   html+='</tbody></table>';
+ }
+ document.getElementById('recordings').innerHTML=html;
+ setProtected(!authRequired||unlocked);
+}
 function selectRecording(name){post('/api/recordings/select',{name})}
 async function updateGithub(){
  if(!confirm('Récupérer la dernière version depuis GitHub et l’installer ?'))return;
