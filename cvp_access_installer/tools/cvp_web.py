@@ -752,10 +752,10 @@ details summary{cursor:pointer;font-weight:700}
         <summary>Journal de mise à jour</summary>
         <pre id="updateLog"></pre>
       </details>
-      <div id="doctorBox" style="display:none;margin-top:12px">
-        <b>Résultat du Doctor</b>
+      <details id="doctorBox" style="display:none;margin-top:12px">
+        <summary>Résultat du Doctor</summary>
         <pre id="doctorOutput"></pre>
-      </div>
+      </details>
     </section>
 
     <section class="panel span-12">
