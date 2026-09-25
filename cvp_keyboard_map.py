@@ -90,6 +90,40 @@ NAV_KEYS = [
 ]
 
 
+# 1.7: these assignments deliberately override the historical presentation
+# constants above. Keeping the old declarations temporarily avoids a risky
+# wholesale rewrite of the printable HTML renderer, while all live metadata
+# now comes from the same catalog/layout used by the runtime and Web editor.
+from cvp_action_catalog import ACTION_CATALOG, action_text
+from cvp_keyboard_layout import (
+    KEY_LABELS as SHARED_KEY_LABELS,
+    MOD_LABELS as SHARED_MOD_LABELS,
+    MODIFIER_ORDER as SHARED_MODIFIER_ORDER,
+    NAV_KEYS as SHARED_NAV_KEYS,
+    ROWS as SHARED_ROWS,
+)
+
+KEY_LABELS = SHARED_KEY_LABELS
+MOD_LABELS = SHARED_MOD_LABELS
+MOD_ORDER = SHARED_MODIFIER_ORDER
+NAV_KEYS = SHARED_NAV_KEYS
+ROWS = SHARED_ROWS
+
+PUBLIC_ACTION_CATALOG = [
+    (
+        name,
+        meta.label,
+        (
+            name
+            if not meta.ui_values
+            else name + ":" + "/".join(str(value) for value in meta.ui_values)
+        ),
+    )
+    for name, meta in ACTION_CATALOG.items()
+    if meta.public and not meta.deprecated
+]
+
+
 def normalize_combo(combo: str):
     parts = [p.strip().upper() for p in combo.split("+") if p.strip()]
     key = parts[-1]
@@ -110,49 +144,23 @@ def parse_action(raw: str):
 
 def human_action(raw: str):
     name, param = parse_action(raw)
-    if name == "song_track_toggle":
-        return f"Piste Song {param}"
-    if name == "style_part_toggle":
-        return STYLE_PARTS.get(param, f"Partie Style {param}")
-    if name == "song_volume_change" and param is not None:
-        return f"Vol. Song {'+' if param > 0 else '−'}{abs(param)}"
-    if name == "main_volume_change" and param is not None:
-        return f"Vol. Main {'+' if param > 0 else '−'}{abs(param)}"
-    if name == "style_volume_change" and param is not None:
-        return f"Vol. Style {'+' if param > 0 else '−'}{abs(param)}"
-    if name == "style_intro":
-        return f"Intro {param}"
-    if name == "style_main":
-        return f"Main {'ABCD'[(param or 1)-1]}"
-    if name == "style_fill":
-        return f"Fill {'ABCD'[(param or 1)-1]}"
-    if name == "style_ending":
-        return f"Ending {param}"
-    if name == "style_break":
-        return "Break"
-    if name == "registration_recall":
-        return f"Registration {param}"
-    return ACTION_LABELS.get(name, name.replace("_", " "))
+    return action_text(name, param)
 
 
 def group_for(raw: str):
     name, _ = parse_action(raw)
-    if name.startswith("song_") or name in {
-        "announce_tempo", "announce_transpose",
-        "announce_song_name", "announce_song_length"
-    }:
-        return "song"
-    if name.startswith("style_") or name in {
-        "announce_style_name", "sync_start_toggle",
-        "guide_toggle", "metronome_toggle",
-        "layer_toggle", "left_toggle"
-    }:
-        return "style"
-    if name.startswith("voice_") or name.startswith("main_volume"):
-        return "voice"
-    if name == "restart":
-        return "system"
-    return "other"
+    meta = ACTION_CATALOG.get(name)
+    if meta is None:
+        return "other"
+    return {
+        "song": "song",
+        "style": "style",
+        "keyboard": "voice",
+        "accessibility": "voice",
+        "registration": "style",
+        "system": "system",
+        "information": "song",
+    }.get(meta.category, "other")
 
 
 def load_config(path: Path):
