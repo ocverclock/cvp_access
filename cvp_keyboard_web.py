@@ -20,37 +20,22 @@ from cvp_keyboard_profiles import (
 )
 
 
-def _variants():
+def _editor_actions():
     result = []
     for item in public_catalog():
         if item["deprecated"]:
             continue
-        name = item["id"]
-        values = item["values"]
+        variants = []
         if item["parameter_required"]:
-            for value in values:
-                raw = f"{name}:{value}"
-                result.append(
+            for value in item["values"]:
+                variants.append(
                     {
-                        "value": raw,
-                        "label": action_text(name, value),
-                        "description": item["description"],
-                        "category": item["category"],
-                        "category_label": item["category_label"],
-                        "synonyms": item["synonyms"],
+                        "parameter": value,
+                        "value": f"{item['id']}:{value}",
+                        "label": action_text(item["id"], value),
                     }
                 )
-        else:
-            result.append(
-                {
-                    "value": name,
-                    "label": item["label"],
-                    "description": item["description"],
-                    "category": item["category"],
-                    "category_label": item["category_label"],
-                    "synonyms": item["synonyms"],
-                }
-            )
+        result.append({**item, "variants": variants})
     return result
 
 
@@ -60,7 +45,7 @@ def catalog_payload():
         "rows": editor_keys(),
         "reserved": RESERVED_KEYS,
         "categories": CATEGORY_LABELS,
-        "actions": _variants(),
+        "actions": _editor_actions(),
     }
 
 
@@ -196,7 +181,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}bu
    <label for="searchAction">Rechercher une fonction</label>
    <input id="searchAction" type="search" placeholder="Ex. solo 8, Main C, volume Song" oninput="renderActions()">
    <div class="categories" id="categories"></div>
-   <div class="actions" id="actions" aria-live="polite"></div>
+   <div class="actions" id="actions" aria-live="polite"></div>\n   <div id="parameters" style="margin-top:10px" aria-live="polite"></div>
   </aside>
  </div>
 
@@ -257,8 +242,11 @@ function rawFor(combo){
 }
 function labelForRaw(raw){
  if(raw===null||raw===undefined)return "Non affectée";
- const a=catalog.actions.find(x=>x.value===raw);
- return a?a.label:raw;
+ const base=String(raw).split(":",1)[0];
+ const a=catalog.actions.find(x=>x.id===base);
+ if(!a)return raw;
+ const variant=(a.variants||[]).find(x=>x.value===raw);
+ return variant?variant.label:a.label;
 }
 function currentCombo(){return selectedKey?comboFor(selectedKey):null}
 
@@ -332,19 +320,37 @@ function renderCategories(){
  }
 }
 function renderActions(){
- const root=$("actions"),q=$("searchAction").value.trim().toLowerCase();root.innerHTML="";
+ const root=$("actions"),params=$("parameters"),q=$("searchAction").value.trim().toLowerCase();
+ root.innerHTML="";params.innerHTML="";
  const filtered=catalog.actions.filter(a=>{
   if(category!=="all"&&a.category!==category)return false;
-  const hay=[a.label,a.description,a.category_label,...(a.synonyms||[])].join(" ").toLowerCase();
+  const variantText=(a.variants||[]).map(v=>v.label).join(" ");
+  const hay=[a.label,a.description,a.category_label,...(a.synonyms||[]),variantText].join(" ").toLowerCase();
   return !q||hay.includes(q);
  });
  if(!filtered.length){root.innerHTML='<div class="muted" style="padding:10px">Aucune fonction trouvée.</div>';return}
  for(const a of filtered){
   const b=document.createElement("button");b.type="button";b.className="action";
   b.innerHTML="<strong>"+esc(a.label)+"</strong><span>"+esc(a.description)+"</span>";
-  b.onclick=()=>assign(a.value);root.appendChild(b);
+  b.onclick=()=>chooseAction(a);root.appendChild(b);
  }
 }
+function chooseAction(a){
+ const combo=currentCombo();
+ if(!combo){status("Sélectionne d’abord une touche.",true);return}
+ const params=$("parameters");params.innerHTML="";
+ if(!a.parameter_required){assign(a.id);return}
+ const title=document.createElement("strong");
+ title.textContent="Choisir : "+a.label;
+ params.appendChild(title);
+ const box=document.createElement("div");box.className="categories";
+ for(const v of (a.variants||[])){
+  const b=document.createElement("button");b.type="button";b.textContent=v.label;
+  b.onclick=()=>{assign(v.value);params.innerHTML=""};box.appendChild(b);
+ }
+ params.appendChild(box);
+}
+
 function assign(raw){
  const combo=currentCombo();if(!combo){status("Sélectionne d’abord une touche.",true);return}
  pending[combo]=raw;renderAll();
