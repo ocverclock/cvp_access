@@ -209,7 +209,7 @@ def render_key(key, bindings, grow=1.0, printed_label=None):
             f'<div class="key recorder" style="flex-grow:{grow}">'
             f'<div class="keyname">{html.escape(label)}</div>'
             '<div class="specialtext"><strong>Dictaphone MIDI</strong><br>'
-            'Court : lecture / stop / annuler / sauver<br>'
+            'Court : lecture / annuler / Stop + sauver<br>'
             'Maintenir : nouvel enregistrement</div></div>'
         )
     for mods, action in items:
