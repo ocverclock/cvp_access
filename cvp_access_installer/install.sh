@@ -91,6 +91,7 @@ apt-get full-upgrade -y
 # -----------------------------------------------------------------------------
 # Packages
 # -----------------------------------------------------------------------------
+[[ -f "$INSTALLER_DIR/tools/generate_recorder_cues.sh" ]] || die "Missing Recorder cue generator."
 PACKAGE_FILE="$INSTALLER_DIR/apt-packages.txt"
 [[ -f "$PACKAGE_FILE" ]] || die "Missing dependency list: $PACKAGE_FILE"
 mapfile -t APT_PACKAGES < <(grep -Ev '^[[:space:]]*(#|$)' "$PACKAGE_FILE")
