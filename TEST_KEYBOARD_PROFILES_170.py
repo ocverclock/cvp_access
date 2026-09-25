@@ -197,7 +197,6 @@ length_scale = 0.85
 
     imported = profiles.save_active_external_as_profile("Import manuel")
     assert imported["active"] is False
-    assert imported["bindings"]["A"].text if False else True
     assert imported["bindings"]["A"] == "song_track_toggle:1"
 
     # Re-activating the stored profile discards the external file by explicit
