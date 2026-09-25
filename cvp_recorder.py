@@ -273,7 +273,7 @@ class RecorderController:
             return
 
         match = re.match(
-            r"^(\d{4})-(\d{2})-(\d{2})_(\d{3})\.mid$",
+            r"^(\d{4})-(\d{2})-(\d{2})_(\d{3,})\.mid$",
             path.name,
             re.IGNORECASE,
         )
@@ -319,7 +319,7 @@ class RecorderController:
         prefix = datetime.now().strftime("%Y-%m-%d")
         used = set()
         pattern = re.compile(
-            rf"^{re.escape(prefix)}_(\d{{3}})\.mid$",
+            rf"^{re.escape(prefix)}_(\d{{3,}})\.mid$",
             re.IGNORECASE,
         )
 
