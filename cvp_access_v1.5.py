@@ -1116,7 +1116,7 @@ def install_midi_recorder(core, port):
     )
     register(recorder.on_midi_message)
 
-    print("Recorder : F15 actif")
+    print("Recorder : F14/F15/F16 actifs")
     print("Recorder : dossier", recordings_dir)
     return recorder
 
