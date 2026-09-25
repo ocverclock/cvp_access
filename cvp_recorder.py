@@ -640,8 +640,8 @@ class RecorderController:
             self.play_process = proc
             self.state = STATE_PLAYING
 
-        self._speak("Lecture.")
-
+        # La relecture démarre immédiatement : pas d'annonce vocale au départ,
+        # afin de ne pas retarder ni masquer les premières notes.
         thread = threading.Thread(
             target=self._wait_playback,
             args=(proc, generation),
