@@ -294,18 +294,38 @@ def main():
             text,
         )
 
-    # Les annonces Song prévisibles sont composées de fragments WAV.
-    # Les mesures sont limitées à 150 dans CVP Access.
-    if needs_song_numbers:
-        for number in range(
-            0,
-            MAX_PREGENERATED_NUMBER + 1,
-        ):
-            add_raw(
-                f"numbers/number_{number:03d}.wav",
-                str(number),
-            )
+    # Les nombres 0..150 sont aussi nécessaires au Recorder pour annoncer
+    # instantanément le jour et le numéro quotidien sans repasser par Piper.
+    for number in range(
+        0,
+        MAX_PREGENERATED_NUMBER + 1,
+    ):
+        add_raw(
+            f"numbers/number_{number:03d}.wav",
+            str(number),
+        )
 
+    recorder_fragments = {
+        "recorder/numero.wav": "numéro",
+        "recorder/month_01.wav": "janvier",
+        "recorder/month_02.wav": "février",
+        "recorder/month_03.wav": "mars",
+        "recorder/month_04.wav": "avril",
+        "recorder/month_05.wav": "mai",
+        "recorder/month_06.wav": "juin",
+        "recorder/month_07.wav": "juillet",
+        "recorder/month_08.wav": "août",
+        "recorder/month_09.wav": "septembre",
+        "recorder/month_10.wav": "octobre",
+        "recorder/month_11.wav": "novembre",
+        "recorder/month_12.wav": "décembre",
+    }
+    for path, text in recorder_fragments.items():
+        add_raw(path, text)
+
+    # Les annonces Song prévisibles utilisent les mêmes nombres, complétés
+    # par leur vocabulaire spécifique.
+    if needs_song_numbers:
         fragments = {
             "words/mesure.wav": "mesure",
             "words/temps.wav": "temps",
