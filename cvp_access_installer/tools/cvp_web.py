@@ -34,7 +34,8 @@ RUNTIME = Path(os.environ.get("CVP_RUNTIME_DIR", "/opt/cvp-access"))
 CONFIG_DIR = Path(os.environ.get("CVP_CONFIG_DIR", "/etc/cvp-access"))
 HARDWARE_CONFIG = CONFIG_DIR / "hardware.toml"
 KEYBOARD_MAP = CONFIG_DIR / "keyboard-map.html"
-ADMIN_SECRET_FILE = CONFIG_DIR / "hotspot-password"
+ADMIN_SECRET_FILE = CONFIG_DIR / "maintenance-password"
+LEGACY_ADMIN_SECRET_FILE = CONFIG_DIR / "hotspot-password"
 WIFI_RESULT_FILE = Path("/run/cvp-wifi-connect-result.json")
 WIFI_CONNECT_HELPER = Path("/usr/local/sbin/cvp-wifi-connect")
 UPDATE_HELPER = Path("/usr/local/sbin/cvp-update-from-github")
@@ -324,10 +325,14 @@ def client_allowed(address):
 
 
 def admin_secret():
-    try:
-        return ADMIN_SECRET_FILE.read_text(encoding="utf-8").strip()
-    except OSError:
-        return ""
+    for path in (ADMIN_SECRET_FILE, LEGACY_ADMIN_SECRET_FILE):
+        try:
+            value = path.read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if value:
+            return value
+    return ""
 
 
 def request_authorized(payload):
