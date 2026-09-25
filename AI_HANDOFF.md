@@ -418,4 +418,6 @@ Audit préalable effectué sur 1.6.1-RC2. Points à traiter avant toute écritur
 - définir un unique mapping usine canonique ;
 - adapter le Doctor aux mappings personnalisés ;
 - protéger obligatoirement les endpoints d'écriture Web ;
+- les profils nommés font partie du périmètre 1.7 : créer, enregistrer sous, renommer, dupliquer, ouvrir et activer explicitement ;
+- conserver `keyboard.toml` comme fichier réellement chargé par le runtime, les profils étant une couche de gestion autour ;
 - conserver le moteur Yamaha/SysEx validé sans refonte simultanée.
