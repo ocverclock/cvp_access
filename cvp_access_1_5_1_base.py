@@ -19,9 +19,6 @@ import signal
 import time
 from pathlib import Path
 
-import cvp_keyboard
-from cvp_keyboard import ActionSpec
-
 from cvp_midi import MidiService
 from cvp_registration import RegistrationController
 from cvp_song_151 import SongController
@@ -65,53 +62,7 @@ def load_legacy():
 legacy = load_legacy()
 
 
-# ---------------------------------------------------------------------
-# Catalogue d'actions 1.5.1
-# ---------------------------------------------------------------------
-
-NEW_ACTION_SPECS = {
-    "announce_style_name": ActionSpec(
-        description="Annonce le Style actuellement sélectionné"
-    ),
-    "announce_song_name": ActionSpec(
-        description="Annonce le Song actuellement chargé"
-    ),
-    "announce_song_length": ActionSpec(
-        description="Annonce la longueur du Song"
-    ),
-    "announce_main_voice_name": ActionSpec(
-        description="Annonce le nom du son Main"
-    ),
-    "announce_layer_voice_name": ActionSpec(
-        description="Annonce le nom du son Layer"
-    ),
-    "announce_left_voice_name": ActionSpec(
-        description="Annonce le nom du son Left"
-    ),
-    "style_volume_change": ActionSpec(
-        True, -5, 5, "Modifie le volume Style"
-    ),
-    "sync_start_toggle": ActionSpec(
-        description="Active ou désactive Syncro Start"
-    ),
-    "metronome_toggle": ActionSpec(
-        description="Active ou désactive le métronome"
-    ),
-    "guide_toggle": ActionSpec(
-        description="Active ou désactive Guide"
-    ),
-    "stream_lights_toggle": ActionSpec(
-        description="Active ou désactive Stream Lights"
-    ),
-    "voice_guide_mute_toggle": ActionSpec(
-        description="Coupe ou réactive le guide vocal"
-    ),
-}
-
-cvp_keyboard.ACTION_SPECS.update(
-    NEW_ACTION_SPECS
-)
-
+# Action metadata is centralised in cvp_action_catalog.py (1.7).
 
 def default_config_path() -> Path:
     return Path(__file__).resolve().with_name(

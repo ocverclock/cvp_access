@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contrôle de cohérence CVP Access 1.6.1 et couches compatibles."""
+"""Contrôle de cohérence CVP Access 1.7 et couches compatibles."""
 
 from __future__ import annotations
 
@@ -78,6 +78,10 @@ def main():
         "cvp_access_v1.5.py",
         "cvp_access_v1.4.1.py",
         "cvp_keyboard.py",
+        "cvp_action_catalog.py",
+        "cvp_keyboard_layout.py",
+        "cvp_keyboard_profiles.py",
+        "cvp_keyboard_web.py",
         "cvp_recorder.py",
         "cvp_song.py",
         "cvp_song_151.py",
@@ -90,6 +94,7 @@ def main():
         "cvp_style.py",
         "cvp_voice.py",
         "default-keyboard-1.5.1.toml",
+        "default-keyboard-current.toml",
     ]
 
     results = []
@@ -141,7 +146,7 @@ def main():
             (
                 OK
                 if str(version).startswith(
-                    ("1.5.1", "1.5.2", "1.6.0", "1.6.1")
+                    ("1.5.1", "1.5.2", "1.6.0", "1.6.1", "1.7")
                 )
                 else FAIL
             ),
@@ -155,66 +160,49 @@ def main():
         )
 
     try:
-        with config.open(
-            "rb"
-        ) as handle:
-            data = tomllib.load(
-                handle
+        from cvp_keyboard import read_config_file
+
+        keyboard_config = read_config_file(config)
+        keys = {}
+        with config.open("rb") as handle:
+            raw_config = tomllib.load(handle)
+        raw_keys = raw_config.get("keys", {})
+        if isinstance(raw_keys, dict):
+            keys = raw_keys
+
+        if keyboard_config.issues:
+            add(
+                "Configuration clavier",
+                FAIL,
+                " ; ".join(keyboard_config.issues),
             )
-        keys = data.get(
-            "keys",
-            {},
-        )
+        else:
+            add(
+                "Configuration clavier",
+                OK,
+                f"{len(keyboard_config.bindings)} affectation(s) valide(s)",
+            )
+
+        factory = runtime / "default-keyboard-current.toml"
+        if factory.is_file():
+            import hashlib
+            active_hash = hashlib.sha256(config.read_bytes()).hexdigest()
+            factory_hash = hashlib.sha256(factory.read_bytes()).hexdigest()
+            profile_detail = (
+                "profil usine"
+                if active_hash == factory_hash
+                else "profil personnalisé"
+            )
+        else:
+            profile_detail = "profil personnalisé (référence usine absente)"
+        add("Profil clavier", OK, profile_detail)
     except Exception as exc:
         add(
-            "Configuration",
+            "Configuration clavier",
             FAIL,
             repr(exc),
         )
         keys = {}
-
-    expected_caps = {
-        "W": "announce_style_name",
-        "X": "announce_song_name",
-        "C": "announce_song_length",
-        "V": "sync_start_toggle",
-        "B": "guide_toggle",
-        "M": "voice_guide_mute_toggle",
-        "L": "song_all_tracks_on",
-        "RPAREN": "style_all_parts_on",
-        "F7": "metronome_toggle",
-        "PAGEUP": "style_volume_change:1",
-        "SHIFT+PAGEUP": "style_volume_change:5",
-        "PAGEDOWN": "style_volume_change:-1",
-        "SHIFT+PAGEDOWN": "style_volume_change:-5",
-    }
-
-    song_keys = (
-        "A", "Z", "E", "R", "T", "Y", "U", "I",
-        "Q", "S", "D", "F", "G", "H", "J", "K",
-    )
-    for track, key in enumerate(song_keys, start=1):
-        expected_caps[f"SHIFT+{key}"] = f"song_track_solo:{track}"
-
-    missing_caps = [
-        key
-        for key, value
-        in expected_caps.items()
-        if keys.get(key) != value
-    ]
-
-    add(
-        "Layout accessibilité",
-        OK if not missing_caps else WARN,
-        (
-            "présente"
-            if not missing_caps
-            else "manquants/conflits: "
-            + ", ".join(
-                missing_caps
-            )
-        ),
-    )
 
     reserved_recorder = {"F14", "F15", "F16"}
     recorder_conflicts = []

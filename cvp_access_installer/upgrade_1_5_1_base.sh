@@ -28,10 +28,12 @@ echo "[CVP Access] Upgrade runtime -> $TARGET_VERSION"
 
 required=(
     "$FRONTEND_SOURCE" cvp_access_v1.5.py cvp_access_v1.4.1.py
-    cvp_keyboard.py cvp_keyboard_map.py cvp_recorder.py cvp_song.py cvp_song_151.py
+    cvp_keyboard.py cvp_action_catalog.py cvp_keyboard_layout.py
+    cvp_keyboard_profiles.py cvp_keyboard_web.py cvp_keyboard_map.py
+    cvp_recorder.py cvp_song.py cvp_song_151.py
     cvp_speech.py cvp_speech_151.py cvp_piper_worker.py cvp_midi.py
     cvp_yamaha.py cvp_registration.py cvp_style.py cvp_voice.py cvp_voice_names.py
-    config/default-1.5.1.toml
+    config/default-1.5.1.toml config/default-current.toml
     cvp_access_installer/tools/generate_configured_voices.py
     cvp_access_installer/tools/generate_151_voices.py
     cvp_access_installer/tools/generate_recorder_cues.sh
@@ -53,19 +55,20 @@ systemctl stop cvp-access.service 2>/dev/null || true
 install -d -m 0755 "$RUNTIME_DIR"
 install -d -o "$CVP_USER" -g "$CVP_USER" -m 0775 "$RECORDINGS_DIR"
 install -m 0755 "$REPO_DIR/$FRONTEND_SOURCE" "$RUNTIME_DIR/cvp_access.py"
-for item in cvp_access_v1.5.py cvp_access_v1.4.1.py cvp_keyboard.py cvp_recorder.py cvp_song.py cvp_song_151.py cvp_speech.py cvp_speech_151.py cvp_piper_worker.py cvp_midi.py cvp_yamaha.py cvp_registration.py cvp_style.py cvp_voice.py cvp_voice_names.py; do
+for item in cvp_access_v1.5.py cvp_access_v1.4.1.py cvp_keyboard.py cvp_action_catalog.py cvp_keyboard_layout.py cvp_keyboard_profiles.py cvp_keyboard_web.py cvp_recorder.py cvp_song.py cvp_song_151.py cvp_speech.py cvp_speech_151.py cvp_piper_worker.py cvp_midi.py cvp_yamaha.py cvp_registration.py cvp_style.py cvp_voice.py cvp_voice_names.py; do
     install -m 0644 "$REPO_DIR/$item" "$RUNTIME_DIR/$item"
 done
 install -m 0755 "$REPO_DIR/cvp_keyboard_map.py" "$RUNTIME_DIR/cvp_keyboard_map.py"
 install -m 0644 "$REPO_DIR/config/default-1.5.1.toml" "$RUNTIME_DIR/default-keyboard-1.5.1.toml"
+install -m 0644 "$REPO_DIR/config/default-current.toml" "$RUNTIME_DIR/default-keyboard-current.toml"
 install -m 0755 "$REPO_DIR/cvp_access_installer/tools/generate_configured_voices.py" "$RUNTIME_DIR/generate_configured_voices.py"
 install -m 0755 "$REPO_DIR/cvp_access_installer/tools/generate_151_voices.py" "$RUNTIME_DIR/generate_151_voices.py"
 install -m 0755 "$REPO_DIR/cvp_access_installer/tools/cvp_doctor.py" "$RUNTIME_DIR/cvp_doctor.py"
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
     install -d -o "$CVP_USER" -g "$CVP_USER" -m 0770 "$CONFIG_DIR"
-    install -o "$CVP_USER" -g "$CVP_USER" -m 0660 "$REPO_DIR/config/default-1.5.1.toml" "$CONFIG_FILE"
-else
+    install -o "$CVP_USER" -g "$CVP_USER" -m 0660 "$REPO_DIR/config/default-current.toml" "$CONFIG_FILE"
+elif [[ "${CVP_SKIP_KEYBOARD_MIGRATION:-0}" != "1" ]]; then
     python3 - "$CONFIG_FILE" <<'PY'
 from pathlib import Path
 import re, sys, tomllib
@@ -157,7 +160,7 @@ PY
     chown "$CVP_USER:$CVP_USER" "$CONFIG_FILE"
 fi
 
-python3 -m py_compile "$RUNTIME_DIR/cvp_access.py" "$RUNTIME_DIR/cvp_access_v1.5.py" "$RUNTIME_DIR/cvp_access_v1.4.1.py" "$RUNTIME_DIR/cvp_keyboard.py" "$RUNTIME_DIR/cvp_keyboard_map.py" "$RUNTIME_DIR/cvp_recorder.py" "$RUNTIME_DIR/cvp_song.py" "$RUNTIME_DIR/cvp_song_151.py" "$RUNTIME_DIR/cvp_speech.py" "$RUNTIME_DIR/cvp_speech_151.py" "$RUNTIME_DIR/cvp_midi.py" "$RUNTIME_DIR/cvp_yamaha.py" "$RUNTIME_DIR/cvp_registration.py" "$RUNTIME_DIR/cvp_style.py" "$RUNTIME_DIR/cvp_voice.py" "$RUNTIME_DIR/cvp_voice_names.py"
+python3 -m py_compile "$RUNTIME_DIR/cvp_access.py" "$RUNTIME_DIR/cvp_access_v1.5.py" "$RUNTIME_DIR/cvp_access_v1.4.1.py" "$RUNTIME_DIR/cvp_keyboard.py" "$RUNTIME_DIR/cvp_action_catalog.py" "$RUNTIME_DIR/cvp_keyboard_layout.py" "$RUNTIME_DIR/cvp_keyboard_profiles.py" "$RUNTIME_DIR/cvp_keyboard_web.py" "$RUNTIME_DIR/cvp_keyboard_map.py" "$RUNTIME_DIR/cvp_recorder.py" "$RUNTIME_DIR/cvp_song.py" "$RUNTIME_DIR/cvp_song_151.py" "$RUNTIME_DIR/cvp_speech.py" "$RUNTIME_DIR/cvp_speech_151.py" "$RUNTIME_DIR/cvp_midi.py" "$RUNTIME_DIR/cvp_yamaha.py" "$RUNTIME_DIR/cvp_registration.py" "$RUNTIME_DIR/cvp_style.py" "$RUNTIME_DIR/cvp_voice.py" "$RUNTIME_DIR/cvp_voice_names.py"
 
 install -d -o "$CVP_USER" -g "$CVP_USER" -m 0770 "$CONFIG_DIR"
 runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" python3 "$RUNTIME_DIR/cvp_keyboard_map.py" --config "$CONFIG_FILE" --output "$CONFIG_DIR/keyboard-map.html" || echo "WARNING: keyboard map generation failed; upgrade continues." >&2

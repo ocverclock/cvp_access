@@ -22,7 +22,10 @@ import time
 import tomllib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
+
+from cvp_keyboard_profiles import ProfileError
+from cvp_keyboard_web import KEYBOARD_EDITOR, catalog_payload, config_payload, handle_write as keyboard_handle_write, profiles_payload
 
 
 HOTSPOT_NET = ipaddress.ip_network("10.42.0.0/24")
@@ -31,7 +34,8 @@ RUNTIME = Path(os.environ.get("CVP_RUNTIME_DIR", "/opt/cvp-access"))
 CONFIG_DIR = Path(os.environ.get("CVP_CONFIG_DIR", "/etc/cvp-access"))
 HARDWARE_CONFIG = CONFIG_DIR / "hardware.toml"
 KEYBOARD_MAP = CONFIG_DIR / "keyboard-map.html"
-ADMIN_SECRET_FILE = CONFIG_DIR / "hotspot-password"
+ADMIN_SECRET_FILE = CONFIG_DIR / "maintenance-password"
+LEGACY_ADMIN_SECRET_FILE = CONFIG_DIR / "hotspot-password"
 WIFI_RESULT_FILE = Path("/run/cvp-wifi-connect-result.json")
 WIFI_CONNECT_HELPER = Path("/usr/local/sbin/cvp-wifi-connect")
 UPDATE_HELPER = Path("/usr/local/sbin/cvp-update-from-github")
@@ -321,10 +325,14 @@ def client_allowed(address):
 
 
 def admin_secret():
-    try:
-        return ADMIN_SECRET_FILE.read_text(encoding="utf-8").strip()
-    except OSError:
-        return ""
+    for path in (ADMIN_SECRET_FILE, LEGACY_ADMIN_SECRET_FILE):
+        try:
+            value = path.read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if value:
+            return value
+    return ""
 
 
 def request_authorized(payload):
@@ -834,6 +842,7 @@ details summary{cursor:pointer;font-weight:700}
         <button class="protected" onclick="action('restart')">Relancer CVP Access</button>
         <button class="secondary protected" onclick="action('doctor')">Lancer le Doctor</button>
         <button id="updateButton" class="primary protected" onclick="updateGithub()">Mettre à jour depuis GitHub</button>
+        <a class="btn primary" href="/keyboard">Configuration clavier</a>
         <a class="btn secondary" href="/keyboard-map">Carte clavier</a>
         <button class="danger protected" onclick="rebootPi()">Redémarrer le Raspberry</button>
       </div>
@@ -1159,7 +1168,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_bytes(403, b"CVP Access portal: local network access only\n")
             return
 
-        path = urlparse(self.path).path
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
 
         if path in CAPTIVE_PATHS:
             self.redirect_portal()
@@ -1185,6 +1195,34 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/status":
             self.send_json(build_status())
+            return
+
+        if path == "/api/keyboard/catalog":
+            self.send_json(catalog_payload())
+            return
+
+        if path == "/api/keyboard/profiles":
+            try:
+                self.send_json(profiles_payload())
+            except ProfileError as exc:
+                self.send_json({"error": str(exc)}, 500)
+            return
+
+        if path == "/api/keyboard/config":
+            query = parse_qs(parsed_url.query)
+            profile_id = query.get("id", [None])[0]
+            try:
+                self.send_json(config_payload(profile_id))
+            except ProfileError as exc:
+                self.send_json({"error": str(exc)}, 404)
+            return
+
+        if path == "/keyboard":
+            self.send_bytes(
+                200,
+                KEYBOARD_EDITOR.encode("utf-8"),
+                "text/html; charset=utf-8",
+            )
             return
 
         if path == "/keyboard-map":
@@ -1213,7 +1251,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"error": "local network access only"}, 403)
             return
 
-        length = min(int(self.headers.get("Content-Length", "0") or 0), 8192)
+        length = min(int(self.headers.get("Content-Length", "0") or 0), 65536)
         raw = self.rfile.read(length)
         try:
             payload = json.loads(raw or b"{}")
@@ -1231,6 +1269,20 @@ class Handler(BaseHTTPRequestHandler):
                     {"ok": False, "error": "Mot de passe maintenance incorrect"},
                     401,
                 )
+            return
+
+        keyboard_editor_writes = {
+            "/api/keyboard/apply",
+            "/api/keyboard/profiles/create",
+            "/api/keyboard/profiles/duplicate",
+            "/api/keyboard/profiles/rename",
+            "/api/keyboard/profiles/delete",
+            "/api/keyboard/profiles/activate",
+            "/api/keyboard/profiles/import-active",
+        }
+        if path in keyboard_editor_writes:
+            body, status = keyboard_handle_write(path, payload)
+            self.send_json(body, status)
             return
 
         if not request_authorized(payload):

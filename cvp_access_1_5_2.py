@@ -13,31 +13,13 @@ La couche runtime conserve également les ajouts 1.5.1 :
 
 from __future__ import annotations
 
-import cvp_keyboard
-from cvp_keyboard import ActionSpec
 import cvp_access_1_5_1_base as base
 
 
 VERSION = "1.5.2-RC1"
 
 
-NEW_ACTION_SPECS = {
-    "song_all_tracks_on": ActionSpec(
-        description="Toutes les pistes Song activées"
-    ),
-    "style_all_parts_on": ActionSpec(
-        description="Toutes les parties Style activées"
-    ),
-    "song_track_solo": ActionSpec(
-        True,
-        1,
-        16,
-        "Solo d'une piste Song",
-    ),
-}
-
-cvp_keyboard.ACTION_SPECS.update(NEW_ACTION_SPECS)
-
+# Action metadata is centralised in cvp_action_catalog.py (1.7).
 
 class CVPActions151(base.CVPActions151):
     """Ajoute les commandes globales et le Solo sans modifier les toggles."""

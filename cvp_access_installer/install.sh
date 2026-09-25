@@ -150,17 +150,22 @@ install -m 0755 "$SOURCE_MAIN" "$RUNTIME_DIR/cvp_access.py"
 if [[ "$(basename "$SOURCE_MAIN")" == "cvp_access_v1.5.py" ]]; then
     [[ -f "$REPO_DIR/cvp_access_v1.4.1.py" ]] || die "v1.5 requires cvp_access_v1.4.1.py."
     [[ -f "$REPO_DIR/cvp_keyboard.py" ]] || die "v1.5 requires cvp_keyboard.py."
+    [[ -f "$REPO_DIR/cvp_action_catalog.py" ]] || die "v1.5 requires cvp_action_catalog.py."
+    [[ -f "$REPO_DIR/cvp_keyboard_layout.py" ]] || die "v1.5 requires cvp_keyboard_layout.py."
     [[ -f "$REPO_DIR/cvp_song.py" ]] || die "v1.5 requires cvp_song.py."
     [[ -f "$REPO_DIR/cvp_speech.py" ]] || die "v1.5 requires cvp_speech.py."
     [[ -f "$REPO_DIR/cvp_piper_worker.py" ]] || die "v1.5 requires cvp_piper_worker.py."
-    [[ -f "$REPO_DIR/config/default.toml" ]] || die "v1.5 requires config/default.toml."
+    [[ -f "$REPO_DIR/config/default-current.toml" ]] || die "v1.7 requires config/default-current.toml."
 
     install -m 0644 "$REPO_DIR/cvp_access_v1.4.1.py" "$RUNTIME_DIR/cvp_access_v1.4.1.py"
     install -m 0644 "$REPO_DIR/cvp_keyboard.py" "$RUNTIME_DIR/cvp_keyboard.py"
+    install -m 0644 "$REPO_DIR/cvp_action_catalog.py" "$RUNTIME_DIR/cvp_action_catalog.py"
+    install -m 0644 "$REPO_DIR/cvp_keyboard_layout.py" "$RUNTIME_DIR/cvp_keyboard_layout.py"
     install -m 0644 "$REPO_DIR/cvp_song.py" "$RUNTIME_DIR/cvp_song.py"
     install -m 0644 "$REPO_DIR/cvp_speech.py" "$RUNTIME_DIR/cvp_speech.py"
     install -m 0644 "$REPO_DIR/cvp_piper_worker.py" "$RUNTIME_DIR/cvp_piper_worker.py"
-    install -m 0644 "$REPO_DIR/config/default.toml" "$RUNTIME_DIR/default-keyboard.toml"
+    install -m 0644 "$REPO_DIR/config/default-current.toml" "$RUNTIME_DIR/default-keyboard.toml"
+    install -m 0644 "$REPO_DIR/config/default-current.toml" "$RUNTIME_DIR/default-keyboard-current.toml"
     if [[ -f "$INSTALLER_DIR/tools/generate_configured_voices.py" ]]; then
         install -m 0755 "$INSTALLER_DIR/tools/generate_configured_voices.py" "$RUNTIME_DIR/generate_configured_voices.py"
     fi
@@ -173,7 +178,7 @@ if [[ "$(basename "$SOURCE_MAIN")" == "cvp_access_v1.5.py" ]]; then
 
     if [[ ! -f "$CONFIG_FILE" ]]; then
         install -o "$CVP_USER" -g "$CVP_USER" -m 0660 \
-            "$REPO_DIR/config/default.toml" "$CONFIG_FILE"
+            "$REPO_DIR/config/default-current.toml" "$CONFIG_FILE"
         log "Created default keyboard configuration: $CONFIG_FILE"
     else
         log "Preserving customer keyboard configuration: $CONFIG_FILE"

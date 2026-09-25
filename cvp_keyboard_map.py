@@ -7,86 +7,29 @@ import socket
 import tomllib
 from pathlib import Path
 
-STYLE_PARTS = {
-    1: "Rythme 1", 2: "Rythme 2", 3: "Basse", 4: "Accord 1",
-    5: "Accord 2", 6: "Pad", 7: "Phrase 1", 8: "Phrase 2",
-}
+from cvp_action_catalog import ACTION_CATALOG, action_text
+from cvp_keyboard_layout import (
+    KEY_LABELS,
+    MOD_LABELS,
+    MODIFIER_ORDER,
+    NAV_KEYS,
+    ROWS,
+)
 
-ACTION_LABELS = {
-    "layer_toggle": "Layer / Dual",
-    "left_toggle": "Left",
-    "announce_tempo": "Annonce tempo",
-    "announce_transpose": "Annonce transpose",
-    "announce_style_name": "Nom du Style",
-    "announce_song_name": "Nom du Song",
-    "announce_song_length": "Longueur du Song",
-    "sync_start_toggle": "Syncro Start ON / OFF",
-    "guide_toggle": "Guide ON / OFF",
-    "stream_lights_toggle": "Stream Lights ON / OFF",
-    "metronome_toggle": "Métronome ON / OFF",
-    "song_play_pause": "Lecture / Pause",
-    "song_stop": "Stop Song",
-    "song_position": "Annonce position",
-    "song_measure_previous": "Mesure −1",
-    "song_measure_next": "Mesure +1",
-    "song_measure_previous_5": "Mesure −5",
-    "song_measure_next_5": "Mesure +5",
-    "song_goto_measure": "Aller à la mesure",
-    "song_loop_point_a": "Point A",
-    "song_loop_point_b": "Point B",
-    "song_loop_toggle": "Boucle A/B",
-    "style_start_stop": "Style Start / Stop",
-    "voice_volume_up": "Vol. guide vocal +",
-    "voice_volume_down": "Vol. guide vocal −",
-    "style_volume_up": "Vol. Style +5 (ancien raccourci)",
-    "style_volume_down": "Vol. Style −5 (ancien raccourci)",
-    "restart": "Redémarrer CVP Access",
-}
+MOD_ORDER = MODIFIER_ORDER
 
 PUBLIC_ACTION_CATALOG = [
-    ("style_intro", "Intro Style 1..3", "style_intro:1..3"),
-    ("style_main", "Main Style A..D", "style_main:1..4"),
-    ("style_fill", "Fill Style A..D", "style_fill:1..4"),
-    ("style_break", "Break Style", "style_break"),
-    ("style_ending", "Ending Style 1..3", "style_ending:1..3"),
-    ("registration_recall", "Registration Memory 1..8", "registration_recall:1..8"),
-    ("stream_lights_toggle", "Stream Lights ON / OFF", "stream_lights_toggle"),
-]
-
-KEY_LABELS = {
-    "ESC": "Échap", "TAB": "Tab", "SPACE": "Espace", "ENTER": "Entrée",
-    "BACKSPACE": "Retour arrière", "TOP1": "& / 1", "TOP2": "é / 2",
-    "TOP3": '" / 3', "TOP4": "' / 4", "TOP5": "( / 5", "TOP6": "- / 6",
-    "TOP7": "è / 7", "TOP8": "_ / 8", "TOP9": "ç / 9", "TOP0": "à / 0",
-    "RPAREN": ") / °", "EQUAL": "= / +", "CARET": "^ / ¨", "DOLLAR": "$ / £",
-    "U_GRAVE": "ù / %", "ASTERISK": "* / µ", "COMMA": ", / ?",
-    "SEMICOLON": "; / .", "COLON": ": / /", "EXCLAMATION": "! / §", "LESS": "< / >",
-    "UP": "↑", "DOWN": "↓", "LEFT": "←", "RIGHT": "→", "PAGEUP": "Page ↑",
-    "PAGEDOWN": "Page ↓", "HOME": "Origine", "END": "Fin", "INSERT": "Inser", "DELETE": "Suppr",
-}
-
-MOD_LABELS = {
-    "SHIFT": "Maj", "CTRL": "Ctrl", "ALT": "Alt",
-    "ALTGR": "AltGr", "META": "Cmd", "CAPS": "Caps",
-}
-MOD_ORDER = ("CAPS", "CTRL", "ALT", "ALTGR", "META", "SHIFT")
-
-ROWS = [
-    [("ESC", 1.25)] + [(f"F{i}", 1) for i in range(1, 17)],
-    [("TOP1",1),("TOP2",1),("TOP3",1),("TOP4",1),("TOP5",1),("TOP6",1),
-     ("TOP7",1),("TOP8",1),("TOP9",1),("TOP0",1),("RPAREN",1),("EQUAL",1),("BACKSPACE",2)],
-    [("TAB",1.5),("A",1),("Z",1),("E",1),("R",1),("T",1),("Y",1),("U",1),("I",1),
-     ("O",1),("P",1),("CARET",1),("DOLLAR",1)],
-    [("CAPSLOCK",1.8),("Q",1),("S",1),("D",1),("F",1),("G",1),("H",1),("J",1),
-     ("K",1),("L",1),("M",1),("U_GRAVE",1),("ASTERISK",1),("ENTER",1.8)],
-    [("SHIFT_L",2),("LESS",1),("W",1),("X",1),("C",1),("V",1),("B",1),("N",1),
-     ("COMMA",1),("SEMICOLON",1),("COLON",1),("EXCLAMATION",1),("SHIFT_R",2)],
-    [("CTRL_L",1.5),("META",1.2),("ALT",1.2),("SPACE",6.0),("ALTGR",1.2),("CTRL_R",1.5)],
-]
-
-NAV_KEYS = [
-    ("INSERT","Inser"),("HOME","Origine"),("PAGEUP","Page ↑"),
-    ("DELETE","Suppr"),("END","Fin"),("PAGEDOWN","Page ↓"),
+    (
+        name,
+        meta.label,
+        (
+            name
+            if not meta.ui_values
+            else name + ":" + "/".join(str(value) for value in meta.ui_values)
+        ),
+    )
+    for name, meta in ACTION_CATALOG.items()
+    if meta.public and not meta.deprecated
 ]
 
 
@@ -110,49 +53,23 @@ def parse_action(raw: str):
 
 def human_action(raw: str):
     name, param = parse_action(raw)
-    if name == "song_track_toggle":
-        return f"Piste Song {param}"
-    if name == "style_part_toggle":
-        return STYLE_PARTS.get(param, f"Partie Style {param}")
-    if name == "song_volume_change" and param is not None:
-        return f"Vol. Song {'+' if param > 0 else '−'}{abs(param)}"
-    if name == "main_volume_change" and param is not None:
-        return f"Vol. Main {'+' if param > 0 else '−'}{abs(param)}"
-    if name == "style_volume_change" and param is not None:
-        return f"Vol. Style {'+' if param > 0 else '−'}{abs(param)}"
-    if name == "style_intro":
-        return f"Intro {param}"
-    if name == "style_main":
-        return f"Main {'ABCD'[(param or 1)-1]}"
-    if name == "style_fill":
-        return f"Fill {'ABCD'[(param or 1)-1]}"
-    if name == "style_ending":
-        return f"Ending {param}"
-    if name == "style_break":
-        return "Break"
-    if name == "registration_recall":
-        return f"Registration {param}"
-    return ACTION_LABELS.get(name, name.replace("_", " "))
+    return action_text(name, param)
 
 
 def group_for(raw: str):
     name, _ = parse_action(raw)
-    if name.startswith("song_") or name in {
-        "announce_tempo", "announce_transpose",
-        "announce_song_name", "announce_song_length"
-    }:
-        return "song"
-    if name.startswith("style_") or name in {
-        "announce_style_name", "sync_start_toggle",
-        "guide_toggle", "metronome_toggle",
-        "layer_toggle", "left_toggle"
-    }:
-        return "style"
-    if name.startswith("voice_") or name.startswith("main_volume"):
-        return "voice"
-    if name == "restart":
-        return "system"
-    return "other"
+    meta = ACTION_CATALOG.get(name)
+    if meta is None:
+        return "other"
+    return {
+        "song": "song",
+        "style": "style",
+        "keyboard": "voice",
+        "accessibility": "voice",
+        "registration": "style",
+        "system": "system",
+        "information": "song",
+    }.get(meta.category, "other")
 
 
 def load_config(path: Path):
@@ -352,7 +269,7 @@ h1{margin:0;font-size:22px}
 <body>
 <div class="header"><div><h1>CVP Access — Carte des commandes</h1>
 <div class="subtitle">Générée depuis {html.escape(str(config_path))}</div></div>
-<div class="stats">{mapped} affectation(s)<br>Layout accessibilité 1.6.1 RC2</div></div>
+<div class="stats">{mapped} affectation(s)<br>Layout accessibilité 1.7 RC1</div></div>
 
 <div class="help-banner"><strong>CTRL = AIDE VOCALE.</strong>
 Maintenir CTRL puis appuyer sur une touche attribuée :
@@ -406,7 +323,7 @@ Sans Song chargé : annonce « Pas de Song chargé ».</div></div></aside></div>
 <div class="unassigned-grid">{unassigned_html}</div></section>
 
 <div class="legend">Song / informations • Style / accompagnement • Guide vocal • Système</div>
-<div class="footer">Les actions non attribuées restent disponibles dans le catalogue et peuvent être affectées ultérieurement dans keyboard.toml.</div>
+<div class="footer">Les actions non attribuées restent disponibles dans le catalogue et peuvent être affectées depuis l’éditeur Web.</div>
 <script>
 async function copyValue(button) {{
   const value = button.dataset.copy || button.textContent.trim();
