@@ -8,7 +8,7 @@ import json
 import os
 import re
 import secrets
-import shutil
+import pwd
 import subprocess
 import tempfile
 import time
@@ -69,6 +69,21 @@ def _atomic_write(path: Path, data: bytes, mode: int = 0o660):
             pass
 
 
+def _chown_cvp_user(path: Path):
+    """Keep user-editable configuration files owned by the normal CVP user."""
+    try:
+        account = pwd.getpwnam(CVP_USER)
+        if os.geteuid() == 0:
+            os.chown(path, account.pw_uid, account.pw_gid)
+    except (KeyError, OSError):
+        pass
+
+
+def _write_user_file(path: Path, data: bytes, mode: int = 0o660):
+    _atomic_write(path, data, mode)
+    _chown_cvp_user(path)
+
+
 def _run(args, timeout=20, env=None):
     proc = subprocess.run(
         args,
@@ -109,7 +124,7 @@ def _load_registry():
 
 def _save_registry(data):
     body = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8") + b"\n"
-    _atomic_write(REGISTRY_FILE, body, 0o660)
+    _write_user_file(REGISTRY_FILE, body, 0o660)
 
 
 def _profile_entry(registry, profile_id):
@@ -160,11 +175,11 @@ def ensure_store():
         current_data = ACTIVE_CONFIG.read_bytes()
     else:
         current_data = factory_data
-        _atomic_write(ACTIVE_CONFIG, current_data, 0o660)
+        _write_user_file(ACTIVE_CONFIG, current_data, 0o660)
 
     standard_id = "standard"
     standard_path = PROFILES_DIR / "standard.toml"
-    _atomic_write(standard_path, current_data, 0o660)
+    _write_user_file(standard_path, current_data, 0o660)
 
     registry = {
         "schema": REGISTRY_SCHEMA,
@@ -394,7 +409,7 @@ def create_profile(name, source_id=None):
 
     profile_id = "p-" + secrets.token_hex(8)
     filename = profile_id + ".toml"
-    _atomic_write(PROFILES_DIR / filename, data, 0o660)
+    _write_user_file(PROFILES_DIR / filename, data, 0o660)
     registry["profiles"].append(
         {"id": profile_id, "name": name, "file": filename, "protected": False}
     )
@@ -449,43 +464,92 @@ def _trim_backups():
 
 
 def _generate_runtime_assets():
+    home = Path(pwd.getpwnam(CVP_USER).pw_dir)
+    voice_dir = home / "cvp_voice"
+
+    try:
+        with ACTIVE_CONFIG.open("rb") as handle:
+            active_data = tomllib.load(handle)
+        voice_name = active_data.get("speech", {}).get(
+            "voice",
+            "fr_FR-siwis-medium",
+        )
+    except Exception:
+        voice_name = "fr_FR-siwis-medium"
+
+    piper_python = home / ".local/share/cvp-access/piper-env/bin/python"
+    piper_model = home / "piper-voices" / f"{voice_name}.onnx"
+
+    def run_as_user(args, timeout):
+        if os.geteuid() == 0:
+            env_args = [
+                f"HOME={home}",
+                f"CVP_RUNTIME_DIR={RUNTIME_DIR}",
+                f"CVP_CONFIG_DIR={CONFIG_DIR}",
+                f"CVP_VOICE_DIR={voice_dir}",
+                f"CVP_PIPER_MODEL={piper_model}",
+            ]
+            return _run(
+                ["runuser", "-u", CVP_USER, "--", "env", *env_args, *args],
+                timeout=timeout,
+            )
+
+        env = os.environ.copy()
+        env.update(
+            {
+                "HOME": str(home),
+                "CVP_RUNTIME_DIR": str(RUNTIME_DIR),
+                "CVP_CONFIG_DIR": str(CONFIG_DIR),
+                "CVP_VOICE_DIR": str(voice_dir),
+                "CVP_PIPER_MODEL": str(piper_model),
+            }
+        )
+        return _run(args, timeout=timeout, env=env)
+
     map_script = RUNTIME_DIR / "cvp_keyboard_map.py"
     if map_script.is_file():
-        rc, out, err = _run(
+        rc, out, err = run_as_user(
             [
-                "python3", str(map_script),
-                "--config", str(ACTIVE_CONFIG),
-                "--output", str(KEYBOARD_MAP),
+                "python3",
+                str(map_script),
+                "--config",
+                str(ACTIVE_CONFIG),
+                "--output",
+                str(KEYBOARD_MAP),
             ],
             timeout=20,
         )
         if rc != 0:
-            raise ProfileError("Régénération de la carte clavier impossible : " + (err or out))
+            raise ProfileError(
+                "Régénération de la carte clavier impossible : "
+                + (err or out)
+            )
 
-    home = Path(os.path.expanduser(f"~{CVP_USER}"))
-    piper_python = home / ".local/share/cvp-access/piper-env/bin/python"
     generators = [
         RUNTIME_DIR / "generate_configured_voices.py",
         RUNTIME_DIR / "generate_151_voices.py",
     ]
-    env = os.environ.copy()
-    env["HOME"] = str(home)
-    env["CVP_RUNTIME_DIR"] = str(RUNTIME_DIR)
-    env.setdefault("CVP_CONFIG_FILE", str(ACTIVE_CONFIG))
 
     for generator in generators:
         if not generator.is_file():
             continue
         if not piper_python.is_file():
-            raise ProfileError("Environnement Piper absent pour régénérer les annonces")
-        rc, out, err = _run(
-            [str(piper_python), str(generator), "--config", str(ACTIVE_CONFIG)],
+            raise ProfileError(
+                "Environnement Piper absent pour régénérer les annonces"
+            )
+        rc, out, err = run_as_user(
+            [
+                str(piper_python),
+                str(generator),
+                "--config",
+                str(ACTIVE_CONFIG),
+            ],
             timeout=180,
-            env=env,
         )
         if rc != 0:
             raise ProfileError(
-                f"Régénération vocale impossible ({generator.name}) : " + (err or out)
+                f"Régénération vocale impossible ({generator.name}) : "
+                + (err or out)
             )
 
 
@@ -515,7 +579,7 @@ def _activate_bytes(new_data: bytes):
         _atomic_write(backup, previous, 0o640)
 
     try:
-        _atomic_write(ACTIVE_CONFIG, new_data, 0o660)
+        _write_user_file(ACTIVE_CONFIG, new_data, 0o660)
         _generate_runtime_assets()
         rc, out, err = _run(["systemctl", "restart", "cvp-access.service"], timeout=15)
         if rc != 0:
@@ -530,7 +594,7 @@ def _activate_bytes(new_data: bytes):
         }
     except Exception as exc:
         if previous:
-            _atomic_write(ACTIVE_CONFIG, previous, 0o660)
+            _write_user_file(ACTIVE_CONFIG, previous, 0o660)
             try:
                 _generate_runtime_assets()
             except Exception:
@@ -578,7 +642,7 @@ def save_profile(profile_id, revision, changes):
             )
         _activate_bytes(new_data)
 
-    _atomic_write(path, new_data, 0o660)
+    _write_user_file(path, new_data, 0o660)
     result = get_profile(profile_id)
     result["saved_revision"] = new_revision
     return result
@@ -591,5 +655,5 @@ def save_active_external_as_profile(name):
     profile = create_profile(name)
     registry = ensure_store()
     entry = _profile_entry(registry, profile["id"])
-    _atomic_write(_profile_path(entry), ACTIVE_CONFIG.read_bytes(), 0o660)
+    _write_user_file(_profile_path(entry), ACTIVE_CONFIG.read_bytes(), 0o660)
     return get_profile(profile["id"])
