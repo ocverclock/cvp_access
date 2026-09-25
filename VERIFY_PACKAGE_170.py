@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static/package verifier for CVP Access 1.7.0-RC1."""
+"""Static + functional verifier for CVP Access 1.7.0-RC1."""
 
 from __future__ import annotations
 
@@ -9,9 +9,19 @@ import subprocess
 import tomllib
 from pathlib import Path
 
-root = Path(__file__).resolve().parent
 
-python_files = [
+ROOT = Path(__file__).resolve().parent
+
+
+def read(rel: str) -> str:
+    return (ROOT / rel).read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Python syntax: parse without importing hardware dependencies.
+# ---------------------------------------------------------------------------
+
+PYTHON_FILES = [
     "cvp_access_1_7.py",
     "cvp_access_1_6_1.py",
     "cvp_access_1_5_2.py",
@@ -43,12 +53,17 @@ python_files = [
     "TEST_KEYBOARD_PROFILES_170.py",
 ]
 
-for rel in python_files:
-    path = root / rel
+for rel in PYTHON_FILES:
+    path = ROOT / rel
     assert path.is_file(), f"Fichier Python requis absent : {rel}"
     ast.parse(path.read_text(encoding="utf-8"), filename=rel)
 
-shell_files = [
+
+# ---------------------------------------------------------------------------
+# Shell syntax.
+# ---------------------------------------------------------------------------
+
+SHELL_FILES = [
     "cvp_access_installer/install.sh",
     "cvp_access_installer/update.sh",
     "cvp_access_installer/upgrade_1_5_1.sh",
@@ -63,8 +78,9 @@ shell_files = [
     "cvp_access_installer/tools/cvp_update_from_github",
     "cvp_access_installer/tools/generate_recorder_cues.sh",
 ]
-for rel in shell_files:
-    path = root / rel
+
+for rel in SHELL_FILES:
+    path = ROOT / rel
     assert path.is_file(), f"Script shell absent : {rel}"
     result = subprocess.run(
         ["bash", "-n", str(path)],
@@ -76,41 +92,39 @@ for rel in shell_files:
         f"Syntaxe shell invalide : {rel}\n{result.stderr}"
     )
 
-required_files = [
+
+# ---------------------------------------------------------------------------
+# Release package identity.
+# ---------------------------------------------------------------------------
+
+for rel in (
     "config/default-current.toml",
     "config/default-1.5.1.toml",
     "cvp_access_installer/release.env",
     "cvp_access_installer/systemd/cvp-web.service.in",
     "docs/CVP_ACCESS_1_7_MAPPING_UI_DESIGN.md",
-]
-for rel in required_files:
-    assert (root / rel).is_file(), f"Fichier requis absent : {rel}"
+):
+    assert (ROOT / rel).is_file(), f"Fichier requis absent : {rel}"
 
-frontend = (root / "cvp_access_1_7.py").read_text(encoding="utf-8")
+frontend = read("cvp_access_1_7.py")
 assert 'VERSION = "1.7.0-RC1"' in frontend
 assert "CVP_RECORDER_ENABLED" in frontend
 assert "cvp_access_1_5_2" in frontend
 
-release_manifest = (
-    root / "cvp_access_installer/release.env"
-).read_text(encoding="utf-8")
+release_manifest = read("cvp_access_installer/release.env")
 assert "CVP_RELEASE_VERSION=1.7.0-RC1" in release_manifest
 assert "CVP_RELEASE_FRONTEND=cvp_access_1_7.py" in release_manifest
 assert "CVP_RELEASE_UPGRADER=upgrade_1_7_0.sh" in release_manifest
 assert "CVP_RELEASE_VERIFIER=VERIFY_PACKAGE_170.py" in release_manifest
 
-upgrade = (
-    root / "cvp_access_installer/upgrade_1_7_0.sh"
-).read_text(encoding="utf-8")
+upgrade = read("cvp_access_installer/upgrade_1_7_0.sh")
 assert 'CVP_FRONTEND_SOURCE="cvp_access_1_7.py"' in upgrade
 assert 'CVP_TARGET_VERSION="1.7.0-RC1"' in upgrade
 assert "CVP_SKIP_KEYBOARD_MIGRATION=1" in upgrade
 assert "cvp_keyboard_profiles.py" in upgrade
 assert "--init" in upgrade
 
-shared_upgrade = (
-    root / "cvp_access_installer/upgrade_1_5_1_base.sh"
-).read_text(encoding="utf-8")
+shared_upgrade = read("cvp_access_installer/upgrade_1_5_1_base.sh")
 for name in (
     "cvp_action_catalog.py",
     "cvp_keyboard_layout.py",
@@ -119,30 +133,31 @@ for name in (
     "default-keyboard-current.toml",
 ):
     assert name in shared_upgrade, f"Déploiement runtime manquant : {name}"
-assert 'CVP_SKIP_KEYBOARD_MIGRATION' in shared_upgrade
+assert "CVP_SKIP_KEYBOARD_MIGRATION" in shared_upgrade
 
-legacy_migration = (
-    root / "cvp_access_installer/upgrade_1_5_1.sh"
-).read_text(encoding="utf-8")
-assert 'CVP_SKIP_KEYBOARD_MIGRATION' in legacy_migration
+legacy_migration = read("cvp_access_installer/upgrade_1_5_1.sh")
+assert "CVP_SKIP_KEYBOARD_MIGRATION" in legacy_migration
 
-fresh_install = (
-    root / "cvp_access_installer/install.sh"
-).read_text(encoding="utf-8")
+fresh_install = read("cvp_access_installer/install.sh")
+assert "config/default.toml" not in fresh_install
 assert "config/default-current.toml" in fresh_install
 assert "cvp_action_catalog.py" in fresh_install
 assert "cvp_keyboard_layout.py" in fresh_install
 
-with (root / "config/default-current.toml").open("rb") as handle:
+
+# ---------------------------------------------------------------------------
+# Canonical mapping and action catalogue.
+# ---------------------------------------------------------------------------
+
+with (ROOT / "config/default-current.toml").open("rb") as handle:
     factory = tomllib.load(handle)
+
 assert factory["general"]["caps_lock_layer"] is False
 factory_keys = factory["keys"]
 assert isinstance(factory_keys, dict)
 assert len(factory_keys) == 83
 
-catalog_source = (
-    root / "cvp_action_catalog.py"
-).read_text(encoding="utf-8")
+catalog_source = read("cvp_action_catalog.py")
 catalog_actions = set(
     re.findall(
         r'^\s{4}"([a-z][a-z0-9_]+)"\s*:\s*_m\(',
@@ -168,7 +183,7 @@ for action in (
 ):
     assert action in catalog_actions
 
-keyboard = (root / "cvp_keyboard.py").read_text(encoding="utf-8")
+keyboard = read("cvp_keyboard.py")
 assert "from cvp_action_catalog import ACTION_SPECS, ActionSpec, action_help" in keyboard
 assert "SHARED_MODIFIER_ORDER" in keyboard
 assert 'source=Path("<builtin-1.7>")' in keyboard
@@ -176,7 +191,6 @@ assert "caps_lock_layer=False" in keyboard
 assert "An empty [keys] table is valid in 1.7" in keyboard
 assert "if not config.issues:" in keyboard
 
-# The built-in recovery mapping must mirror the canonical factory profile.
 builtin_block = re.search(
     r"BUILTIN_BINDINGS\s*=\s*\{(.*?)\n\}",
     keyboard,
@@ -185,8 +199,27 @@ builtin_block = re.search(
 assert builtin_block, "BUILTIN_BINDINGS absent"
 builtin_pairs = dict(
     re.findall(
-        r'^\s*"([^"]+)"\s*:\s*"([^"]+)"\s*,?\s*
-profiles = (root / "cvp_keyboard_profiles.py").read_text(encoding="utf-8")
+        r'^\s*"([^"]+)"\s*:\s*"([^"]+)"\s*,?\s*$',
+        builtin_block.group(1),
+        flags=re.M,
+    )
+)
+assert builtin_pairs == factory_keys, (
+    "Le mapping built-in diffère du profil usine canonique"
+)
+
+for wrapper_name in ("cvp_access_1_5_1_base.py", "cvp_access_1_5_2.py"):
+    wrapper_source = read(wrapper_name)
+    assert "NEW_ACTION_SPECS" not in wrapper_source
+    assert "ACTION_SPECS.update" not in wrapper_source
+    assert "from cvp_keyboard import ActionSpec" not in wrapper_source
+
+
+# ---------------------------------------------------------------------------
+# Profiles, safe apply and external-change handling.
+# ---------------------------------------------------------------------------
+
+profiles = read("cvp_keyboard_profiles.py")
 for marker in (
     "keyboard-profiles.json",
     'RESERVED_KEYS = {"F14", "F15", "F16"}',
@@ -197,19 +230,26 @@ for marker in (
     "def delete_profile(",
     "def activate_profile(",
     "def save_profile(",
+    "def save_active_external_as_profile(",
     "runuser",
     "systemctl",
-    "restart",
     "cvp-access.service",
 ):
-    assert marker.lower() in profiles.lower(), f"Gestion profils incomplète : {marker}"
+    assert marker.lower() in profiles.lower(), (
+        f"Gestion profils incomplète : {marker}"
+    )
 assert 'if "CTRL" in parts[:-1]' in profiles
 assert "active_revision != current_revision" in profiles
 assert "MAX_BACKUPS = 10" in profiles
 assert "ancienne configuration a été restaurée" in profiles
 assert "_write_user_file(ACTIVE_CONFIG" in profiles
 
-web_helper = (root / "cvp_keyboard_web.py").read_text(encoding="utf-8")
+
+# ---------------------------------------------------------------------------
+# Graphical editor and portal routing/auth.
+# ---------------------------------------------------------------------------
+
+web_helper = read("cvp_keyboard_web.py")
 for marker in (
     "KEYBOARD_EDITOR",
     "/api/keyboard/apply",
@@ -218,8 +258,10 @@ for marker in (
     "/api/keyboard/profiles/rename",
     "/api/keyboard/profiles/delete",
     "/api/keyboard/profiles/activate",
+    "/api/keyboard/profiles/import-active",
     "Enregistrer sous",
     "Activer cette configuration",
+    "Enregistrer comme nouveau profil",
     "Rechercher une fonction",
     "Modifications en attente",
     "Choisir : ",
@@ -227,19 +269,19 @@ for marker in (
 ):
     assert marker in web_helper, f"Éditeur Web incomplet : {marker}"
 
-portal = (
-    root / "cvp_access_installer/tools/cvp_web.py"
-).read_text(encoding="utf-8")
+portal = read("cvp_access_installer/tools/cvp_web.py")
 for marker in (
     "/keyboard",
     "/api/keyboard/catalog",
     "/api/keyboard/config",
     "/api/keyboard/profiles",
+    "/api/keyboard/profiles/import-active",
+    "/api/keyboard/select",
     "keyboard_write_authorized",
     "Configuration clavier",
 ):
     assert marker in portal, f"Portail 1.7 incomplet : {marker}"
-assert "if not AUTH_REQUIRED" in portal
+
 strict_auth = re.search(
     r"def keyboard_write_authorized\(payload\):(.*?)(?=\ndef )",
     portal,
@@ -248,23 +290,38 @@ strict_auth = re.search(
 assert strict_auth, "Fonction d'autorisation clavier absente"
 assert "if not AUTH_REQUIRED" not in strict_auth.group(1)
 assert "hmac.compare_digest" in strict_auth.group(1)
+assert 'ADMIN_SECRET_FILE = CONFIG_DIR / "maintenance-password"' in portal
+assert 'LEGACY_ADMIN_SECRET_FILE = CONFIG_DIR / "hotspot-password"' in portal
+assert 'path.startswith("/api/keyboard/")' not in portal
+assert "keyboard_editor_writes" in portal
 
-doctor = (
-    root / "cvp_access_installer/tools/cvp_doctor.py"
-).read_text(encoding="utf-8")
+maintenance = read("cvp_access_installer/install_maintenance.sh")
+assert "MAINTENANCE_PASSWORD_FILE" in maintenance
+assert "CVP_MAINTENANCE_PASSWORD" in maintenance
+assert "maintenance-password" in maintenance
+assert 'Admin key : stored in $MAINTENANCE_PASSWORD_FILE' in maintenance
+
+
+# ---------------------------------------------------------------------------
+# Doctor, printable map and shared physical layout.
+# ---------------------------------------------------------------------------
+
+doctor = read("cvp_access_installer/tools/cvp_doctor.py")
 assert "profil personnalisé" in doctor
 assert "Configuration clavier" in doctor
 assert "default-keyboard-current.toml" in doctor
 assert "expected_caps" not in doctor
 
-keyboard_map = (root / "cvp_keyboard_map.py").read_text(encoding="utf-8")
+keyboard_map = read("cvp_keyboard_map.py")
 assert "from cvp_action_catalog import ACTION_CATALOG, action_text" in keyboard_map
 assert "from cvp_keyboard_layout import (" in keyboard_map
 assert "ACTION_LABELS =" not in keyboard_map
 assert "KEY_LABELS = {" not in keyboard_map
 assert "ROWS = [" not in keyboard_map
+assert "Layout accessibilité 1.7 RC1" in keyboard_map
+assert "Layout accessibilité 1.6.1 RC2" not in keyboard_map
 
-layout = (root / "cvp_keyboard_layout.py").read_text(encoding="utf-8")
+layout = read("cvp_keyboard_layout.py")
 assert '("CTRL", "ALT", "ALTGR", "SHIFT", "META", "CAPS")' in layout
 assert '"F14": "Morceau précédent / Recorder"' in layout
 assert '"F15": "Dictaphone MIDI"' in layout
@@ -273,15 +330,18 @@ assert "EDITOR_NAV_ROWS" in layout
 assert '("INSERT",1),("HOME",1),("PAGEUP",1)' in layout
 assert '("LEFT",1),("DOWN",1),("RIGHT",1)' in layout
 
-service = (
-    root / "cvp_access_installer/systemd/cvp-web.service.in"
-).read_text(encoding="utf-8")
-# Global dev auth may remain disabled in RC1; keyboard writes are independently
-# protected server-side and the verifier checks that strict path above.
+service = read("cvp_access_installer/systemd/cvp-web.service.in")
+# Global portal auth remains in development mode for RC1. Keyboard/profile
+# mutations are independently protected by keyboard_write_authorized().
 assert "Environment=CVP_WEB_REQUIRE_AUTH=0" in service
 
+
+# ---------------------------------------------------------------------------
+# Functional profile/editor self-test with a local evdev stub.
+# ---------------------------------------------------------------------------
+
 self_test = subprocess.run(
-    ["python3", str(root / "TEST_KEYBOARD_PROFILES_170.py")],
+    ["python3", str(ROOT / "TEST_KEYBOARD_PROFILES_170.py")],
     capture_output=True,
     text=True,
     check=False,
@@ -293,103 +353,5 @@ assert self_test.returncode == 0, (
     + self_test.stderr
 )
 assert "keyboard/profile self-test: OK" in self_test.stdout
-
-print("CVP Access 1.7.0 RC1 package: OK")
-,
-        builtin_block.group(1),
-        flags=re.M,
-    )
-)
-assert builtin_pairs == factory_keys, (
-    "Le mapping built-in diffère du profil usine canonique"
-)
-
-for wrapper_name in ("cvp_access_1_5_1_base.py", "cvp_access_1_5_2.py"):
-    wrapper_source = (root / wrapper_name).read_text(encoding="utf-8")
-    assert "NEW_ACTION_SPECS" not in wrapper_source
-    assert "ACTION_SPECS.update" not in wrapper_source
-    assert "from cvp_keyboard import ActionSpec" not in wrapper_source
-
-profiles = (root / "cvp_keyboard_profiles.py").read_text(encoding="utf-8")
-for marker in (
-    "keyboard-profiles.json",
-    'RESERVED_KEYS = {"F14", "F15", "F16"}',
-    "RevisionConflict",
-    "def create_profile(",
-    "def duplicate_profile(",
-    "def rename_profile(",
-    "def delete_profile(",
-    "def activate_profile(",
-    "def save_profile(",
-    "runuser",
-    "systemctl",
-    "restart",
-    "cvp-access.service",
-):
-    assert marker.lower() in profiles.lower(), f"Gestion profils incomplète : {marker}"
-assert 'if "CTRL" in parts[:-1]' in profiles
-assert "active_revision != current_revision" in profiles
-assert "MAX_BACKUPS = 10" in profiles
-assert "ancienne configuration a été restaurée" in profiles
-assert "_write_user_file(ACTIVE_CONFIG" in profiles
-
-web_helper = (root / "cvp_keyboard_web.py").read_text(encoding="utf-8")
-for marker in (
-    "KEYBOARD_EDITOR",
-    "/api/keyboard/apply",
-    "/api/keyboard/profiles/create",
-    "/api/keyboard/profiles/duplicate",
-    "/api/keyboard/profiles/rename",
-    "/api/keyboard/profiles/delete",
-    "/api/keyboard/profiles/activate",
-    "Enregistrer sous",
-    "Activer cette configuration",
-    "Rechercher une fonction",
-    "Modifications en attente",
-):
-    assert marker in web_helper, f"Éditeur Web incomplet : {marker}"
-
-portal = (
-    root / "cvp_access_installer/tools/cvp_web.py"
-).read_text(encoding="utf-8")
-for marker in (
-    "/keyboard",
-    "/api/keyboard/catalog",
-    "/api/keyboard/config",
-    "/api/keyboard/profiles",
-    "keyboard_write_authorized",
-    "Configuration clavier",
-):
-    assert marker in portal, f"Portail 1.7 incomplet : {marker}"
-assert "if not AUTH_REQUIRED" in portal
-strict_auth = re.search(
-    r"def keyboard_write_authorized\(payload\):(.*?)(?=\ndef )",
-    portal,
-    flags=re.S,
-)
-assert strict_auth, "Fonction d'autorisation clavier absente"
-assert "if not AUTH_REQUIRED" not in strict_auth.group(1)
-assert "hmac.compare_digest" in strict_auth.group(1)
-
-doctor = (
-    root / "cvp_access_installer/tools/cvp_doctor.py"
-).read_text(encoding="utf-8")
-assert "profil personnalisé" in doctor
-assert "Configuration clavier" in doctor
-assert "default-keyboard-current.toml" in doctor
-assert "expected_caps" not in doctor
-
-layout = (root / "cvp_keyboard_layout.py").read_text(encoding="utf-8")
-assert '("CTRL", "ALT", "ALTGR", "SHIFT", "META", "CAPS")' in layout
-assert '"F14": "Morceau précédent / Recorder"' in layout
-assert '"F15": "Dictaphone MIDI"' in layout
-assert '"F16": "Morceau suivant / Recorder"' in layout
-
-service = (
-    root / "cvp_access_installer/systemd/cvp-web.service.in"
-).read_text(encoding="utf-8")
-# Global dev auth may remain disabled in RC1; keyboard writes are independently
-# protected server-side and the verifier checks that strict path above.
-assert "Environment=CVP_WEB_REQUIRE_AUTH=0" in service
 
 print("CVP Access 1.7.0 RC1 package: OK")
