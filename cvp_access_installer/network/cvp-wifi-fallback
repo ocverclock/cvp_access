@@ -2,8 +2,27 @@
 set -u
 
 HOTSPOT="${CVP_HOTSPOT_NAME:-CVP-ACCESS}"
-DEV="${CVP_WIFI_DEVICE:-wlan0}"
 WAIT_SECONDS="${CVP_WIFI_FALLBACK_WAIT:-30}"
+
+detect_wifi_device() {
+    if [[ -n "${CVP_WIFI_DEVICE:-}" ]]; then
+        printf '%s\n' "$CVP_WIFI_DEVICE"
+        return
+    fi
+
+    local profile_dev=""
+    profile_dev="$(nmcli -g connection.interface-name connection show "$HOTSPOT" 2>/dev/null || true)"
+    if [[ -n "$profile_dev" ]] && nmcli -t -f DEVICE,TYPE device status 2>/dev/null |
+        awk -F: -v dev="$profile_dev" '$1 == dev && $2 == "wifi" { found=1 } END { exit(found ? 0 : 1) }'; then
+        printf '%s\n' "$profile_dev"
+        return
+    fi
+
+    nmcli -t -f DEVICE,TYPE,STATE device status 2>/dev/null |
+        awk -F: '$2 == "wifi" && $3 != "unavailable" { print $1; exit }'
+}
+
+DEV="$(detect_wifi_device)"
 
 log() {
     logger -t cvp-wifi "$*"
@@ -37,6 +56,10 @@ wifi_device_available() {
 }
 
 while true; do
+    if [[ -z "$DEV" ]] || ! wifi_device_available; then
+        DEV="$(detect_wifi_device)"
+    fi
+
     # Ethernet or a normal Wi-Fi connection is sufficient: do not start the AP.
     # If the AP was already active when a LAN connection appeared, stop it.
     if normal_network_active; then
