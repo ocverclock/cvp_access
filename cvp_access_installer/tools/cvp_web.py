@@ -1295,6 +1295,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/keyboard/profiles/rename",
             "/api/keyboard/profiles/delete",
             "/api/keyboard/profiles/activate",
+            "/api/keyboard/profiles/import-active",
         }
         if path in keyboard_editor_writes:
             if not keyboard_write_authorized(payload):
