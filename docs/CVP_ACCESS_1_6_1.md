@@ -1,10 +1,10 @@
-# CVP Access 1.6.1-RC1 — consolidation
+# CVP Access 1.6.1-RC2 — consolidation
 
 Date : 25 septembre 2026.
 
 ## Objet
 
-1.6.1-RC1 consolide les ajouts du dictaphone MIDI et de la maintenance Web sans
+1.6.1-RC2 consolide les ajouts du dictaphone MIDI et de la maintenance Web sans
 modifier le moteur Yamaha/SysEx validé.
 
 La pile reste volontairement compatible :
@@ -92,7 +92,7 @@ cvp_access_installer/release.env
 est la source de vérité pour la release courante :
 
 ```text
-CVP_RELEASE_VERSION=1.6.1-RC1
+CVP_RELEASE_VERSION=1.6.1-RC2
 CVP_RELEASE_FRONTEND=cvp_access_1_6_1.py
 CVP_RELEASE_UPGRADER=upgrade_1_6_1.sh
 CVP_RELEASE_VERIFIER=VERIFY_PACKAGE_161.py
@@ -172,7 +172,7 @@ réévaluées périodiquement.
 
 ## Audit de consolidation
 
-Revue globale effectuée avant validation terrain de 1.6.1-RC1.
+Revue globale effectuée avant validation terrain de 1.6.1-RC2.
 
 ### Cohérence des noms
 
