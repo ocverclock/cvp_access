@@ -168,3 +168,55 @@ l'espace disque libre. La navigation F14/F16 conserve pendant deux secondes le
 catalogue trié en mémoire afin que des centaines de fichiers n'imposent pas un
 `glob + sort` à chaque pression ; les modifications externes par Samba sont
 réévaluées périodiquement.
+
+
+## Audit de consolidation
+
+Revue globale effectuée avant validation terrain de 1.6.1-RC1.
+
+### Cohérence des noms
+
+Terminologie publique retenue :
+
+- **Dictaphone MIDI** : fonction F14/F15/F16 ;
+- **Enregistrements MIDI** : fichiers enregistrés, Web et Samba ;
+- **Morceau** : fichier actuellement sélectionné ;
+- **Guide vocal** : voix et signaux CVP Access ;
+- **Recorder** : terme réservé au code, aux logs et aux noms internes.
+
+### Politique voix / son / silence
+
+Le comportement a été vérifié contre `docs/FEEDBACK_POLICY_1_6_1.md`.
+
+Le chemin normal du Dictaphone n'attend plus Piper pour :
+
+- F14/F16 court : cues SoX ;
+- F14/F16 long : date + numéro depuis fragments WAV ;
+- F15 armement / annulation : WAV fixe ;
+- F15 arrêt enregistrement : « Stop » WAV direct ;
+- confirmation de sauvegarde : fragments WAV « Enregistrement du » + jour + mois + « numéro » + index + « sauvegardé ».
+
+Piper reste un fallback pour les valeurs hors banque ou les fichiers au nom non standard.
+
+### Nombre de fichiers
+
+Il n'existe pas de limite artificielle du nombre total d'enregistrements.
+
+- le suffixe quotidien accepte trois chiffres ou plus ;
+- aucun fichier n'est supprimé automatiquement ;
+- la navigation garde un cache de catalogue de 2 s ;
+- le portail affiche les 100 fichiers les plus récents et conserve toujours la sélection courante visible ;
+- le portail indique désormais le nombre total et la taille cumulée ;
+- le Doctor indique nombre de fichiers, taille cumulée et espace disque libre.
+
+### Robustesse installation / mise à jour
+
+L'audit a détecté et corrigé une corruption de structure dans les blocs de fallback de :
+
+- `cvp_access_installer/install.sh` ;
+- `cvp_access_installer/update.sh` ;
+- `cvp_access_installer/tools/cvp_update_from_github`.
+
+Le chemin normal utilisant `release.env` restait le modèle voulu, mais ces blocs auraient pu casser une installation ou un fallback.
+
+`VERIFY_PACKAGE_161.py` exécute maintenant aussi `bash -n` sur les scripts shell principaux afin qu'une erreur de syntaxe de ce type bloque le paquet avant installation.
