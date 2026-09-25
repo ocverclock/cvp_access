@@ -1,0 +1,34 @@
+name: Publish CVP Access 1.6.1-RC2
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: contains(github.event.head_commit.message, '[publish-1.6.1-rc2]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          ref: 3b2a2392c29f8f5f276ff5b4fa8dcc4874afa327
+
+      - name: Publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v1.6.1-RC2" >/dev/null 2>&1; then
+            echo "Release v1.6.1-RC2 already exists."
+            exit 0
+          fi
+          gh release create "v1.6.1-RC2" \
+            --repo "${{ github.repository }}" \
+            --target "3b2a2392c29f8f5f276ff5b4fa8dcc4874afa327" \
+            --title "CVP Access 1.6.1-RC2" \
+            --notes-file "docs/RELEASE_1_6_1_RC2.md" \
+            --prerelease
