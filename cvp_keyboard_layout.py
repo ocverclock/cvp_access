@@ -47,7 +47,13 @@ ROWS = [
 NAV_KEYS = [
     ("INSERT","Inser"),("HOME","Origine"),("PAGEUP","Page ↑"),
     ("DELETE","Suppr"),("END","Fin"),("PAGEDOWN","Page ↓"),
-    ("UP","↑"),("LEFT","←"),("DOWN","↓"),("RIGHT","→"),
+]
+
+EDITOR_NAV_ROWS = [
+    [("INSERT",1),("HOME",1),("PAGEUP",1)],
+    [("DELETE",1),("END",1),("PAGEDOWN",1)],
+    [("UP",1)],
+    [("LEFT",1),("DOWN",1),("RIGHT",1)],
 ]
 
 RESERVED_KEYS = {
@@ -65,7 +71,7 @@ def printed_label(key: str) -> str:
 
 def editor_keys():
     keys = []
-    for row in ROWS:
+    for row in ROWS + EDITOR_NAV_ROWS:
         current = []
         for key, width in row:
             current.append(
