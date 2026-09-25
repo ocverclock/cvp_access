@@ -184,3 +184,26 @@ Validé matériellement :
 - stop lecture ;
 - partage Samba `CVP_recordings` ;
 - non-régression des commandes SysEx pendant usage Recorder.
+
+
+## Validation matérielle — F15 armement / annulation
+
+Test réalisé le 25 septembre 2026 sur le Raspberry de référence avec CVP Access 1.6.0-RC1 :
+
+```text
+F15 long  -> « Enregistrement prêt »
+F15 court -> « Enregistrement annulé »
+```
+
+Journal observé :
+
+```text
+Recorder : Enregistrement prêt.
+Recorder : Enregistrement annulé.
+```
+
+Statut :
+
+- F15 long -> « Enregistrement prêt » : VALIDÉ ;
+- F15 court à l'état armé -> annulation : VALIDÉ ;
+- aucun enregistrement vide ne doit être créé dans ce scénario.
