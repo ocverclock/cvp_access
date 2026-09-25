@@ -21,9 +21,26 @@ RECORDINGS_DIR="${CVP_RECORDINGS_DIR:-$CVP_HOME/CVP_Recordings}"
 RUNTIME_DIR="/opt/cvp-access"
 CONFIG_DIR="/etc/cvp-access"
 HOTSPOT="CVP-ACCESS"
-DEV="${CVP_WIFI_DEVICE:-wlan0}"
 HOTSPOT_IP="10.42.0.1/24"
 PASSWORD_FILE="$CONFIG_DIR/hotspot-password"
+
+detect_wifi_device() {
+    if [[ -n "${CVP_WIFI_DEVICE:-}" ]]; then
+        printf '%s\n' "$CVP_WIFI_DEVICE"
+        return
+    fi
+
+    local profile_dev=""
+    profile_dev="$(nmcli -g connection.interface-name connection show "$HOTSPOT" 2>/dev/null || true)"
+    if [[ -n "$profile_dev" ]] && nmcli -t -f DEVICE,TYPE device status 2>/dev/null |
+        awk -F: -v dev="$profile_dev" '$1 == dev && $2 == "wifi" { found=1 } END { exit(found ? 0 : 1) }'; then
+        printf '%s\n' "$profile_dev"
+        return
+    fi
+
+    nmcli -t -f DEVICE,TYPE,STATE device status 2>/dev/null |
+        awk -F: '$2 == "wifi" && $3 != "unavailable" { print $1; exit }'
+}
 
 for command in nmcli python3; do
     command -v "$command" >/dev/null || {
@@ -31,6 +48,13 @@ for command in nmcli python3; do
         exit 1
     }
 done
+
+DEV="$(detect_wifi_device)"
+[[ -n "$DEV" ]] || {
+    echo "No usable Wi-Fi interface detected." >&2
+    exit 1
+}
+echo "[CVP Access] Wi-Fi maintenance interface: $DEV"
 
 install -d -m 0755 "$CONFIG_DIR" "$RUNTIME_DIR"
 install -d -o "$CVP_USER" -g "$CVP_USER" -m 0775 "$RECORDINGS_DIR"
