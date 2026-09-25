@@ -754,3 +754,28 @@ Point important : correction de blocs shell corrompus dans `install.sh`, `update
 
 
 Correction terrain 25 septembre 2026 : absence de Wi-Fi ne bloque plus l'upgrade. `install_maintenance.sh` continue l'installation du portail et des services et saute uniquement la configuration du hotspot lorsque aucune interface Wi-Fi utilisable n'est détectée.
+
+## Projet 1.7 — éditeur Web de mapping clavier
+
+Conception ouverte le 25 septembre 2026.
+
+Spécification de référence :
+
+```text
+docs/CVP_ACCESS_1_7_MAPPING_UI_DESIGN.md
+```
+
+Portée retenue :
+
+- édition visuelle des affectations depuis le portail Web ;
+- sélection d'une touche puis d'une fonction ;
+- couches Simple / Maj / Alt / AltGr / Cmd / Caps ;
+- CTRL conservé comme aide vocale structurelle ;
+- F14/F15/F16 conservées comme touches réservées du Dictaphone MIDI ;
+- modifications mises en attente puis appliquées en une fois ;
+- validation du TOML, sauvegarde, écriture atomique, régénération de la carte et rollback en cas d'échec ;
+- accessibilité Web et VoiceOver obligatoires ;
+- centralisation préalable du catalogue d'actions et des métadonnées du clavier afin d'éviter une nouvelle duplication entre runtime, carte et portail.
+
+Décision de périmètre : ne pas profiter de la 1.7 pour réécrire simultanément la pile Yamaha/SysEx validée. La 1.7 doit rester centrée sur la configuration et l'ergonomie.
+
