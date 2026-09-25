@@ -63,30 +63,53 @@ echo
 echo "[CVP Access update] Recuperation GitHub"
 git_user -C "$REPO_DIR" pull --ff-only
 
-VERIFY_SCRIPT="$(
-    find "$REPO_DIR" -maxdepth 1 -type f -name 'VERIFY_PACKAGE_*.py' -printf '%p\n' \
-    | sort -V \
-    | tail -n 1
-)"
+RELEASE_MANIFEST="$REPO_DIR/cvp_access_installer/release.env"
+
+if [[ -f "$RELEASE_MANIFEST" ]]; then
+    # shellcheck disable=SC1090
+    source "$RELEASE_MANIFEST"
+    VERIFY_SCRIPT="$REPO_DIR/${CVP_RELEASE_VERIFIER:?CVP_RELEASE_VERIFIER absent}"
+    UPGRADE_SCRIPT="$REPO_DIR/cvp_access_installer/${CVP_RELEASE_UPGRADER:?CVP_RELEASE_UPGRADER absent}"
+
+    [[ -f "$VERIFY_SCRIPT" ]] || {
+        echo "Verificateur de release introuvable : $VERIFY_SCRIPT" >&2
+        exit 1
+    }
+    [[ -f "$UPGRADE_SCRIPT" ]] || {
+        echo "Installateur de release introuvable : $UPGRADE_SCRIPT" >&2
+        exit 1
+    }
+else
+    # Compatibilité avec les anciens clones dépourvus de manifeste.
+    VERIFY_SCRIPT="$(
+        find "$REPO_DIR" -maxdepth 1 -type f -name 'VERIFY_PACKAGE_*.py' -printf '%p\n' \
+        | sort -V \
+        | tail -n 1
+    )"
+
+    mapfile -t UPGRADERS < <(
+        find "$REPO_DIR/cvp_access_installer" -maxdepth 1 -type f -name 'upgrade_*.sh' -printf '%f\n' \
+        | grep -E '^upgrade_[0-9]+(_[0-9]+){1,2}\.sh
+echo
+echo "[CVP Access update] Installation : $(basename "$UPGRADE_SCRIPT")"
+CVP_USER="$CVP_USER" bash "$UPGRADE_SCRIPT"
+ \
+        | sort -V
+    )
+
+    (( ${#UPGRADERS[@]} > 0 )) || {
+        echo "Aucun installateur de version trouve." >&2
+        exit 1
+    }
+
+    UPGRADE_SCRIPT="$REPO_DIR/cvp_access_installer/${UPGRADERS[-1]}"
+fi
 
 if [[ -n "$VERIFY_SCRIPT" ]]; then
     echo
     echo "[CVP Access update] Verification : $(basename "$VERIFY_SCRIPT")"
     runuser -u "$CVP_USER" -- env HOME="$CVP_HOME" python3 "$VERIFY_SCRIPT"
 fi
-
-mapfile -t UPGRADERS < <(
-    find "$REPO_DIR/cvp_access_installer" -maxdepth 1 -type f -name 'upgrade_*.sh' -printf '%f\n' \
-    | grep -E '^upgrade_[0-9]+(_[0-9]+){1,2}\.sh$' \
-    | sort -V
-)
-
-(( ${#UPGRADERS[@]} > 0 )) || {
-    echo "Aucun installateur de version trouve." >&2
-    exit 1
-}
-
-UPGRADE_SCRIPT="$REPO_DIR/cvp_access_installer/${UPGRADERS[-1]}"
 
 echo
 echo "[CVP Access update] Installation : $(basename "$UPGRADE_SCRIPT")"
