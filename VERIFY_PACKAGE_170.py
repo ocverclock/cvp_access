@@ -253,6 +253,10 @@ web_helper = read("cvp_keyboard_web.py")
 assert r"\n" not in web_helper, (
     "L'éditeur Web contient un \\n littéral susceptible de casser le JavaScript/HTML"
 )
+assert "adminPassword" not in web_helper
+assert "Mot de passe maintenance pour enregistrer/activer" not in web_helper
+assert "admin_password" not in web_helper
+assert "minmax(260px,330px)" in web_helper
 for marker in (
     "KEYBOARD_EDITOR",
     "/api/keyboard/apply",
@@ -281,23 +285,18 @@ for marker in (
     "/api/keyboard/profiles",
     "/api/keyboard/profiles/import-active",
     "/api/keyboard/select",
-    "keyboard_write_authorized",
     "Configuration clavier",
 ):
     assert marker in portal, f"Portail 1.7 incomplet : {marker}"
 
-strict_auth = re.search(
-    r"def keyboard_write_authorized\(payload\):(.*?)(?=\ndef )",
-    portal,
-    flags=re.S,
+assert "keyboard_write_authorized" not in portal
+assert "Mot de passe maintenance requis pour modifier le clavier" not in portal
+keyboard_write_pos = portal.index("keyboard_editor_writes")
+global_auth_pos = portal.index("if not request_authorized(payload):")
+assert keyboard_write_pos < global_auth_pos, (
+    "Les écritures clavier doivent rester libres du code maintenance"
 )
-assert strict_auth, "Fonction d'autorisation clavier absente"
-assert "if not AUTH_REQUIRED" not in strict_auth.group(1)
-assert "hmac.compare_digest" in strict_auth.group(1)
-assert 'ADMIN_SECRET_FILE = CONFIG_DIR / "maintenance-password"' in portal
-assert 'LEGACY_ADMIN_SECRET_FILE = CONFIG_DIR / "hotspot-password"' in portal
 assert 'path.startswith("/api/keyboard/")' not in portal
-assert "keyboard_editor_writes" in portal
 
 maintenance = read("cvp_access_installer/install_maintenance.sh")
 assert "MAINTENANCE_PASSWORD_FILE" in maintenance
@@ -336,7 +335,7 @@ assert '("LEFT",1),("DOWN",1),("RIGHT",1)' in layout
 
 service = read("cvp_access_installer/systemd/cvp-web.service.in")
 # Global portal auth remains in development mode for RC1. Keyboard/profile
-# mutations are independently protected by keyboard_write_authorized().
+# editing is intentionally code-free on the already LAN-restricted portal.
 assert "Environment=CVP_WEB_REQUIRE_AUTH=0" in service
 
 
