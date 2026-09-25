@@ -28,7 +28,7 @@ for rel in [
     "cvp_voice_names.py",
     "cvp_access_installer/tools/generate_configured_voices.py",
     "cvp_access_installer/tools/generate_151_voices.py",
-    "cvp_access_installer/tools/cvp_doctor_151.py",
+    "cvp_access_installer/tools/cvp_doctor.py",
     "cvp_access_installer/tools/cvp_web.py",
 ]:
     path = root / rel
@@ -106,8 +106,12 @@ assert "launch_github_update" in portal_source
 assert "/api/recordings/select" in portal_source
 assert '"recordings": recording_catalog()' in portal_source
 assert "CVP_recordings" in portal_source
+assert "cvp_doctor.py" in portal_source
 assert "total_count" in portal_source
 assert "displayed_count" in portal_source
+assert "def wifi_device():" in portal_source
+assert '"interface": device or "--"' in portal_source
+assert '"ifname", "wlan0"' not in portal_source
 
 service_template_source = (
     root / "cvp_access_installer/systemd/cvp-web.service.in"
@@ -125,7 +129,16 @@ generator_source = (
     root / "cvp_access_installer/tools/generate_151_voices.py"
 ).read_text(encoding="utf-8")
 doctor_source = (
-    root / "cvp_access_installer/tools/cvp_doctor_151.py"
+    root / "cvp_access_installer/tools/cvp_doctor.py"
+).read_text(encoding="utf-8")
+wifi_connect_source = (
+    root / "cvp_access_installer/network/cvp-wifi-connect"
+).read_text(encoding="utf-8")
+wifi_fallback_source = (
+    root / "cvp_access_installer/network/cvp-wifi-fallback"
+).read_text(encoding="utf-8")
+maintenance_install_source = (
+    root / "cvp_access_installer/install_maintenance.sh"
 ).read_text(encoding="utf-8")
 
 assert "announce_startup_ready" in speech_source
@@ -150,6 +163,15 @@ assert '("1.5.1", "1.5.2", "1.6.0", "1.6.1")' in doctor_source
 assert "WAV Recorder" in doctor_source
 assert "WAV nombres 0..150" in doctor_source
 assert "Recorder stockage" in doctor_source
+assert "Interface Wi-Fi" in doctor_source
+assert "cvp_access_1_5_2.py" in doctor_source
+assert "cvp_access_1_5_1_base.py" in doctor_source
+assert "detect_wifi_device()" in wifi_connect_source
+assert "detect_wifi_device()" in wifi_fallback_source
+assert "detect_wifi_device()" in maintenance_install_source
+assert ':-wlan0' not in wifi_connect_source
+assert ':-wlan0' not in wifi_fallback_source
+assert ':-wlan0' not in maintenance_install_source
 
 updater_helper_source = (
     root / "cvp_access_installer/tools/cvp_update_from_github"
@@ -184,6 +206,8 @@ shared_upgrade_source = (
 ).read_text(encoding="utf-8")
 assert "Refreshing Samba shares" in shared_upgrade_source
 assert "install_maintenance.sh" in shared_upgrade_source
+assert "cvp_doctor.py" in shared_upgrade_source
+assert "cvp_doctor_151.py" not in shared_upgrade_source
 
 fresh_install_source = (
     root / "cvp_access_installer/install.sh"
