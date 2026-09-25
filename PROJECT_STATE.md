@@ -751,3 +751,6 @@ Consolidation 1.6.1 : Wi-Fi maintenance : détection dynamique de l'interface (p
 Revue globale effectuée : nomenclature publique stabilisée (Dictaphone MIDI / Enregistrements MIDI / Morceau / Guide vocal), politique voix-son-silence explicitée, sauvegarde Recorder rendue normalement indépendante de Piper via fragments WAV, portail enrichi du nombre total + taille cumulée, gestion des index >999 conservée sans écrasement.
 
 Point important : correction de blocs shell corrompus dans `install.sh`, `update.sh` et `cvp_update_from_github`. Le vérificateur 1.6.1 lance désormais `bash -n` sur les scripts principaux pour empêcher cette classe de régression.
+
+
+Correction terrain 25 septembre 2026 : absence de Wi-Fi ne bloque plus l'upgrade. `install_maintenance.sh` continue l'installation du portail et des services et saute uniquement la configuration du hotspot lorsque aucune interface Wi-Fi utilisable n'est détectée.
