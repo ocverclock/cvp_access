@@ -11,13 +11,13 @@ Ordre de reprise :
 3. `docs/FEEDBACK_POLICY_1_6_1.md`
 4. `docs/CVP_ACCESS_1_5_2.md`
 5. `docs/NETWORK_MAINTENANCE_PORTAL.md`
-4. `AI_HANDOFF.md`
-5. `docs/CVP_ACCESS_1_5_1.md` pour la base fonctionnelle
-6. `docs/KEY_ACTIONS_1_5_1.md`
-7. `docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md`
-8. `CVP905_PROTOCOL_CHECKPOINT_RC4.md` pour le protocole historique
-9. `docs/FUNCTION_CATALOG.md`
-10. `docs/MIDI_RECORDER_1_6.md` pour le projet dictaphone 1.6
+6. `AI_HANDOFF.md`
+7. `docs/CVP_ACCESS_1_5_1.md` pour la base fonctionnelle
+8. `docs/KEY_ACTIONS_1_5_1.md`
+9. `docs/CVP905_VOICE_NAME_CHECKPOINT_2026-09-01.md`
+10. `CVP905_PROTOCOL_CHECKPOINT_RC4.md` pour le protocole historique
+11. `docs/FUNCTION_CATALOG.md`
+12. `docs/MIDI_RECORDER_1_6.md` pour l'historique du dictaphone 1.6
 
 Ne pas relancer les scans massifs déjà clôturés sans nouvelle hypothèse.
 
