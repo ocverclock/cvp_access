@@ -20,7 +20,7 @@ install -m 0644 \
 
 # Migration non destructive d'une configuration déjà installée.
 # Ne jamais écraser une personnalisation existante.
-if [[ -f "$CONFIG_FILE" ]]; then
+if [[ -f "$CONFIG_FILE" && "${CVP_SKIP_KEYBOARD_MIGRATION:-0}" != "1" ]]; then
     python3 - "$CONFIG_FILE" <<'PY'
 from pathlib import Path
 import re
