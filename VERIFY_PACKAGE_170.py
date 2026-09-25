@@ -139,22 +139,22 @@ factory_keys = factory["keys"]
 assert isinstance(factory_keys, dict)
 assert len(factory_keys) == 83
 
-catalog_ns = {}
-exec(
-    compile(
-        (root / "cvp_action_catalog.py").read_text(encoding="utf-8"),
-        "cvp_action_catalog.py",
-        "exec",
-    ),
-    catalog_ns,
+catalog_source = (
+    root / "cvp_action_catalog.py"
+).read_text(encoding="utf-8")
+catalog_actions = set(
+    re.findall(
+        r'^\s{4}"([a-z][a-z0-9_]+)"\s*:\s*_m\(',
+        catalog_source,
+        flags=re.M,
+    )
 )
-catalog = catalog_ns["ACTION_CATALOG"]
 assigned_actions = {
     value.split(":", 1)[0]
     for value in factory_keys.values()
     if isinstance(value, str)
 }
-missing_catalog = sorted(assigned_actions - set(catalog))
+missing_catalog = sorted(assigned_actions - catalog_actions)
 assert not missing_catalog, (
     "Actions du profil usine absentes du catalogue : "
     + ", ".join(missing_catalog)
@@ -165,7 +165,7 @@ for action in (
     "style_all_parts_on",
     "voice_guide_mute_toggle",
 ):
-    assert action in catalog
+    assert action in catalog_actions
 
 keyboard = (root / "cvp_keyboard.py").read_text(encoding="utf-8")
 assert "from cvp_action_catalog import ACTION_SPECS, ActionSpec, action_help" in keyboard
@@ -190,12 +190,12 @@ for marker in (
     "systemctl",
     "restart",
     "cvp-access.service",
-    "rollback",
 ):
     assert marker.lower() in profiles.lower(), f"Gestion profils incomplète : {marker}"
 assert 'if "CTRL" in parts[:-1]' in profiles
 assert "active_revision != current_revision" in profiles
 assert "MAX_BACKUPS = 10" in profiles
+assert "ancienne configuration a été restaurée" in profiles
 assert "_write_user_file(ACTIVE_CONFIG" in profiles
 
 web_helper = (root / "cvp_keyboard_web.py").read_text(encoding="utf-8")
