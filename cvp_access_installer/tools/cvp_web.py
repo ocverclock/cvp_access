@@ -435,7 +435,17 @@ def recording_catalog():
     except OSError:
         paths = []
 
-    for path in paths[:100]:
+    total_count = len(paths)
+    display_paths = paths[:100]
+
+    # Si la sélection courante est plus ancienne que les 100 derniers fichiers,
+    # elle doit rester visible dans le portail.
+    if selected and all(path.name != selected for path in display_paths):
+        selected_path = RECORDINGS_DIR / selected
+        if selected_path.is_file():
+            display_paths.append(selected_path)
+
+    for path in display_paths:
         try:
             stat = path.stat()
         except OSError:
@@ -451,6 +461,8 @@ def recording_catalog():
 
     return {
         "selected": selected,
+        "total_count": total_count,
+        "displayed_count": len(files),
         "files": files,
     }
 
@@ -994,8 +1006,10 @@ function renderRecordings(){
  const selected=rec.selected||'';
  const summary=document.getElementById('recordingsSummary');
  if(summary){
-   summary.textContent=all.length
-     ? all.length+' fichier(s) · sélectionné : '+(selected||'aucun')
+   const total=Number.isInteger(rec.total_count) ? rec.total_count : all.length;
+   const shown=Number.isInteger(rec.displayed_count) ? rec.displayed_count : all.length;
+   summary.textContent=total
+     ? total+' fichier(s)'+(shown<total?' · '+shown+' affiché(s)':'')+' · sélectionné : '+(selected||'aucun')
      : 'Aucun enregistrement MIDI';
  }
  let html='';
