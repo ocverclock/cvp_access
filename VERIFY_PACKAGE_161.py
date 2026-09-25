@@ -211,6 +211,9 @@ assert "cvp_access_1_5_1_base.py" in doctor_source
 assert "detect_wifi_device()" in wifi_connect_source
 assert "detect_wifi_device()" in wifi_fallback_source
 assert "detect_wifi_device()" in maintenance_install_source
+assert "Web maintenance will still be installed" in maintenance_install_source
+assert "HAS_WIFI=0" in maintenance_install_source
+assert "hotspot setup is skipped for this run" in maintenance_install_source
 assert ':-wlan0' not in wifi_connect_source
 assert ':-wlan0' not in wifi_fallback_source
 assert ':-wlan0' not in maintenance_install_source
