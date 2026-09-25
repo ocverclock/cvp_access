@@ -220,3 +220,16 @@ L'audit a détecté et corrigé une corruption de structure dans les blocs de fa
 Le chemin normal utilisant `release.env` restait le modèle voulu, mais ces blocs auraient pu casser une installation ou un fallback.
 
 `VERIFY_PACKAGE_161.py` exécute maintenant aussi `bash -n` sur les scripts shell principaux afin qu'une erreur de syntaxe de ce type bloque le paquet avant installation.
+
+
+### Mise à jour sans interface Wi-Fi
+
+Correction après validation terrain : l'absence temporaire ou permanente d'une
+interface Wi-Fi utilisable ne doit jamais faire échouer une mise à jour CVP
+Access.
+
+`install_maintenance.sh` installe désormais le portail Web, les helpers et les
+services même si aucun périphérique Wi-Fi n'est disponible. Dans ce cas, seule
+la création/modification du hotspot `CVP-ACCESS` est ignorée pour cette
+exécution. Le portail reste accessible par Ethernet/LAN et le service de
+fallback pourra redétecter une interface Wi-Fi ultérieurement.
