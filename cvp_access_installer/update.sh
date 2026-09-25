@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-UPDATE_VERSION="0.6.0"
+UPDATE_VERSION="0.6.1"
 REQUIRED_CODENAME="${CVP_REQUIRED_CODENAME:-trixie}"
 REQUIRED_ARCH="${CVP_REQUIRED_ARCH:-arm64}"
 PIPER_VOICE="${CVP_PIPER_VOICE:-fr_FR-siwis-medium}"
