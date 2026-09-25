@@ -17,6 +17,7 @@ from cvp_keyboard_profiles import (
     list_profiles,
     rename_profile,
     save_profile,
+    save_active_external_as_profile,
 )
 
 
@@ -114,6 +115,15 @@ def handle_write(path, payload):
                 "profiles": list_profiles(),
             }, 200
 
+        if path == "/api/keyboard/profiles/import-active":
+            profile = save_active_external_as_profile(payload.get("name"))
+            profile["binding_labels"] = _binding_labels(profile["bindings"])
+            return {
+                "ok": True,
+                "profile": profile,
+                "profiles": list_profiles(),
+            }, 201
+
         return {"error": "Action clavier inconnue"}, 404
     except RevisionConflict as exc:
         return {"error": str(exc), "conflict": True}, 409
@@ -165,6 +175,14 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}bu
  <div class="profile-actions">
   <button onclick="activateSelected()" id="activateBtn">Activer cette configuration</button>
   <a class="btn" href="/keyboard-map" target="_blank" rel="noopener">Voir / imprimer la carte</a>
+ </div>
+ <div id="externalRecovery" class="wide" hidden style="grid-column:1/-1;padding:10px;background:#fff7ed;border-radius:9px">
+  <strong>Configuration active modifiée hors du portail</strong>
+  <p class="muted">Tu peux conserver cet état comme nouveau profil ou recharger le profil enregistré.</p>
+  <div class="profile-actions">
+   <input id="externalProfileName" maxlength="80" placeholder="Nom du nouveau profil" style="max-width:320px">
+   <button onclick="importExternalActive()">Enregistrer comme nouveau profil</button>
+  </div>
  </div>
 </section>
 
@@ -383,7 +401,10 @@ function renderProfileState(){
  const mismatch=profile.active&&!profile.active_file_matches_profile;
  $("profileState").innerHTML=(profile.active?'<span class="badge ok">ACTIVE</span>':'<span class="badge warn">NON ACTIVE</span>')+
   (profile.protected?' &nbsp; Profil usine protégé':'')+(mismatch?' &nbsp; keyboard.toml a été modifié hors du portail':'');
- $("activateBtn").disabled=profile.active||Object.keys(pending).length>0;
+ $("externalRecovery").hidden=!mismatch;
+ if(mismatch&&!$("externalProfileName").value)$("externalProfileName").value=profile.name+" - import manuel";
+ $("activateBtn").textContent=mismatch?"Recharger ce profil enregistré":"Activer cette configuration";
+ $("activateBtn").disabled=(profile.active&&!mismatch)||Object.keys(pending).length>0;
 }
 function renderAll(){renderProfiles();renderLayers();renderKeyboard();renderSelected();renderActions();renderChanges();renderProfileState()}
 function resetPending(){pending={};renderAll()}
@@ -418,6 +439,16 @@ async function deleteSelected(){
 async function activateSelected(){
  if(Object.keys(pending).length){status("Enregistre ou annule les modifications avant d’activer ce profil.",true);return}
  try{const d=await post("/api/keyboard/profiles/activate",{profile_id:profile.id});profiles=d.profiles;profile=d.profile;status(d.message);renderAll()}catch(e){status(e.message,true)}
+}
+async function importExternalActive(){
+ const name=$("externalProfileName").value.trim();
+ if(!name){status("Saisis le nom du profil à créer.",true);return}
+ try{
+  const d=await post("/api/keyboard/profiles/import-active",{name});
+  profiles=d.profiles;profile=d.profile;pending={};
+  status("Configuration manuelle conservée dans le nouveau profil « "+profile.name+" ».");
+  renderAll();
+ }catch(e){status(e.message,true)}
 }
 document.addEventListener("keydown",e=>{
  if(["INPUT","SELECT","TEXTAREA"].includes(document.activeElement?.tagName))return;
