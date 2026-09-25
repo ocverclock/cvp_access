@@ -45,6 +45,7 @@ maintenance_required = [
     "cvp_access_installer/systemd/cvp-web.service.in",
     "cvp_access_installer/samba/cvp-access.conf.in",
     "cvp_access_installer/tools/cvp_update_from_github",
+    "cvp_access_installer/tools/generate_recorder_cues.sh",
 ]
 for rel in maintenance_required:
     assert (root / rel).is_file(), f"Fichier maintenance absent : {rel}"
@@ -79,6 +80,8 @@ assert "smb://" in keyboard_map_source
 assert "Dictaphone MIDI" in keyboard_map_source
 assert "Layout accessibilité 1.6.0 RC1" in keyboard_map_source
 assert "CVP_recordings" in keyboard_map_source
+assert "Morceau précédent" in keyboard_map_source
+assert "Morceau suivant" in keyboard_map_source
 
 portal_source = (
     root / "cvp_access_installer/tools/cvp_web.py"
@@ -112,7 +115,7 @@ assert "CVP_RECORDINGS_DIR=@RECORDINGS_DIR@" in service_template_source
 
 speech_source = (root / "cvp_speech_151.py").read_text(encoding="utf-8")
 keyboard_source = (root / "cvp_keyboard.py").read_text(encoding="utf-8")
-assert 'range(1, 16)' in keyboard_source
+assert 'range(1, 17)' in keyboard_source
 
 runtime_source = (root / "cvp_access_v1.5.py").read_text(encoding="utf-8")
 generator_source = (
@@ -125,6 +128,8 @@ doctor_source = (
 assert "announce_startup_ready" in speech_source
 assert "announce_device_restart" in speech_source
 assert "announce_recorder_stop_now" in speech_source
+assert "play_recorder_navigation_cue" in speech_source
+assert "announce_recorder_selection_now" in speech_source
 assert "announce_startup_ready" in runtime_source
 assert "CVP_RECORDER_PROBE" in runtime_source
 assert "Recorder probe : actif" in runtime_source
@@ -133,6 +138,8 @@ assert "recorder.handle_key_event" in runtime_source
 assert "system/startup_ready.wav" in generator_source
 assert "system/restart_device.wav" in generator_source
 assert "recorder/stop.wav" in generator_source
+assert "recorder/month_12.wav" in generator_source
+assert "recorder/numero.wav" in generator_source
 assert "startup_ready.wav" in doctor_source
 assert "restart_device.wav" in doctor_source
 assert "WAV système" in doctor_source
@@ -148,6 +155,9 @@ assert "upgrade_[0-9]" in updater_helper_source
 recorder_source = (root / "cvp_recorder.py").read_text(encoding="utf-8")
 assert "class RecorderController" in recorder_source
 assert "KEY_F15" in recorder_source
+assert "KEY_F14" in recorder_source
+assert "KEY_F16" in recorder_source
+assert "_navigate_selection" in recorder_source
 assert "STATE_ARMED" in recorder_source
 assert "STATE_RECORDING" in recorder_source
 assert "mido.MidiFile" in recorder_source
