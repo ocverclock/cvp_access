@@ -385,3 +385,13 @@ Plusieurs Note On / Note Off successifs, accords et chevauchements ont été re�
 **Statut : capture MIDI canal 1 VALIDÉE MATÉRIELLEMENT.**
 
 Le prochain checkpoint reste la non-régression SysEx pendant que le tap Recorder est actif : lancer au moins une commande CVP Access qui fait une lecture/écriture Yamaha (par exemple annonce du tempo ou changement d'état d'une piste) et confirmer que le comportement reste normal.
+
+
+### Navigation F14 / F16
+
+- F14 : précédent, bip descendant immédiat ;
+- F16 : suivant, bip montant immédiat ;
+- maintien ~0,8 s : annonce du morceau sélectionné via fragments WAV, sans Piper dans le cas normal ;
+- navigation cyclique ;
+- sons générés automatiquement par SoX pendant installation / upgrade ;
+- F14/F16 doivent encore être validées physiquement sur le clavier de référence, F15 étant déjà validée.
