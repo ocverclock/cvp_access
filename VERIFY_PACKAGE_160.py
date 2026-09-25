@@ -124,6 +124,7 @@ doctor_source = (
 
 assert "announce_startup_ready" in speech_source
 assert "announce_device_restart" in speech_source
+assert "announce_recorder_stop_now" in speech_source
 assert "announce_startup_ready" in runtime_source
 assert "CVP_RECORDER_PROBE" in runtime_source
 assert "Recorder probe : actif" in runtime_source
@@ -131,6 +132,7 @@ assert "install_midi_recorder" in runtime_source
 assert "recorder.handle_key_event" in runtime_source
 assert "system/startup_ready.wav" in generator_source
 assert "system/restart_device.wav" in generator_source
+assert "recorder/stop.wav" in generator_source
 assert "startup_ready.wav" in doctor_source
 assert "restart_device.wav" in doctor_source
 assert "WAV système" in doctor_source
@@ -151,6 +153,7 @@ assert "STATE_RECORDING" in recorder_source
 assert "mido.MidiFile" in recorder_source
 assert "aplaymidi" in recorder_source
 assert ".cvp-selection.json" in recorder_source
+assert "announce_recorder_stop_now" in recorder_source
 
 samba_source = (
     root / "cvp_access_installer/samba/cvp-access.conf.in"
