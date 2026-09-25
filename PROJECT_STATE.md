@@ -711,3 +711,6 @@ Upgrade :
 python3 VERIFY_PACKAGE_160.py
 sudo bash cvp_access_installer/upgrade_1_6_0.sh
 ```
+
+
+Checkpoint Recorder 25 septembre 2026 : armement F15 long et annulation F15 court validés matériellement sur 1.6.0-RC1. Journal : « Recorder : Enregistrement prêt. » puis « Recorder : Enregistrement annulé. » Prochain test : première Note On -> enregistrement -> F15 court -> sauvegarde .mid datée.
