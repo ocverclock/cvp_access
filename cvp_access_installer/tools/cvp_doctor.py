@@ -404,16 +404,33 @@ def main():
         recordings.is_dir()
         and os.access(recordings, os.R_OK | os.W_OK | os.X_OK)
     )
-    midi_files = (
-        len(list(recordings.glob("*.mid")))
+    midi_paths = (
+        list(recordings.glob("*.mid"))
         if recordings.is_dir()
-        else 0
+        else []
     )
+    midi_files = len(midi_paths)
+    midi_bytes = 0
+    for path in midi_paths:
+        try:
+            midi_bytes += path.stat().st_size
+        except OSError:
+            pass
+
+    storage_detail = f"{midi_files} fichier(s) MIDI · {midi_bytes / 1024:.1f} KiB"
+    if recorder_dir_ok:
+        try:
+            usage = shutil.disk_usage(recordings)
+            storage_detail += f" · libre {usage.free / (1024 ** 3):.1f} GiB"
+        except OSError:
+            pass
+        storage_detail += f" · {recordings}"
+
     add(
         "Recorder stockage",
         OK if recorder_dir_ok else FAIL,
         (
-            f"{midi_files} fichier(s) MIDI · {recordings}"
+            storage_detail
             if recorder_dir_ok
             else f"dossier absent/non accessible: {recordings}"
         ),
