@@ -114,6 +114,7 @@ assert '"recordings": recording_catalog()' in portal_source
 assert "CVP_recordings" in portal_source
 assert "cvp_doctor.py" in portal_source
 assert "total_count" in portal_source
+assert '"total_size"' in portal_source
 assert "displayed_count" in portal_source
 assert "def wifi_device():" in portal_source
 assert '"interface": device or "--"' in portal_source
@@ -152,6 +153,7 @@ assert "announce_device_restart" in speech_source
 assert "announce_recorder_stop_now" in speech_source
 assert "play_recorder_navigation_cue" in speech_source
 assert "announce_recorder_selection_now" in speech_source
+assert "announce_recorder_saved_now" in speech_source
 assert "announce_startup_ready" in runtime_source
 assert "CVP_RECORDER_PROBE" in runtime_source
 assert "Recorder probe : actif" in runtime_source
@@ -162,6 +164,8 @@ assert "system/restart_device.wav" in generator_source
 assert "recorder/stop.wav" in generator_source
 assert "recorder/month_12.wav" in generator_source
 assert "recorder/numero.wav" in generator_source
+assert "recorder/enregistrement_du.wav" in generator_source
+assert "recorder/sauvegarde.wav" in generator_source
 assert "startup_ready.wav" in doctor_source
 assert "restart_device.wav" in doctor_source
 assert "WAV système" in doctor_source
@@ -201,6 +205,8 @@ assert "mido.MidiFile" in recorder_source
 assert "aplaymidi" in recorder_source
 assert ".cvp-selection.json" in recorder_source
 assert "announce_recorder_stop_now" in recorder_source
+assert "announce_recorder_saved_now" in recorder_source
+assert "Recorder : sauvegardé" in recorder_source
 assert "playback_port_cache" in recorder_source
 assert "recording_files_cache" in recorder_source
 assert "recording_files_cache_seconds = 2.0" in recorder_source
