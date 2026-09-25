@@ -34,6 +34,7 @@ required=(
     config/default-1.5.1.toml
     cvp_access_installer/tools/generate_configured_voices.py
     cvp_access_installer/tools/generate_151_voices.py
+    cvp_access_installer/tools/generate_recorder_cues.sh
     cvp_access_installer/tools/cvp_doctor_151.py
     cvp_access_installer/tools/cvp_web.py
     cvp_access_installer/tools/cvp_update_from_github
@@ -175,6 +176,12 @@ if [[ -x "$PIPER_DIR/bin/python" ]]; then
 else
     echo "WARNING: Piper environment absent; WAV generation skipped." >&2
 fi
+
+echo "[CVP Access] Generating Recorder navigation cues"
+runuser -u "$CVP_USER" -- env \
+    HOME="$CVP_HOME" \
+    CVP_VOICE_DIR="$VOICE_DIR" \
+    bash "$INSTALLER_DIR/tools/generate_recorder_cues.sh"
 
 # Keep Samba part of the release upgrade, not only of a fresh installation.
 if command -v testparm >/dev/null 2>&1 && [[ -f /etc/samba/smb.conf ]]; then
