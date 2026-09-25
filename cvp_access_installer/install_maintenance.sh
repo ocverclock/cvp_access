@@ -23,6 +23,7 @@ CONFIG_DIR="/etc/cvp-access"
 HOTSPOT="CVP-ACCESS"
 HOTSPOT_IP="10.42.0.1/24"
 PASSWORD_FILE="$CONFIG_DIR/hotspot-password"
+MAINTENANCE_PASSWORD_FILE="$CONFIG_DIR/maintenance-password"
 
 detect_wifi_device() {
     if [[ -n "${CVP_WIFI_DEVICE:-}" ]]; then
@@ -62,14 +63,28 @@ fi
 install -d -m 0755 "$CONFIG_DIR" "$RUNTIME_DIR"
 install -d -o "$CVP_USER" -g "$CVP_USER" -m 0775 "$RECORDINGS_DIR"
 
+EXISTING_PSK=""
+if (( HAS_WIFI )) && nmcli -t -f NAME connection show | grep -Fxq "$HOTSPOT"; then
+    EXISTING_PSK="$(nmcli --show-secrets -g 802-11-wireless-security.psk connection show "$HOTSPOT" 2>/dev/null || true)"
+fi
+
+if [[ -n "${CVP_MAINTENANCE_PASSWORD:-}" ]]; then
+    MAINTENANCE_PASSWORD="$CVP_MAINTENANCE_PASSWORD"
+elif [[ -r "$MAINTENANCE_PASSWORD_FILE" ]]; then
+    MAINTENANCE_PASSWORD="$(cat "$MAINTENANCE_PASSWORD_FILE")"
+elif [[ -r "$PASSWORD_FILE" ]]; then
+    MAINTENANCE_PASSWORD="$(cat "$PASSWORD_FILE")"
+elif [[ -n "$EXISTING_PSK" ]]; then
+    MAINTENANCE_PASSWORD="$EXISTING_PSK"
+else
+    MAINTENANCE_PASSWORD="$(python3 -c 'import secrets; alphabet="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"; print("".join(secrets.choice(alphabet) for _ in range(14)))')"
+fi
+printf '%s\n' "$MAINTENANCE_PASSWORD" > "$MAINTENANCE_PASSWORD_FILE"
+chmod 0600 "$MAINTENANCE_PASSWORD_FILE"
+
 if (( HAS_WIFI )); then
     # Preserve the password of an already installed hotspot. Fresh installations
     # receive a random password unless CVP_HOTSPOT_PASSWORD is explicitly supplied.
-    EXISTING_PSK=""
-    if nmcli -t -f NAME connection show | grep -Fxq "$HOTSPOT"; then
-        EXISTING_PSK="$(nmcli --show-secrets -g 802-11-wireless-security.psk connection show "$HOTSPOT" 2>/dev/null || true)"
-    fi
-
     if [[ -n "${CVP_HOTSPOT_PASSWORD:-}" ]]; then
         HOTSPOT_PASSWORD="$CVP_HOTSPOT_PASSWORD"
     elif [[ -n "$EXISTING_PSK" ]]; then
@@ -77,7 +92,7 @@ if (( HAS_WIFI )); then
     elif [[ -r "$PASSWORD_FILE" ]]; then
         HOTSPOT_PASSWORD="$(cat "$PASSWORD_FILE")"
     else
-        HOTSPOT_PASSWORD="$(python3 -c 'import secrets; alphabet="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"; print("".join(secrets.choice(alphabet) for _ in range(14)))')"
+        HOTSPOT_PASSWORD="$MAINTENANCE_PASSWORD"
     fi
 
     if ! nmcli -t -f NAME connection show | grep -Fxq "$HOTSPOT"; then
@@ -139,6 +154,7 @@ systemctl try-restart avahi-daemon.service >/dev/null 2>&1 || true
 echo
 HOST_NOW="$(hostnamectl --static 2>/dev/null || hostname)"
 echo "[CVP Access] Maintenance services installed"
+echo "Admin key : stored in $MAINTENANCE_PASSWORD_FILE"
 echo "LAN       : http://$HOST_NOW.local"
 if (( HAS_WIFI )); then
     echo "SSID      : $HOTSPOT"
