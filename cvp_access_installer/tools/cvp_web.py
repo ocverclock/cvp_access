@@ -1288,7 +1288,15 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
 
-        if path.startswith("/api/keyboard/"):
+        keyboard_editor_writes = {
+            "/api/keyboard/apply",
+            "/api/keyboard/profiles/create",
+            "/api/keyboard/profiles/duplicate",
+            "/api/keyboard/profiles/rename",
+            "/api/keyboard/profiles/delete",
+            "/api/keyboard/profiles/activate",
+        }
+        if path in keyboard_editor_writes:
             if not keyboard_write_authorized(payload):
                 self.send_json(
                     {"error": "Mot de passe maintenance requis pour modifier le clavier"},
