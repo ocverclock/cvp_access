@@ -1,4 +1,4 @@
-# Politique de retour utilisateur — CVP Access 1.6.1-RC1
+# Politique de retour utilisateur — CVP Access 1.6.1-RC2
 
 Date de consolidation : 25 septembre 2026.
 
