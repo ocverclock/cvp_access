@@ -4,6 +4,8 @@ Date de conception : 25 septembre 2026.
 
 Statut : **spécification ergonomique et architecture proposée — avant développement**.
 
+Base technique auditée : **CVP Access 1.6.1-RC2**.
+
 ## 1. Objectif
 
 CVP Access 1.7 doit permettre de configurer les raccourcis clavier depuis le portail Web sans éditer manuellement `keyboard.toml`.
@@ -34,7 +36,7 @@ Chaque touche est un vrai bouton HTML. Une touche affiche :
 
 - son libellé physique ;
 - sa fonction principale actuelle ;
-- un indicateur si des variantes avec Maj / Alt / AltGr / Cmd / Caps existent ;
+- un indicateur si des variantes avec Maj / Alt / AltGr / Cmd ou des combinaisons avancées existent ;
 - un état visuel « non affectée », « affectée », « réservée » ou « modifiée mais non appliquée ».
 
 Il ne faut pas demander à l'utilisateur de connaître des identifiants techniques comme :
@@ -138,7 +140,7 @@ L'éditeur 1.7 est la vue de modification.
 | Configuration clavier                         1.7              |
 | Configuration active : keyboard.toml                           |
 |                                                               |
-| Couche : [Simple] [Maj] [Alt] [AltGr] [Cmd] [Caps] [Avancé] |
+| Couche : [Simple] [Maj] [Alt] [AltGr] [Cmd] [Avancé]        |
 +--------------------------------------+------------------------+
 |                                      |                        |
 |       CLAVIER AZERTY INTERACTIF      |  Touche sélectionnée   |
@@ -181,14 +183,19 @@ META
 CAPS
 ```
 
-L'interface principale expose une couche à la fois :
+L'interface principale 1.7-RC1 expose une couche à la fois :
 
 - Simple ;
 - Maj ;
 - Alt ;
 - AltGr ;
-- Cmd ;
-- Caps.
+- Cmd.
+
+### Caps Lock : compatibilité uniquement
+
+Le moteur sait encore interpréter `CAPS`, mais le profil RC2 officiel a `caps_lock_layer = false` et la couche Caps expérimentale a été abandonnée dans l'usage courant.
+
+Décision après audit : **ne pas réintroduire Caps dans l'interface principale 1.7-RC1**. Les éventuelles affectations `CAPS+...` déjà présentes dans un ancien TOML doivent être conservées sans destruction, mais l'éditeur simple ne doit pas en créer. Une réintroduction ultérieure demanderait un choix ergonomique explicite et la gestion de `caps_fallback_to_base`.
 
 Exemple :
 
@@ -230,10 +237,10 @@ Un panneau « Avancé » peut permettre plus tard des combinaisons comme :
 
 ```text
 SHIFT+ALT+F1
-CAPS+SHIFT+F2
+ALTGR+SHIFT+F2
 ```
 
-Le backend doit néanmoins conserver sans les détruire les combinaisons avancées déjà présentes dans un TOML existant, même si l'interface simple ne les modifie pas.
+Le backend doit néanmoins conserver sans les détruire les combinaisons avancées déjà présentes dans un TOML existant, y compris d'anciennes combinaisons `CAPS+...`, même si l'interface simple ne les modifie pas.
 
 ## 5. Touches réservées et protégées
 
@@ -655,7 +662,7 @@ Décision proposée pour 1.7-RC1 :
 
 - nouvelle page `/keyboard` ;
 - clavier interactif ;
-- couches Simple / Maj / Alt / AltGr / Cmd / Caps ;
+- couches Simple / Maj / Alt / AltGr / Cmd ;
 - affichage des affectations actuelles ;
 - recherche/catalogue des fonctions, sans écriture.
 
@@ -699,7 +706,7 @@ La version n'est pas considérée prête tant que les cas suivants ne passent pa
 4. affecter une action paramétrée ;
 5. conserver une même action sur plusieurs touches ;
 6. modifier un raccourci avec Maj ;
-7. conserver les raccourcis avancés non édités ;
+7. conserver les raccourcis avancés non édités, y compris les anciens `CAPS+...` ;
 8. empêcher la modification de F14/F15/F16 ;
 9. conserver CTRL comme aide ;
 10. détecter un TOML modifié extérieurement ;
@@ -737,3 +744,156 @@ keyboard.toml reste la configuration persistante
 ```
 
 C'est la base retenue pour commencer le développement de CVP Access 1.7 sans fragiliser le moteur Yamaha déjà validé.
+
+
+## 22. Audit du dépôt RC2 avant développement
+
+Revue complémentaire effectuée le 25 septembre 2026 sur la base **1.6.1-RC2**.
+
+### 22.1 Écriture Web : authentification obligatoire
+
+Le portail actuel fonctionne avec :
+
+```text
+User=root
+CVP_WEB_REQUIRE_AUTH=0
+```
+
+et accepte les clients des réseaux IPv4 privés directement connectés au Raspberry.
+
+Ce mode est tolérable pour la phase de mise au point actuelle, mais **aucun endpoint 1.7 capable d'écrire le mapping ne doit être livré ainsi**.
+
+Avant d'activer `POST /api/keyboard/apply` :
+
+- l'écriture doit exiger une authentification ;
+- l'autorisation doit être contrôlée côté serveur, jamais seulement dans l'interface ;
+- les chemins de fichiers restent fixes ;
+- aucune donnée utilisateur ne doit être interpolée dans une commande shell ;
+- F14/F15/F16 et CTRL doivent être refusés côté backend même si le navigateur est contourné.
+
+Option minimale pour 1.7 : réactiver l'authentification des actions d'écriture par défaut.
+
+Le fait que `cvp-web.service` tourne en root augmente l'impact potentiel d'une erreur du portail. Réduire les privilèges ou déléguer les opérations sensibles à des helpers stricts reste souhaitable, mais ne doit pas entraîner un refactoring Yamaha dans cette version.
+
+### 22.2 Une désaffectation doit survivre aux mises à jour
+
+Les migrations actuelles 1.5.1 / 1.5.2 utilisent encore une logique de type :
+
+```text
+si une touche officielle est absente
+-> ajouter l'affectation officielle
+```
+
+Avec l'éditeur 1.7, une touche absente pourra signifier **« l'utilisateur l'a volontairement désaffectée »**.
+
+À partir de 1.7, une mise à jour ne doit donc plus déduire l'état de migration de la seule présence d'une touche.
+
+Règle retenue :
+
+- une configuration personnalisée est autoritaire pour `[keys]` ;
+- une nouvelle fonction de release peut rester non attribuée ;
+- seules les migrations structurelles nécessaires (renommage d'identifiant, changement de format) peuvent modifier automatiquement un mapping existant ;
+- ces migrations doivent être pilotées par une version de schéma/migration explicite, pas par « touche absente = touche à ajouter ».
+
+Sinon une mise à jour pourrait ressusciter une touche que le client venait précisément de supprimer dans l'interface.
+
+### 22.3 Un seul mapping usine canonique
+
+Le dépôt contient actuellement deux lignées de configuration :
+
+```text
+config/default.toml
+config/default-1.5.1.toml
+```
+
+et les chemins d'installation historiques peuvent produire :
+
+```text
+/opt/cvp-access/default-keyboard.toml
+/opt/cvp-access/default-keyboard-1.5.1.toml
+```
+
+La chaîne RC2 finit par utiliser le profil 1.5.1 consolidé, mais cette duplication est mauvaise pour une future commande « Restaurer le mapping officiel ».
+
+Pour 1.7 il faut une seule source canonique de mapping usine. Les anciens fichiers peuvent rester comme historique/compatibilité, mais l'éditeur, le Doctor, l'installateur et la restauration doivent pointer vers le même fichier courant.
+
+### 22.4 Le Doctor doit accepter un mapping volontairement personnalisé
+
+Le Doctor actuel recherche plusieurs affectations officielles précises et produit un avertissement lorsqu'elles sont absentes ou différentes.
+
+Ce comportement était utile avant l'éditeur, mais devient ambigu en 1.7.
+
+Le Doctor 1.7 doit distinguer :
+
+```text
+VALIDITÉ
+- TOML lisible
+- combinaisons valides
+- actions connues
+- paramètres valides
+- pas de conflit avec touches réservées
+
+PROFIL
+- identique au mapping usine
+- personnalisé
+```
+
+Un mapping personnalisé valide ne doit pas être présenté comme une panne.
+
+### 22.5 La carte clavier actuelle confirme le besoin d'un catalogue unique
+
+La revue de `cvp_keyboard_map.py` montre déjà des divergences de présentation :
+
+- certaines actions récentes n'ont pas de libellé humain dédié et retombent sur leur identifiant technique ;
+- `song_track_solo` ne bénéficie pas actuellement d'un libellé paramétré propre dans cette carte ;
+- certaines fonctions Guide / Métronome / Layer / Left sont regroupées visuellement dans la catégorie Style.
+
+Ce n'est pas un problème du moteur Yamaha, mais c'est exactement la raison pour laquelle 1.7 doit centraliser `label`, `category`, description et paramètres dans `cvp_action_catalog.py`.
+
+Le vérificateur 1.7 devra comparer catalogue, runtime, carte et API afin qu'une action ne puisse plus exister avec quatre descriptions différentes.
+
+### 22.6 Touches réservées : validation serveur
+
+Le runtime Recorder intercepte F14/F15/F16 et la carte indique qu'une affectation TOML sur ces touches serait ignorée. Le parseur TOML générique peut néanmoins encore accepter ces combinaisons.
+
+Pour conserver la compatibilité des anciens fichiers, le parseur historique peut continuer à les signaler. En revanche l'API 1.7 doit **refuser explicitement** toute tentative nouvelle d'affecter :
+
+```text
+F14
+F15
+F16
+CTRL+...
+```
+
+CTRL est une sémantique d'aide, pas une couche utilisateur.
+
+### 22.7 Validation après application
+
+Le simple état `systemctl is-active cvp-access.service` ne suffit pas comme seule preuve d'activation.
+
+Après écriture, la séquence doit au minimum confirmer :
+
+1. le fichier actif passe `cvp_keyboard.py --check` ;
+2. sa révision correspond au contenu validé ;
+3. le service redémarre et reste actif ;
+4. la carte est régénérée depuis ce même fichier ;
+5. aucun fallback de configuration n'a été utilisé à la place du fichier demandé.
+
+Le rollback doit restaurer exactement la sauvegarde précédente puis refaire les mêmes contrôles.
+
+### 22.8 Ordre de priorité après audit
+
+Avant toute page d'édition :
+
+```text
+1. catalogue d'actions unique
+2. métadonnées clavier uniques
+3. mapping usine canonique unique
+4. stratégie de migration compatible avec les désaffectations volontaires
+5. Doctor compatible avec les profils personnalisés
+6. protection des écritures Web
+7. éditeur lecture seule
+8. édition + application atomique
+```
+
+Ces points sont désormais considérés comme faisant partie du périmètre de fondation de CVP Access 1.7.
