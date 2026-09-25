@@ -77,12 +77,7 @@ if (( HAS_WIFI )); then
     elif [[ -r "$PASSWORD_FILE" ]]; then
         HOTSPOT_PASSWORD="$(cat "$PASSWORD_FILE")"
     else
-        HOTSPOT_PASSWORD="$(python3 - <<'PY'
-    import secrets
-    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
-    print("".join(secrets.choice(alphabet) for _ in range(14)))
-    PY
-    )"
+        HOTSPOT_PASSWORD="$(python3 -c 'import secrets; alphabet="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"; print("".join(secrets.choice(alphabet) for _ in range(14)))')"
     fi
 
     if ! nmcli -t -f NAME connection show | grep -Fxq "$HOTSPOT"; then
