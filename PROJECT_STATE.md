@@ -720,3 +720,6 @@ Checkpoint Recorder 25 septembre 2026 : première Note On -> démarrage et F15 c
 
 
 Amélioration ergonomique Recorder 25 septembre 2026 : ajout d'un « Stop. » pré-généré en lecture directe au F15 court pendant l'enregistrement, avant l'écriture disque et l'annonce dynamique « Enregistrement du … sauvegardé ». Objectif : supprimer la sensation de latence. Keyboard map mise à jour en « Stop + sauver ».
+
+
+Ergonomie Recorder 25 septembre 2026 : relecture F15 sans annonce « Lecture ». Le fichier MIDI démarre immédiatement pour éviter toute latence ou masquage des premières notes.
