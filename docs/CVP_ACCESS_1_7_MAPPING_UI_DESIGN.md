@@ -138,7 +138,7 @@ L'éditeur 1.7 est la vue de modification.
 ```text
 +---------------------------------------------------------------+
 | Configuration clavier                         1.7              |
-| Configuration active : keyboard.toml                           |
+| Profil : [ Standard Melody Music ▾ ]     État : Actif          |
 |                                                               |
 | Couche : [Simple] [Maj] [Alt] [AltGr] [Cmd] [Avancé]        |
 +--------------------------------------+------------------------+
@@ -806,6 +806,7 @@ Lecture :
 ```text
 GET /api/keyboard/config
 GET /api/keyboard/catalog
+GET /api/keyboard/profiles
 ```
 
 `/api/keyboard/config` retourne notamment :
@@ -824,7 +825,19 @@ GET /api/keyboard/catalog
 
 Le catalogue retourne des choix déjà structurés pour l'interface, sans faire interpréter au JavaScript les règles internes des paramètres.
 
-Application :
+Gestion des profils :
+
+```text
+POST /api/keyboard/profiles/create
+POST /api/keyboard/profiles/rename
+POST /api/keyboard/profiles/duplicate
+POST /api/keyboard/profiles/delete
+POST /api/keyboard/profiles/activate
+```
+
+Les opérations de renommage/suppression/activation utilisent l'identifiant stable du profil, jamais son nom comme chemin de fichier.
+
+Application des modifications :
 
 ```text
 POST /api/keyboard/apply
@@ -869,25 +882,213 @@ Décision proposée :
 
 Cela limite fortement le risque de régression sur le CVP-905.
 
-## 18. Profils clavier
+## 18. Profils clavier — inclus dans la 1.7
 
-Les profils seraient intéressants à terme :
+Décision révisée : la 1.7 doit permettre de **nommer, enregistrer, dupliquer, renommer et sélectionner plusieurs configurations clavier** depuis l'interface graphique.
+
+Exemples :
 
 ```text
-Profil standard
-Profil Song
-Profil accompagnement
-Profil client X
+Standard Melody Music
+Song / séquenceur
+Accompagnement Style
+Client Jean
+Test atelier
 ```
 
-Mais les intégrer dès le premier RC 1.7 ferait exploser la portée : sélection du profil actif, migration, sauvegardes, affichage, changements à chaud.
+### 18.1 Sélecteur de configuration
 
-Décision proposée pour 1.7-RC1 :
+En haut de l'éditeur :
 
-- **une seule configuration active** ;
-- sauvegardes/restauration solides ;
-- architecture compatible avec des profils futurs ;
-- profils reportés après validation terrain de l'éditeur simple.
+```text
+Configuration
+[ Standard Melody Music                         ▾ ]
+
+État : Active
+
+[ Enregistrer ]
+[ Enregistrer sous… ]
+[ Gérer les configurations ]
+```
+
+Le menu permet de choisir un autre profil sans connaître aucun nom de fichier.
+
+### 18.2 Enregistrer
+
+`Enregistrer` sauvegarde les modifications dans le profil actuellement sélectionné puis, si ce profil est actif, applique la nouvelle version à CVP Access avec le pipeline sécurisé de validation / sauvegarde / restart / rollback.
+
+Si le profil édité n'est pas actif, l'enregistrement ne doit pas redémarrer inutilement CVP Access.
+
+### 18.3 Enregistrer sous…
+
+Permet de créer une nouvelle configuration à partir de celle affichée :
+
+```text
+Nom de la nouvelle configuration
+[ Accompagnement gospel________________ ]
+
+[ Annuler ] [ Enregistrer ]
+```
+
+Le nouveau profil est créé sans écraser l'original.
+
+Après création, proposer explicitement :
+
+```text
+Configuration « Accompagnement gospel » enregistrée.
+
+[ Continuer à l'éditer ]
+[ L'activer maintenant ]
+```
+
+Ne pas changer automatiquement le profil actif sans action explicite de l'utilisateur.
+
+### 18.4 Renommer
+
+Dans « Gérer les configurations » :
+
+```text
+Standard Melody Music       ACTIVE
+Song / séquenceur
+Accompagnement gospel
+Client Jean
+
+[ Renommer ] [ Dupliquer ] [ Supprimer ] [ Activer ]
+```
+
+Le renommage modifie uniquement le nom humain du profil. Il ne doit pas casser son identifiant interne ni l'historique de sauvegarde.
+
+### 18.5 Dupliquer
+
+`Dupliquer` est important pour créer rapidement une variante :
+
+```text
+Standard Melody Music
+-> Dupliquer
+-> « Concert »
+-> modifier seulement quelques touches
+```
+
+C'est plus sûr que de repartir d'une configuration vide.
+
+### 18.6 Activer une configuration
+
+Sélectionner un profil dans le menu sert d'abord à **l'ouvrir dans l'éditeur**.
+
+L'activation est une action distincte :
+
+```text
+Profil ouvert : Accompagnement gospel
+Profil actif  : Standard Melody Music
+
+[ Activer cette configuration ]
+```
+
+Cela évite qu'un simple clic dans la liste change immédiatement le comportement du piano.
+
+Après activation réussie :
+
+```text
+Configuration active :
+Accompagnement gospel
+
+CVP Access a redémarré correctement.
+```
+
+### 18.7 Suppression
+
+Le profil actif ne peut pas être supprimé directement.
+
+Pour supprimer le profil actif :
+
+1. activer un autre profil ;
+2. puis supprimer l'ancien.
+
+Le mapping usine officiel est protégé et ne peut pas être supprimé ni renommé. Il peut être dupliqué pour créer un profil utilisateur.
+
+### 18.8 Stockage interne proposé
+
+Le client ne voit jamais ces chemins, mais la structure interne peut être :
+
+```text
+/etc/cvp-access/
+  keyboard.toml                 # configuration réellement chargée par le runtime
+  active-profile.json           # identifiant + révision du profil activé
+  profiles/
+    factory.toml                # profil usine protégé
+    <profile-id-1>.toml
+    <profile-id-2>.toml
+  backups/
+    ...
+```
+
+Chaque profil utilisateur possède un identifiant interne stable indépendant de son nom affiché.
+
+Exemple conceptuel dans le TOML :
+
+```toml
+[profile]
+id = "p-7f4c..."
+name = "Accompagnement gospel"
+```
+
+Le nom peut donc contenir espaces, accents et ponctuation sans devenir directement un nom de fichier.
+
+### 18.9 Pourquoi conserver keyboard.toml
+
+Le runtime actuel continue à charger :
+
+```text
+/etc/cvp-access/keyboard.toml
+```
+
+On évite ainsi de modifier le chemin d'exécution Yamaha déjà validé.
+
+Lorsqu'un profil est activé :
+
+```text
+profil choisi
+-> validation
+-> sauvegarde de l'ancien keyboard.toml
+-> copie atomique du profil choisi vers keyboard.toml
+-> génération carte / WAV nécessaires
+-> restart
+-> contrôle
+-> rollback si nécessaire
+```
+
+Le système de profils reste donc une couche de gestion autour du mécanisme actuel.
+
+### 18.10 Modification manuelle externe
+
+Si `keyboard.toml` est modifié par Samba ou SSH après activation d'un profil, son hash ne correspondra plus à la révision mémorisée.
+
+Le portail doit alors afficher :
+
+```text
+Configuration active modifiée hors du portail.
+
+[ Enregistrer ces changements dans le profil actif ]
+[ Enregistrer comme nouveau profil ]
+[ Recharger le profil actif et abandonner ces changements ]
+```
+
+Aucune synchronisation silencieuse ne doit écraser le travail manuel.
+
+### 18.11 Profil usine
+
+La 1.7 doit définir un **unique profil usine canonique**.
+
+Il est :
+
+- en lecture seule ;
+- toujours disponible ;
+- non renommable ;
+- non supprimable ;
+- duplicable ;
+- activable.
+
+Cela remplace l'ambiguïté actuelle entre `default.toml` et `default-1.5.1.toml`.
 
 ## 19. Découpage de développement recommandé
 
@@ -914,8 +1115,13 @@ Décision proposée pour 1.7-RC1 :
 - résumé des différences ;
 - annulation.
 
-### Étape D — application sûre
+### Étape D — profils et application sûre
 
+- stockage des profils nommés ;
+- création / duplication / renommage / suppression ;
+- sélection et activation explicites ;
+- profil usine protégé ;
+- détection des modifications externes ;
 - API d'application ;
 - hash de révision ;
 - validation ;
@@ -955,7 +1161,15 @@ La version n'est pas considérée prête tant que les cas suivants ne passent pa
 13. régénérer la carte clavier ;
 14. redémarrer CVP Access ;
 15. rollback automatique si le nouveau fichier empêche le service de repartir ;
-16. utiliser toute la page avec VoiceOver et sans souris.
+16. utiliser toute la page avec VoiceOver et sans souris ;
+17. créer un profil avec un nom libre ;
+18. enregistrer sous un nouveau nom sans écraser l'original ;
+19. renommer un profil sans changer son identifiant interne ;
+20. dupliquer un profil ;
+21. ouvrir un profil sans l'activer ;
+22. activer explicitement un profil et vérifier le restart ;
+23. empêcher la suppression du profil actif et du profil usine ;
+24. détecter un `keyboard.toml` modifié extérieurement depuis l'activation du profil.
 
 ## 21. Résumé de la décision proposée
 
@@ -980,7 +1194,8 @@ Le point architectural indispensable est :
 ```text
 une seule source de vérité pour les actions
 une seule source de vérité pour le layout clavier
-keyboard.toml reste la configuration persistante
+keyboard.toml reste la configuration active du runtime
+les profils nommés deviennent la bibliothèque persistante de configurations
 ```
 
 C'est la base retenue pour commencer le développement de CVP Access 1.7 sans fragiliser le moteur Yamaha déjà validé.
