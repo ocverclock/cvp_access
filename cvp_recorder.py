@@ -66,6 +66,7 @@ class RecorderController:
         self.navigation_long_fired = {}
         self.navigation_generation = {}
         self.navigation_timers = {}
+        self.navigation_cues = {}
 
         self.play_process: subprocess.Popen | None = None
         self.play_generation = 0
@@ -195,7 +196,7 @@ class RecorderController:
             name = self._ensure_selection()
         return self.recordings_dir / name if name else None
 
-    def _navigate_selection(self, delta, cue):
+    def _navigate_selection(self, delta):
         files = self._recording_files()
         if not files:
             self._speak("Aucun enregistrement disponible.")
@@ -216,7 +217,9 @@ class RecorderController:
             return False
 
         print("Recorder : sélection", name)
+        return True
 
+    def _play_navigation_cue(self, cue):
         player = getattr(
             self.core,
             "play_recorder_navigation_cue",
@@ -227,8 +230,6 @@ class RecorderController:
                 player(cue)
             except Exception as exc:
                 print("Recorder : erreur son navigation :", exc)
-
-        return True
 
     def _announce_selected_recording(self):
         path = self.selected_path()
@@ -373,8 +374,13 @@ class RecorderController:
         if state == STATE_PLAYING:
             self.stop_playback(announce=False)
 
-        if not self._navigate_selection(delta, cue):
+        if not self._navigate_selection(delta):
+            with self.lock:
+                self.navigation_pressed[code] = False
             return
+
+        with self.lock:
+            self.navigation_cues[code] = cue
 
         timer = threading.Timer(
             self.navigation_hold_seconds,
@@ -394,9 +400,16 @@ class RecorderController:
         with self.lock:
             self.navigation_pressed[code] = False
             timer = self.navigation_timers.pop(code, None)
+            long_fired = self.navigation_long_fired.get(code, False)
+            cue = self.navigation_cues.pop(code, None)
 
         if timer is not None:
             timer.cancel()
+
+        # Appui court : retour sonore au relâchement.
+        # Appui long : aucune sonnerie, seule l'annonce du morceau est lue.
+        if not long_fired and cue is not None:
+            self._play_navigation_cue(cue)
 
     def _fire_navigation_long_press(self, code, generation):
         with self.lock:
@@ -887,6 +900,7 @@ class RecorderController:
             )
             self.navigation_timers.clear()
             self.navigation_pressed.clear()
+            self.navigation_cues.clear()
 
         if timer is not None:
             timer.cancel()
