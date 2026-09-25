@@ -657,3 +657,32 @@ def save_active_external_as_profile(name):
     entry = _profile_entry(registry, profile["id"])
     _write_user_file(_profile_path(entry), ACTIVE_CONFIG.read_bytes(), 0o660)
     return get_profile(profile["id"])
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="CVP Access 1.7 keyboard profile store"
+    )
+    parser.add_argument(
+        "--init",
+        action="store_true",
+        help="initialise the profile store from the current keyboard.toml",
+    )
+    args = parser.parse_args()
+
+    if args.init:
+        ensure_store()
+        state = list_profiles()
+        for item in state["profiles"]:
+            suffix = " [ACTIVE]" if item["active"] else ""
+            print(f"{item['name']}{suffix}")
+        return 0
+
+    parser.print_help()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
