@@ -1285,9 +1285,9 @@ def main():
 
     try:
         for event in keyboard.read_loop():
-            # F15 belongs exclusively to the accessible MIDI recorder in 1.6.
-            # The recorder consumes press/release/autorepeat before the generic
-            # key router so short/long press semantics remain deterministic.
+            # F14/F15/F16 belong exclusively to the accessible MIDI recorder
+            # in 1.6.x. The recorder consumes press/release/autorepeat before
+            # the generic router so short/long semantics remain deterministic.
             if recorder is not None:
                 recorder_help = any(
                     code in {
