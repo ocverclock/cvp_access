@@ -171,6 +171,246 @@ Le clavier passe au-dessus et le panneau d'affectation en dessous.
 
 Le clavier peut défiler horizontalement si nécessaire. Aucune fonction essentielle ne doit dépendre d'un survol de souris.
 
+## 3.4 Mapping graphique concret — le TOML devient invisible
+
+L'éditeur 1.7 doit fonctionner comme un configurateur de clavier. Le fichier `keyboard.toml` reste une couche de stockage interne et n'est jamais montré dans le parcours normal.
+
+### Parcours principal : touche -> fonction
+
+```text
+1. choisir la couche : Simple / Maj / Alt / AltGr / Cmd
+2. cliquer la touche sur le clavier dessiné
+3. voir sa fonction actuelle
+4. cliquer « Changer la fonction »
+5. choisir une famille
+6. choisir la fonction
+7. choisir son paramètre si nécessaire
+8. voir immédiatement le nouveau libellé sur la touche
+9. continuer avec d'autres touches
+10. Appliquer une seule fois
+```
+
+Exemple :
+
+```text
+clic sur F8
+
+F8
+Actuellement : Non affectée
+
+[ Changer la fonction ]
+
+-> Song
+-> Piste — Mute / Unmute
+-> Piste 7
+
+Résultat en attente :
+F8 = Piste Song 7 — Mute / Unmute
+```
+
+Le navigateur conserve ce changement localement. Le Raspberry n'est modifié qu'au clic sur **Appliquer**.
+
+### Une touche doit être lisible directement sur le clavier
+
+Exemples :
+
+```text
+┌──────────────┐
+│      A       │
+│ Piste Song 1 │
+└──────────────┘
+
+┌──────────────┐
+│   Maj + A    │
+│ Solo piste 1 │
+└──────────────┘
+
+┌──────────────┐
+│      O       │
+│      —       │
+└──────────────┘
+
+┌──────────────┐
+│     F15      │
+│ Recorder     │
+│ Réservée     │
+└──────────────┘
+```
+
+L'état réservé/modifié doit toujours être exprimé par du texte, pas seulement par une couleur ou une icône.
+
+### Panneau contextuel de la touche sélectionnée
+
+```text
+Touche sélectionnée : A
+Couche : Simple
+
+Fonction actuelle
+Piste Song 1 — Mute / Unmute
+
+[ Changer la fonction ]
+[ Désaffecter ]
+```
+
+Après « Changer la fonction » :
+
+```text
+Rechercher : [________________]
+
+[ Song ]
+[ Style ]
+[ Parties clavier ]
+[ Informations ]
+[ Guide / accessibilité ]
+[ Registration ]
+[ Système ]
+```
+
+### Ne pas afficher une liste plate de dizaines d'actions
+
+Les actions paramétrées sont choisies en deux temps. Exemple Song :
+
+```text
+Song
+[ Lecture / Pause ]
+[ Stop ]
+[ Position ]
+[ Aller à la mesure ]
+[ Boucle A/B ]
+[ Piste — Mute / Unmute ]
+[ Solo piste ]
+[ Volume Song ]
+```
+
+Si l'utilisateur choisit « Piste — Mute / Unmute » :
+
+```text
+Choisir la piste
+
+[1] [2] [3] [4]
+[5] [6] [7] [8]
+[9] [10] [11] [12]
+[13] [14] [15] [16]
+```
+
+Même principe pour :
+
+```text
+Main Style -> [A] [B] [C] [D]
+Intro -> [1] [2] [3]
+Registration -> [1] ... [8]
+Volume -> [-5] [-1] [+1] [+5]
+```
+
+Le client ne voit donc jamais `song_track_toggle:7`, `style_main:3` ou un autre identifiant technique.
+
+### Aperçu immédiat avant sauvegarde
+
+Dès qu'une fonction est choisie, le clavier virtuel est mis à jour, mais uniquement en état « modification en attente ».
+
+```text
+A
+Avant : Piste Song 1 — Mute / Unmute
+Après : Nom du Song
+
+MODIFIÉ — non appliqué
+
+[ Annuler cette modification ]
+```
+
+### Sélection par clavier physique — option de confort
+
+En complément du clic sur le clavier dessiné, proposer éventuellement :
+
+```text
+[ Appuyer sur une touche du clavier pour la sélectionner ]
+```
+
+Le navigateur peut écouter un événement clavier et sélectionner la touche correspondante. Cette méthode reste secondaire car certains navigateurs ou systèmes interceptent certaines touches de fonction. Le clavier visuel reste toujours la référence fiable ; F14/F15/F16 sont de toute façon réservées.
+
+### Le modificateur se choisit avant la touche
+
+Le mode normal ne demande pas de cliquer graphiquement sur Maj puis A. On choisit simplement une couche en haut de page :
+
+```text
+[ Simple ] [ Maj ] [ Alt ] [ AltGr ] [ Cmd ]
+```
+
+Puis le clavier entier affiche cette couche :
+
+```text
+Simple : A -> Piste Song 1
+Maj    : A -> Solo piste 1
+```
+
+Cette approche est beaucoup plus lisible que de simuler plusieurs touches simultanément à la souris.
+
+### Recherche directe
+
+Un utilisateur qui connaît déjà la fonction peut la rechercher :
+
+```text
+main c       -> Main Style C
+solo 8       -> Solo piste 8
+volume song  -> Volume Song
+```
+
+La fonction trouvée est affectée à la touche actuellement sélectionnée.
+
+### Détails techniques uniquement pour le dépannage
+
+Une zone repliable peut éventuellement afficher :
+
+```text
+Détails techniques
+Action interne : song_track_toggle:7
+```
+
+mais cette information ne doit jamais être nécessaire pour configurer le produit.
+
+### Résumé graphique des changements
+
+```text
+3 modifications en attente
+
+A
+Piste Song 1 -> Nom du Song
+
+Maj + F4
+Non affectée -> Main C
+
+F2
+Annonce transpose -> Non affectée
+
+[ Tout annuler ] [ Vérifier ] [ Appliquer ]
+```
+
+Chaque modification peut être annulée individuellement avant application.
+
+### Interaction de référence retenue
+
+```text
+COUCHE
+  ↓
+CLAVIER VISUEL
+  ↓ clic sur une touche
+PANNEAU DE LA TOUCHE
+  ↓
+FAMILLE DE FONCTIONS
+  ↓
+FONCTION
+  ↓
+PARAMÈTRE VISUEL SI NÉCESSAIRE
+  ↓
+APERÇU SUR LA TOUCHE
+  ↓
+MODIFICATIONS EN ATTENTE
+  ↓
+APPLIQUER
+```
+
+Ce parcours fait du TOML un détail d'implémentation et non plus l'interface de configuration.
+
 ## 4. Sélection des couches et modificateurs
 
 Le moteur actuel sait gérer :
