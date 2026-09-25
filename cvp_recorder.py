@@ -675,9 +675,32 @@ class RecorderController:
             return
 
         when = datetime.now()
+        print(
+            "Recorder : sauvegardé",
+            path.name,
+        )
+        announcer = getattr(
+            self.core,
+            "announce_recorder_saved_now",
+            None,
+        )
+        if callable(announcer):
+            try:
+                announcer(
+                    when.day,
+                    when.month,
+                    number,
+                )
+                return
+            except Exception as exc:
+                print(
+                    "Recorder : erreur annonce sauvegarde :",
+                    exc,
+                )
+
         self._speak(
             "Enregistrement du "
-            f"{when.day} {self._month_name(when.month)} {when.year}, "
+            f"{when.day} {self._month_name(when.month)}, "
             f"numéro {number}, sauvegardé."
         )
 
