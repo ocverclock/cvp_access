@@ -404,3 +404,6 @@ CVP Access 1.6.0-RC1 est maintenant implémenté dans le dépôt. Lire `docs/CVP
 Le Recorder est dans `cvp_recorder.py`, activé uniquement par le frontend `cvp_access_1_6_0.py`. F15 est interceptée avant le routeur générique ; CTRL+F15 conserve l'aide vocale sans exécution.
 
 Le prochain travail est **validation matérielle**, pas redesign : installer via `VERIFY_PACKAGE_160.py` + `upgrade_1_6_0.sh`, tester F15 long/court, créer un .mid, vérifier la liste Web, puis tester lecture/stop et SysEx.
+
+
+F14/F16 servent maintenant à la navigation Recorder : F14 précédent (glissando descendant), F16 suivant (glissando montant), action dès l'enfoncement ; maintien ~0,8 s annonce la sélection depuis fragments WAV. Les cues sont générés par SoX pendant l'upgrade. F16 est supportée dans `cvp_keyboard.py` et la keyboard map, mais F14/F16 doivent être validées physiquement avant de déclarer ce checkpoint terminé.
