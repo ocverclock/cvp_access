@@ -73,6 +73,8 @@ def main():
 
     expected = [
         "cvp_access.py",
+        "cvp_access_1_5_2.py",
+        "cvp_access_1_5_1_base.py",
         "cvp_access_v1.5.py",
         "cvp_access_v1.4.1.py",
         "cvp_keyboard.py",
@@ -429,6 +431,21 @@ def main():
             OK if shutil.which(command) else FAIL,
             shutil.which(command) or "absente",
         )
+
+    nm_dev_rc, nm_dev_out, _ = command_output(
+        ["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "device", "status"]
+    )
+    wifi_devices = []
+    if nm_dev_rc == 0:
+        for line in nm_dev_out.splitlines():
+            fields = line.split(":")
+            if len(fields) >= 3 and fields[1] == "wifi":
+                wifi_devices.append(fields[0])
+    add(
+        "Interface Wi-Fi",
+        OK if wifi_devices else WARN,
+        ", ".join(wifi_devices) if wifi_devices else "aucune",
+    )
 
     wifi_state = service_state("cvp-wifi-fallback.service")
     web_state = service_state("cvp-web.service")
