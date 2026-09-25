@@ -11,8 +11,8 @@ CVP Access permet de piloter et d’interroger des fonctions importantes d’un 
 Version de référence :
 
 ```text
-CVP Access 1.6.0-RC1
-Consolidation : 24 septembre 2026
+CVP Access 1.6.1-RC1
+Consolidation : 25 septembre 2026
 ```
 
 Validation matérielle principale :
@@ -30,8 +30,9 @@ Piper fr_FR-siwis-medium
 Le runtime reste construit au-dessus du moteur historique validé. La couche actuelle est transitoire :
 
 ```text
-cvp_access_1_5_2.py
-  -> cvp_access_1_5_1_base.py
+cvp_access_1_6_1.py
+  -> cvp_access_1_5_2.py
+      -> cvp_access_1_5_1_base.py
       -> cvp_access_v1.5.py
           -> cvp_access_v1.4.1.py
 ```
@@ -96,9 +97,9 @@ Les sections Style restent disponibles comme actions configurables même lorsqu�
 - worker Piper préchargé ;
 - carte clavier HTML générée depuis la configuration active.
 
-Les annonces Song prévisibles sont composées de WAV. La banque de nombres destinée aux mesures est limitée à `0..150`. Les 16 annonces `Solo piste N` sont pré-générées.
+Les annonces prévisibles sont composées de WAV. La banque de nombres `0..150` sert aux mesures et aux annonces du Recorder. Les 12 mois, le mot « numéro », les 16 annonces `Solo piste N` et les retours courts du Recorder sont pré-générés.
 
-## Layout clavier 1.5.2-RC1
+## Layout clavier 1.6.1-RC1
 
 ### Parties Style / clavier
 
@@ -227,22 +228,33 @@ Solo piste 1
 Pas de Song chargé.
 ```
 
-## Dictaphone MIDI — 1.6
+## Dictaphone MIDI — 1.6.1
 
-F15 est la touche unique du dictaphone MIDI accessible :
+Le Recorder utilise trois touches contiguës :
 
 ```text
+F14 court -> morceau précédent + glissando descendant
+F14 long  -> morceau précédent puis annonce de la sélection, sans bip
+
 F15 long  -> « Enregistrement prêt »
 1re note  -> début réel de l'enregistrement
 F15 court -> annuler si rien n'a été joué
-F15 court -> arrêter + sauvegarder si l'enregistrement a démarré
-F15 court au repos -> lire le morceau sélectionné
+F15 court -> « Stop » immédiat + sauvegarde si l'enregistrement a démarré
+F15 court au repos -> lire immédiatement le morceau sélectionné, sans annonce
 F15 court en lecture -> stop
+
+F16 court -> morceau suivant + glissando montant
+F16 long  -> morceau suivant puis annonce de la sélection, sans bip
 ```
 
-Les fichiers sont enregistrés dans `~/CVP_Recordings/` sous la forme `AAAA-MM-JJ_NNN.mid`. Le portail Web permet de choisir le morceau courant et Samba expose le partage `CVP_recordings`.
+Les cues F14/F16 sont générés localement par SoX pendant l'installation. Les
+fichiers sont enregistrés dans `~/CVP_Recordings/` sous la forme
+`AAAA-MM-JJ_NNN.mid`. Le portail Web permet de choisir le morceau courant et
+Samba expose le partage `CVP_recordings`.
 
-CTRL+F15 annonce la fonction sans l'exécuter.
+`CTRL+F14/F15/F16` annonce la fonction sans l'exécuter. La politique complète
+voix / sons / silence est documentée dans
+`docs/FEEDBACK_POLICY_1_6_1.md`.
 
 ## Maintenance autonome
 
@@ -292,7 +304,7 @@ Les partages Samba officiels sont `CVP_access` pour le projet et `CVP_config` po
 
 La carte clavier reprend les blocs **Accès Web** et **Partages Samba** tout en restant conçue pour une impression sur **une seule page A4 paysage**.
 
-Le portail propose également **Mettre à jour depuis GitHub**. Cette action vérifie que le dépôt local ne contient pas de modifications, effectue un `git pull --ff-only`, lance le vérificateur de paquet le plus récent puis l'upgrade de version le plus récent. La mise à jour est exécutée dans un service systemd séparé afin de continuer même lorsque le portail Web se redémarre.
+Le portail propose également **Mettre à jour depuis GitHub**. Cette action vérifie que le dépôt local ne contient pas de modifications, effectue un `git pull --ff-only`, puis utilise `cvp_access_installer/release.env` pour sélectionner le vérificateur et l'upgrade de la release courante. Un fallback par numéro de version reste présent pour les anciens clones. La mise à jour est exécutée dans un service systemd séparé afin de continuer même lorsque le portail Web se redémarre.
 
 Pour la phase de mise au point actuelle, la demande de mot de passe des boutons du portail est suspendue (`CVP_WEB_REQUIRE_AUTH=0`). Le mécanisme reste disponible pour être réactivé ultérieurement. Le point d'accès fournit également les indications de portail captif destinées à proposer automatiquement le dashboard sur téléphone ou ordinateur. L'accès direct `http://10.42.0.1` reste toujours la référence en mode hotspot.
 
@@ -301,13 +313,13 @@ Pour la phase de mise au point actuelle, la demande de mot de passe des boutons 
 ```bash
 cd ~/CVP_access
 git pull --ff-only origin main
-python3 VERIFY_PACKAGE_160.py
-sudo bash cvp_access_installer/upgrade_1_6_0.sh
+python3 VERIFY_PACKAGE_161.py
+sudo bash cvp_access_installer/upgrade_1_6_1.sh
 ```
 
 L’upgrade conserve les personnalisations existantes et n’ajoute les nouveaux raccourcis que si les combinaisons sont libres.
 
-Le Doctor vérifie notamment le runtime, le layout, les WAV d’états, les WAV de mute Style, les 16 bindings Solo et les 16 WAV Solo.
+Le Doctor vérifie notamment le runtime, le layout, les WAV d’états, les WAV de mute Style, les 16 bindings Solo, les WAV du Recorder, les 151 nombres pré-générés, le dossier d'enregistrements et les commandes `aplaymidi` / `sox`.
 
 ## État de validation matérielle
 
@@ -335,6 +347,8 @@ Lire dans cet ordre :
 
 ```text
 PROJECT_STATE.md
+docs/CVP_ACCESS_1_6_1.md
+docs/FEEDBACK_POLICY_1_6_1.md
 docs/CVP_ACCESS_1_6.md
 docs/CVP_ACCESS_1_5_2.md
 docs/NETWORK_MAINTENANCE_PORTAL.md
