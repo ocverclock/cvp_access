@@ -292,12 +292,50 @@ fi
 # -----------------------------------------------------------------------------
 # Current CVP Access release
 # -----------------------------------------------------------------------------
-RELEASE_UPGRADER="$INSTALLER_DIR/upgrade_1_6_0.sh"
-if [[ -f "$RELEASE_UPGRADER" ]]; then
-    log "Deploying current CVP Access release 1.5.2-RC1"
+RELEASE_MANIFEST="$INSTALLER_DIR/release.env"
+if [[ -f "$RELEASE_MANIFEST" ]]; then
+    # shellcheck disable=SC1090
+    source "$RELEASE_MANIFEST"
+    RELEASE_UPGRADER="$INSTALLER_DIR/${CVP_RELEASE_UPGRADER:?Missing CVP_RELEASE_UPGRADER}"
+    RELEASE_LABEL="${CVP_RELEASE_VERSION:-unknown}"
+else
+    RELEASE_UPGRADER="$(
+        find "$INSTALLER_DIR" -maxdepth 1 -type f -name 'upgrade_*.sh' -printf '%p\n' \
+        | grep -E '/upgrade_[0-9]+(_[0-9]+){1,2}\.sh
+
+# -----------------------------------------------------------------------------
+# Diagnostic
+# -----------------------------------------------------------------------------
+log "Running CVP Doctor"
+runuser -u "$CVP_USER" -- env \
+    HOME="$CVP_HOME" \
+    CVP_PROJECT_DIR="$REPO_DIR" \
+    CVP_RUNTIME_DIR="$RUNTIME_DIR" \
+    CVP_VOICE_DIR="$VOICE_DIR" \
+    CVP_PIPER_MODEL="$PIPER_MODEL" \
+    CVP_CONFIG_FILE="$CONFIG_FILE" \
+    python3 "$INSTALLER_DIR/tools/cvp_doctor.py" || true
+
+apt-get clean
+
+if [[ -f /var/run/reboot-required ]]; then
+    warn "A reboot is required by the OS update: sudo reboot"
+fi
+
+rm -f -- "${BASH_SOURCE[0]}" 2>/dev/null || true
+log "Update complete"
+ \
+        | sort -V \
+        | tail -n 1
+    )"
+    RELEASE_LABEL="$(basename "$RELEASE_UPGRADER" .sh | sed 's/^upgrade_//; s/_/./g')"
+fi
+
+if [[ -n "$RELEASE_UPGRADER" && -f "$RELEASE_UPGRADER" ]]; then
+    log "Deploying current CVP Access release $RELEASE_LABEL"
     CVP_USER="$CVP_USER" bash "$RELEASE_UPGRADER"
 else
-    warn "Current release upgrader not found: $RELEASE_UPGRADER"
+    warn "Current release upgrader not found: ${RELEASE_UPGRADER:-none}"
 fi
 
 # -----------------------------------------------------------------------------
