@@ -395,3 +395,22 @@ Le prochain checkpoint reste la non-régression SysEx pendant que le tap Recorde
 - navigation cyclique ;
 - sons générés automatiquement par SoX pendant installation / upgrade ;
 - F14/F16 doivent encore être validées physiquement sur le clavier de référence, F15 étant déjà validée.
+
+
+### Validation matérielle F14 / F16
+
+Test réalisé le 25 septembre 2026 sur le Raspberry atelier.
+
+Journal observé :
+
+```text
+Recorder : sélection 2026-09-25_002.mid
+Recorder : sélection 2026-09-25_003.mid
+```
+
+Statut :
+
+- F14/F16 : VALIDÉS physiquement ;
+- changement de sélection : VALIDÉ ;
+- cues de navigation montant/descendant : VALIDÉS à l'usage ;
+- ressenti utilisateur : sons courts, distincts et très réactifs.
