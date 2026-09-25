@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Contrôle de cohérence CVP Access 1.5.x / 1.6.x."""
+"""Contrôle de cohérence CVP Access 1.6.1 et couches compatibles."""
 
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -61,6 +62,12 @@ def main():
         os.environ.get(
             "CVP_VOICE_DIR",
             home / "cvp_voice",
+        )
+    )
+    recordings = Path(
+        os.environ.get(
+            "CVP_RECORDINGS_DIR",
+            home / "CVP_Recordings",
         )
     )
 
@@ -132,7 +139,7 @@ def main():
             (
                 OK
                 if str(version).startswith(
-                    ("1.5.1", "1.5.2", "1.6.0")
+                    ("1.5.1", "1.5.2", "1.6.0", "1.6.1")
                 )
                 else FAIL
             ),
@@ -254,7 +261,7 @@ def main():
     ]
 
     add(
-        "WAV états 1.5.1",
+        "WAV états",
         (
             OK
             if not missing_states
@@ -317,6 +324,112 @@ def main():
         ),
     )
 
+    recorder_fixed = [
+        voices / "recorder" / name
+        for name in (
+            "ready.wav",
+            "cancelled.wav",
+            "no_recording.wav",
+            "play_stopped.wav",
+            "play_finished.wav",
+            "output_missing.wav",
+            "save_error.wav",
+            "stop.wav",
+            "previous.wav",
+            "next.wav",
+            "numero.wav",
+        )
+    ]
+    recorder_fixed.extend(
+        voices / "recorder" / f"month_{month:02d}.wav"
+        for month in range(1, 13)
+    )
+    missing_recorder_fixed = [
+        path for path in recorder_fixed
+        if not path.is_file()
+    ]
+    add(
+        "WAV Recorder",
+        OK if not missing_recorder_fixed else WARN,
+        (
+            f"{len(recorder_fixed)} présents"
+            if not missing_recorder_fixed
+            else f"{len(missing_recorder_fixed)} absents"
+        ),
+    )
+
+    number_files = [
+        voices / "numbers" / f"number_{number:03d}.wav"
+        for number in range(0, 151)
+    ]
+    missing_numbers = [
+        path for path in number_files
+        if not path.is_file()
+    ]
+    add(
+        "WAV nombres 0..150",
+        OK if not missing_numbers else WARN,
+        (
+            "151 présents"
+            if not missing_numbers
+            else f"{len(missing_numbers)} absents"
+        ),
+    )
+
+    recorder_dir_ok = (
+        recordings.is_dir()
+        and os.access(recordings, os.R_OK | os.W_OK | os.X_OK)
+    )
+    midi_files = (
+        len(list(recordings.glob("*.mid")))
+        if recordings.is_dir()
+        else 0
+    )
+    add(
+        "Recorder stockage",
+        OK if recorder_dir_ok else FAIL,
+        (
+            f"{midi_files} fichier(s) MIDI · {recordings}"
+            if recorder_dir_ok
+            else f"dossier absent/non accessible: {recordings}"
+        ),
+    )
+
+    selection_file = recordings / ".cvp-selection.json"
+    selection_detail = "aucune sélection"
+    selection_status = OK
+    if selection_file.is_file():
+        try:
+            import json
+            selected = json.loads(
+                selection_file.read_text(encoding="utf-8")
+            ).get("selected")
+            target = recordings / str(selected)
+            if (
+                not isinstance(selected, str)
+                or Path(selected).name != selected
+                or not target.is_file()
+            ):
+                selection_status = WARN
+                selection_detail = "sélection invalide"
+            else:
+                selection_detail = selected
+        except Exception as exc:
+            selection_status = WARN
+            selection_detail = f"illisible: {exc}"
+    add(
+        "Recorder sélection",
+        selection_status,
+        selection_detail,
+    )
+
+    for command in ("aplaymidi", "sox"):
+        add(
+            f"Commande {command}",
+            OK if shutil.which(command) else FAIL,
+            shutil.which(command) or "absente",
+        )
+
     wifi_state = service_state("cvp-wifi-fallback.service")
     web_state = service_state("cvp-web.service")
     add(
@@ -355,7 +468,7 @@ def main():
 
     print()
     print(
-        "CVP Access Doctor 1.5.1"
+        "CVP Access Doctor 1.6.1"
     )
     print(
         "=" * 72
