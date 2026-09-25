@@ -207,3 +207,25 @@ Statut :
 - F15 long -> « Enregistrement prêt » : VALIDÉ ;
 - F15 court à l'état armé -> annulation : VALIDÉ ;
 - aucun enregistrement vide ne doit être créé dans ce scénario.
+
+
+## Validation matérielle — enregistrement et sauvegarde
+
+Test réalisé le 25 septembre 2026 sur CVP Access 1.6.0-RC1.
+
+Journal observé :
+
+```text
+Recorder : Enregistrement prêt.
+Recorder : enregistrement démarré (tempo 100)
+Recorder : Enregistrement du 25 septembre 2026, numéro 1, sauvegardé.
+```
+
+Statut :
+
+- F15 long -> armement : VALIDÉ ;
+- première Note On -> démarrage : VALIDÉ ;
+- tempo lu au moment de l'armement (100 BPM) : VALIDÉ ;
+- F15 court pendant enregistrement -> arrêt + sauvegarde : VALIDÉ ;
+- annonce vocale datée + numéro : VALIDÉ ;
+- existence et lecture du fichier .mid restent à vérifier explicitement.
