@@ -482,6 +482,13 @@ def recording_catalog():
         paths = []
 
     total_count = len(paths)
+    total_size = 0
+    for path in paths:
+        try:
+            total_size += path.stat().st_size
+        except OSError:
+            pass
+
     display_paths = paths[:100]
 
     # Si la sélection courante est plus ancienne que les 100 derniers fichiers,
@@ -508,6 +515,7 @@ def recording_catalog():
     return {
         "selected": selected,
         "total_count": total_count,
+        "total_size": total_size,
         "displayed_count": len(files),
         "files": files,
     }
