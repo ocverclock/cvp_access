@@ -368,52 +368,7 @@ if [[ -f "$RELEASE_MANIFEST" ]]; then
 else
     RELEASE_UPGRADER="$(
         find "$INSTALLER_DIR" -maxdepth 1 -type f -name 'upgrade_*.sh' -printf '%p\n' \
-        | grep -E '/upgrade_[0-9]+(_[0-9]+){1,2}\.sh
-
-# -----------------------------------------------------------------------------
-# Diagnostic
-# -----------------------------------------------------------------------------
-log "Running CVP Doctor"
-DOCTOR="$INSTALLER_DIR/tools/cvp_doctor.py"
-if [[ -f "$DOCTOR" ]]; then
-    runuser -u "$CVP_USER" -- env \
-        HOME="$CVP_HOME" \
-        CVP_PROJECT_DIR="$REPO_DIR" \
-        CVP_RUNTIME_DIR="$RUNTIME_DIR" \
-        CVP_VOICE_DIR="$VOICE_DIR" \
-        CVP_PIPER_MODEL="$PIPER_MODEL" \
-        CVP_CONFIG_FILE="$CONFIG_FILE" \
-        python3 "$DOCTOR" || true
-fi
-
-# Keep installed packages intact. Do not autoremove on a machine we did not provision.
-apt-get clean
-
-HOST_NOW="$(hostnamectl --static 2>/dev/null || hostname)"
-log "Installation complete"
-printf 'SSH   : ssh %s@%s.local\n' "$CVP_USER" "$HOST_NOW"
-printf 'Samba : \\\\%s.local\\CVP_access\n' "$HOST_NOW"
-if [[ -f "$CONFIG_FILE" ]]; then
-    printf 'Config: \\\\%s.local\\CVP_config\\keyboard.toml\n' "$HOST_NOW"
-fi
-printf 'Status: systemctl status cvp-access\n'
-printf 'Doctor: python3 %s/tools/cvp_doctor.py\n' "$INSTALLER_DIR"
-
-if [[ -f /var/run/reboot-required ]]; then
-    warn "A reboot is required by the OS update."
-else
-    warn "A reboot is recommended after the first installation."
-fi
-
-if [[ -t 0 && -r /dev/tty ]]; then
-    printf '\n'
-    IFS= read -r -p "Reboot now? [Y/n] " answer </dev/tty || true
-    case "${answer:-Y}" in
-        n|N|no|NO|non|NON) printf 'Reboot postponed.\n' ;;
-        *) reboot ;;
-    esac
-fi
- \
+        | grep -E '/upgrade_[0-9]+(_[0-9]+){1,2}\.sh$' \
         | sort -V \
         | tail -n 1
     )"
