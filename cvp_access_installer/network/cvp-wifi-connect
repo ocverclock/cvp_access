@@ -2,9 +2,32 @@
 set -Eeuo pipefail
 
 REQUEST_FILE="${1:-}"
-DEV="${CVP_WIFI_DEVICE:-wlan0}"
 HOTSPOT="${CVP_HOTSPOT_NAME:-CVP-ACCESS}"
 RESULT_FILE="/run/cvp-wifi-connect-result.json"
+
+detect_wifi_device() {
+    if [[ -n "${CVP_WIFI_DEVICE:-}" ]]; then
+        printf '%s\n' "$CVP_WIFI_DEVICE"
+        return
+    fi
+
+    local profile_dev=""
+    profile_dev="$(nmcli -g connection.interface-name connection show "$HOTSPOT" 2>/dev/null || true)"
+    if [[ -n "$profile_dev" ]] && nmcli -t -f DEVICE,TYPE device status 2>/dev/null |
+        awk -F: -v dev="$profile_dev" '$1 == dev && $2 == "wifi" { found=1 } END { exit(found ? 0 : 1) }'; then
+        printf '%s\n' "$profile_dev"
+        return
+    fi
+
+    nmcli -t -f DEVICE,TYPE,STATE device status 2>/dev/null |
+        awk -F: '$2 == "wifi" && $3 != "unavailable" { print $1; exit }'
+}
+
+DEV="$(detect_wifi_device)"
+[[ -n "$DEV" ]] || {
+    echo "Aucune interface Wi-Fi disponible." >&2
+    exit 3
+}
 
 log() {
     logger -t cvp-wifi-connect "$*"
