@@ -858,7 +858,8 @@ details summary{cursor:pointer;font-weight:700}
         <button class="protected" onclick="action('restart')">Relancer CVP Access</button>
         <button class="secondary protected" onclick="action('doctor')">Lancer le Doctor</button>
         <button id="updateButton" class="primary protected" onclick="updateGithub()">Mettre à jour depuis GitHub</button>
-        <a class="btn primary" href="/keyboard">Configuration clavier</a>\n        <a class="btn secondary" href="/keyboard-map">Carte clavier</a>
+        <a class="btn primary" href="/keyboard">Configuration clavier</a>
+        <a class="btn secondary" href="/keyboard-map">Carte clavier</a>
         <button class="danger protected" onclick="rebootPi()">Redémarrer le Raspberry</button>
       </div>
       <div id="actionResult" class="small" style="margin-top:10px"></div>
