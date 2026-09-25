@@ -717,3 +717,6 @@ Checkpoint Recorder 25 septembre 2026 : armement F15 long et annulation F15 cour
 
 
 Checkpoint Recorder 25 septembre 2026 : première Note On -> démarrage et F15 court -> sauvegarde validés matériellement sur 1.6.0-RC1. Tempo lu : 100 BPM. Annonce : « Enregistrement du 25 septembre 2026, numéro 1, sauvegardé. » Prochain test : vérifier le fichier généré puis lecture/stop via F15.
+
+
+Amélioration ergonomique Recorder 25 septembre 2026 : ajout d'un « Stop. » pré-généré en lecture directe au F15 court pendant l'enregistrement, avant l'écriture disque et l'annonce dynamique « Enregistrement du … sauvegardé ». Objectif : supprimer la sensation de latence. Keyboard map mise à jour en « Stop + sauver ».
