@@ -40,6 +40,7 @@ python_files = [
     "cvp_access_installer/tools/generate_151_voices.py",
     "cvp_access_installer/tools/cvp_doctor.py",
     "cvp_access_installer/tools/cvp_web.py",
+    "TEST_KEYBOARD_PROFILES_170.py",
 ]
 
 for rel in python_files:
@@ -278,6 +279,20 @@ service = (
 # Global dev auth may remain disabled in RC1; keyboard writes are independently
 # protected server-side and the verifier checks that strict path above.
 assert "Environment=CVP_WEB_REQUIRE_AUTH=0" in service
+
+self_test = subprocess.run(
+    ["python3", str(root / "TEST_KEYBOARD_PROFILES_170.py")],
+    capture_output=True,
+    text=True,
+    check=False,
+)
+assert self_test.returncode == 0, (
+    "Self-test clavier/profils en échec:\n"
+    + self_test.stdout
+    + "\n"
+    + self_test.stderr
+)
+assert "keyboard/profile self-test: OK" in self_test.stdout
 
 print("CVP Access 1.7.0 RC1 package: OK")
 ,
