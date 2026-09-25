@@ -98,7 +98,7 @@ assert "CVP_REPO_DIR=@REPO_DIR@" in service_template_source
 
 speech_source = (root / "cvp_speech_151.py").read_text(encoding="utf-8")
 keyboard_source = (root / "cvp_keyboard.py").read_text(encoding="utf-8")
-assert 'range(1, 16)' in keyboard_source
+assert 'range(1, 17)' in keyboard_source
 
 runtime_source = (root / "cvp_access_v1.5.py").read_text(encoding="utf-8")
 generator_source = (
