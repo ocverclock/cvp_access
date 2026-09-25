@@ -714,3 +714,6 @@ sudo bash cvp_access_installer/upgrade_1_6_0.sh
 
 
 Checkpoint Recorder 25 septembre 2026 : armement F15 long et annulation F15 court validés matériellement sur 1.6.0-RC1. Journal : « Recorder : Enregistrement prêt. » puis « Recorder : Enregistrement annulé. » Prochain test : première Note On -> enregistrement -> F15 court -> sauvegarde .mid datée.
+
+
+Checkpoint Recorder 25 septembre 2026 : première Note On -> démarrage et F15 court -> sauvegarde validés matériellement sur 1.6.0-RC1. Tempo lu : 100 BPM. Annonce : « Enregistrement du 25 septembre 2026, numéro 1, sauvegardé. » Prochain test : vérifier le fichier généré puis lecture/stop via F15.
