@@ -401,23 +401,93 @@ Le prochain travail est **validation matérielle**, pas redesign : installer via
 F14/F16 servent maintenant à la navigation Recorder : F14 précédent (glissando descendant), F16 suivant (glissando montant), action dès l'enfoncement ; maintien ~0,8 s annonce la sélection depuis fragments WAV. Les cues sont générés par SoX pendant l'upgrade. F16 est supportée dans `cvp_keyboard.py` et la keyboard map, mais F14/F16 doivent être validées physiquement avant de déclarer ce checkpoint terminé.
 
 
-## Projet 1.7 — chantier courant
+## Projet 1.7 — RC1 implémentée, validation Raspberry requise
 
-Référence de conception :
+Références :
 
 ```text
 docs/CVP_ACCESS_1_7_MAPPING_UI_DESIGN.md
+docs/CVP_ACCESS_1_7_IMPLEMENTATION.md
 ```
 
-Audit préalable effectué sur 1.6.1-RC2. Points à traiter avant toute écriture Web :
+Branche :
 
-- centraliser catalogue d'actions et métadonnées clavier ;
-- conserver F14/F15/F16 comme touches réservées et CTRL comme aide ;
-- ne pas exposer Caps Lock dans l'éditeur simple RC1 ;
-- rendre les désaffectations persistantes face aux futures mises à jour ;
-- définir un unique mapping usine canonique ;
-- adapter le Doctor aux mappings personnalisés ;
-- protéger obligatoirement les endpoints d'écriture Web ;
-- les profils nommés font partie du périmètre 1.7 : créer, enregistrer sous, renommer, dupliquer, ouvrir et activer explicitement ;
-- conserver `keyboard.toml` comme fichier réellement chargé par le runtime, les profils étant une couche de gestion autour ;
-- conserver le moteur Yamaha/SysEx validé sans refonte simultanée.
+```text
+feature/cvp-access-1.7-mapping-ui
+```
+
+PR GitHub :
+
+```text
+#1 — draft — CVP Access 1.7-RC1 — éditeur graphique et profils clavier
+```
+
+Version de travail : `1.7.0-RC1`.
+
+État au 25 septembre 2026 :
+
+- éditeur Web graphique `/keyboard` implémenté ;
+- aucune édition TOML nécessaire dans le parcours normal ;
+- couches Simple / Maj / Alt / AltGr / Cmd ;
+- navigation + flèches incluses ;
+- choix des actions en français et paramètres en deux étapes ;
+- profils : créer, Enregistrer sous, renommer, dupliquer, supprimer, ouvrir et activer ;
+- profil usine protégé ;
+- configuration active toujours `/etc/cvp-access/keyboard.toml` ;
+- profils ajoutés autour du runtime, sans refonte Yamaha ;
+- F14/F15/F16 verrouillées côté serveur ;
+- CTRL réservé à l'aide ;
+- Échap avertit avant remapping ;
+- détection SHA-256 des modifications concurrentes ;
+- détection de `keyboard.toml` modifié par SSH/Samba et import comme nouveau profil ;
+- sauvegarde + écriture atomique + carte/WAV + restart + contrôle + rollback ;
+- 10 sauvegardes conservées ;
+- catalogue unique `cvp_action_catalog.py` ;
+- layout unique `cvp_keyboard_layout.py` ;
+- carte imprimable branchée sur les mêmes métadonnées ;
+- 46/46 actions historiques couvertes ;
+- profil usine canonique `config/default-current.toml` ;
+- fallback intégré aligné sur les 83 bindings usine ;
+- `[keys]` vide volontairement accepté sans fallback ;
+- migrations « touche absente => recréer » désactivées par l'upgrader 1.7 ;
+- Doctor compatible avec les profils personnalisés ;
+- endpoint matériel `/api/keyboard/select` conservé ;
+- écritures mapping/profils toujours authentifiées ;
+- `/etc/cvp-access/maintenance-password` disponible même sans Wi-Fi, avec fallback hotspot historique ;
+- `VERIFY_PACKAGE_170.py` propre ;
+- `TEST_KEYBOARD_PROFILES_170.py` ajouté ;
+- workflow CI ajouté, mais aucun run GitHub n'est actuellement exposé : ne pas considérer la CI comme validée.
+
+Validation Raspberry :
+
+```bash
+cd ~/CVP_access
+git fetch origin
+git switch feature/cvp-access-1.7-mapping-ui
+git pull --ff-only origin feature/cvp-access-1.7-mapping-ui
+python3 VERIFY_PACKAGE_170.py
+```
+
+Attendu : `CVP Access 1.7.0 RC1 package: OK`.
+
+Puis seulement :
+
+```bash
+sudo bash cvp_access_installer/upgrade_1_7_0.sh
+```
+
+Après installation :
+
+```bash
+systemctl --no-pager --full status cvp-access.service cvp-web.service
+sudo cat /etc/cvp-access/maintenance-password
+```
+
+Puis ouvrir `http://cvp-access.local/keyboard`.
+
+Important :
+
+- **ne pas fusionner PR #1 avant test matériel** ;
+- **ne pas publier de stable 1.7 avant test matériel** ;
+- ne pas refactorer Yamaha/SysEx dans cette version ;
+- suivre `docs/CVP_ACCESS_1_7_IMPLEMENTATION.md` pour la validation terrain.
