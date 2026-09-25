@@ -225,6 +225,9 @@ Date de consolidation : **25 septembre 2026**.
 - panneaux de maintenance rétractables ;
 - cache du port `aplaymidi` pour les relectures successives ;
 - Doctor étendu au Recorder ;
+- confirmation de sauvegarde assemblée depuis des WAV, sans Piper dans le cas normal ;
+- compteur + taille cumulée des enregistrements dans le portail ;
+- audit des scripts d'installation/update et contrôle `bash -n` intégré au vérificateur ;
 - manifeste unique `cvp_access_installer/release.env` ;
 - frontend `cvp_access_1_6_1.py` ;
 - vérificateur `VERIFY_PACKAGE_161.py` ;
