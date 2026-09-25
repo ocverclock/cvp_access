@@ -204,29 +204,35 @@ def render_key(key, bindings, grow=1.0, printed_label=None):
     group = group_for(items[0][1]) if items else "unused"
     body = []
 
-    if key == "F14" and not items:
+    if key == "F14":
         return (
             f'<div class="key recorder" style="flex-grow:{grow}">'
             f'<div class="keyname">{html.escape(label)}</div>'
             '<div class="specialtext"><strong>Morceau précédent</strong><br>'
             'Appui : bip descendant + sélection<br>'
-            'Maintenir : annonce du morceau</div></div>'
+            'Maintenir : annonce du morceau'
+            + ('<br><em>Affectation TOML ignorée : touche réservée</em>' if items else '')
+            + '</div></div>'
         )
-    if key == "F15" and not items:
+    if key == "F15":
         return (
             f'<div class="key recorder" style="flex-grow:{grow}">'
             f'<div class="keyname">{html.escape(label)}</div>'
             '<div class="specialtext"><strong>Dictaphone MIDI</strong><br>'
             'Court : lecture / annuler / Stop + sauver<br>'
-            'Maintenir : nouvel enregistrement</div></div>'
+            'Maintenir : nouvel enregistrement'
+            + ('<br><em>Affectation TOML ignorée : touche réservée</em>' if items else '')
+            + '</div></div>'
         )
-    if key == "F16" and not items:
+    if key == "F16":
         return (
             f'<div class="key recorder" style="flex-grow:{grow}">'
             f'<div class="keyname">{html.escape(label)}</div>'
             '<div class="specialtext"><strong>Morceau suivant</strong><br>'
             'Appui : bip montant + sélection<br>'
-            'Maintenir : annonce du morceau</div></div>'
+            'Maintenir : annonce du morceau'
+            + ('<br><em>Affectation TOML ignorée : touche réservée</em>' if items else '')
+            + '</div></div>'
         )
     for mods, action in items:
         mod = ""
