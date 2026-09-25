@@ -132,3 +132,25 @@ Restent notamment à surveiller avant une version stable :
 - non-régression SysEx complète pendant l'usage Recorder ;
 - robustesse de la sortie `aplaymidi` après débranchement/rebranchement USB ;
 - date des fichiers lorsque le Raspberry démarre longtemps hors réseau sans RTC.
+
+
+## Détection Wi-Fi dynamique
+
+La maintenance ne suppose plus que l'interface s'appelle `wlan0`.
+
+Ordre de sélection :
+
+1. `CVP_WIFI_DEVICE` si explicitement défini ;
+2. interface liée au profil `CVP-ACCESS` si elle existe encore ;
+3. première interface Wi-Fi NetworkManager utilisable.
+
+Cette logique est appliquée à l'installation maintenance, au fallback hotspot,
+à l'assistant de connexion Wi-Fi et au portail Web. Elle couvre notamment les
+adaptateurs USB nommés `wlx...`.
+
+## Nommage des outils
+
+`cvp_doctor.py` devient le nom canonique du diagnostic pour la release
+courante. Le fichier historique `cvp_doctor_151.py` est conservé dans le dépôt
+pour compatibilité avec les anciens vérificateurs, mais les nouveaux upgrades et
+le portail utilisent le nom générique.
