@@ -262,3 +262,16 @@ F15 court au repos
 ```
 
 L'arrêt manuel conserve pour le moment son comportement séparé.
+
+
+## Portail Web — liste MIDI compacte
+
+La liste des enregistrements a été compactée pour rester exploitable avec beaucoup de fichiers :
+
+- tableau compact ;
+- hauteur maximale avec défilement interne ;
+- fichier sélectionné mis en évidence ;
+- champ de filtre par nom ;
+- compteur total et rappel du morceau sélectionné.
+
+Cette présentation évite qu'une longue collection d'enregistrements allonge toute la page de maintenance.
