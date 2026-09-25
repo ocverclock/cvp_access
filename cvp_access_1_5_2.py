@@ -19,7 +19,9 @@ import cvp_access_1_5_1_base as base
 VERSION = "1.5.2-RC1"
 
 
-# Action metadata is centralised in cvp_action_catalog.py (1.7).\nclass CVPActions151(base.CVPActions151):
+# Action metadata is centralised in cvp_action_catalog.py (1.7).
+
+class CVPActions151(base.CVPActions151):
     """Ajoute les commandes globales et le Solo sans modifier les toggles."""
 
     def dispatch(self, invocation):

@@ -62,7 +62,9 @@ def load_legacy():
 legacy = load_legacy()
 
 
-# Action metadata is centralised in cvp_action_catalog.py (1.7).\n\ndef default_config_path() -> Path:
+# Action metadata is centralised in cvp_action_catalog.py (1.7).
+
+def default_config_path() -> Path:
     return Path(__file__).resolve().with_name(
         "default-keyboard-1.5.1.toml"
     )
