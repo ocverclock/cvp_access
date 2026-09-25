@@ -185,8 +185,8 @@ class KeyboardConfig:
             self.issues = []
 
 
-# Complete built-in fallback. RC4 adds actions to the catalogue but deliberately
-# keeps the validated RC3 default mapping unchanged.
+# Complete built-in fallback. In 1.7 this mirrors config/default-current.toml so
+# every recovery path uses the same canonical factory mapping.
 BUILTIN_BINDINGS = {
     "TOP1": "style_part_toggle:1",
     "TOP2": "style_part_toggle:2",
@@ -198,7 +198,7 @@ BUILTIN_BINDINGS = {
     "TOP8": "style_part_toggle:8",
     "TOP9": "layer_toggle",
     "TOP0": "left_toggle",
-
+    "RPAREN": "style_all_parts_on",
     "A": "song_track_toggle:1",
     "Z": "song_track_toggle:2",
     "E": "song_track_toggle:3",
@@ -207,7 +207,6 @@ BUILTIN_BINDINGS = {
     "Y": "song_track_toggle:6",
     "U": "song_track_toggle:7",
     "I": "song_track_toggle:8",
-
     "Q": "song_track_toggle:9",
     "S": "song_track_toggle:10",
     "D": "song_track_toggle:11",
@@ -216,41 +215,61 @@ BUILTIN_BINDINGS = {
     "H": "song_track_toggle:14",
     "J": "song_track_toggle:15",
     "K": "song_track_toggle:16",
-
+    "SHIFT+A": "song_track_solo:1",
+    "SHIFT+Z": "song_track_solo:2",
+    "SHIFT+E": "song_track_solo:3",
+    "SHIFT+R": "song_track_solo:4",
+    "SHIFT+T": "song_track_solo:5",
+    "SHIFT+Y": "song_track_solo:6",
+    "SHIFT+U": "song_track_solo:7",
+    "SHIFT+I": "song_track_solo:8",
+    "SHIFT+Q": "song_track_solo:9",
+    "SHIFT+S": "song_track_solo:10",
+    "SHIFT+D": "song_track_solo:11",
+    "SHIFT+F": "song_track_solo:12",
+    "SHIFT+G": "song_track_solo:13",
+    "SHIFT+H": "song_track_solo:14",
+    "SHIFT+J": "song_track_solo:15",
+    "SHIFT+K": "song_track_solo:16",
+    "L": "song_all_tracks_on",
+    "W": "announce_style_name",
+    "X": "announce_song_name",
+    "C": "announce_song_length",
+    "V": "sync_start_toggle",
+    "B": "guide_toggle",
+    "N": "announce_main_voice_name",
+    "M": "voice_guide_mute_toggle",
+    "COMMA": "announce_layer_voice_name",
+    "SEMICOLON": "announce_left_voice_name",
     "F1": "announce_tempo",
     "F2": "announce_transpose",
     "F3": "song_goto_measure",
     "F4": "song_loop_point_a",
     "F5": "song_loop_point_b",
     "F6": "song_loop_toggle",
+    "F7": "metronome_toggle",
     "F13": "style_start_stop",
-
     "SPACE": "song_play_pause",
     "ENTER": "song_stop",
     "P": "song_position",
-
     "LEFT": "song_measure_previous",
     "RIGHT": "song_measure_next",
     "SHIFT+LEFT": "song_measure_previous_5",
     "SHIFT+RIGHT": "song_measure_next_5",
-
     "UP": "voice_volume_up",
     "DOWN": "voice_volume_down",
-    "PAGEUP": "style_volume_up",
-    "PAGEDOWN": "style_volume_down",
-
-    # Song / MidiMaster volume
+    "PAGEUP": "style_volume_change:1",
+    "SHIFT+PAGEUP": "style_volume_change:5",
+    "PAGEDOWN": "style_volume_change:-1",
+    "SHIFT+PAGEDOWN": "style_volume_change:-5",
     "HOME": "song_volume_change:1",
     "SHIFT+HOME": "song_volume_change:5",
     "END": "song_volume_change:-1",
     "SHIFT+END": "song_volume_change:-5",
-
-    # Main volume
     "INSERT": "main_volume_change:1",
     "SHIFT+INSERT": "main_volume_change:5",
     "DELETE": "main_volume_change:-1",
     "SHIFT+DELETE": "main_volume_change:-5",
-
     "ESC": "restart",
 }
 
