@@ -1302,7 +1302,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/action/doctor":
-            doctor = RUNTIME / "cvp_doctor_151.py"
+            doctor = RUNTIME / "cvp_doctor.py"
             if not doctor.is_file():
                 self.send_json({"error": "Doctor 1.5.1 absent"}, 404)
                 return
