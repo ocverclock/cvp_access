@@ -24,7 +24,7 @@ Ne pas relancer les scans massifs déjà clôturés sans nouvelle hypothèse.
 ## 2. Point de départ obligatoire
 
 ```text
-CVP Access 1.6.1-RC1
+CVP Access 1.6.1-RC2
 Yamaha CVP-905 firmware 1.03
 Raspberry Pi / Debian 13 arm64
 ```
