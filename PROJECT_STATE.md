@@ -1,8 +1,8 @@
 # CVP Access — état de référence du projet
 
-Dernière consolidation : **24 septembre 2026**.
+Dernière consolidation : **25 septembre 2026**.
 
-Version de référence : **CVP Access 1.5.2-RC1**.
+Version de référence : **CVP Access 1.6.1-RC1**.
 
 Instrument de référence : **Yamaha CVP-905 firmware 1.03**.
 
@@ -26,25 +26,28 @@ Toute validation dite matérielle doit provenir du CVP-905 de référence ou êt
 Repo            : ~/CVP_access
 Runtime         : /opt/cvp-access
 Entrée runtime  : /opt/cvp-access/cvp_access.py
-Source courante : cvp_access_1_5_2.py
+Source courante : cvp_access_1_6_1.py
 Base 1.5.1      : cvp_access_1_5_1_base.py
 Config active   : /etc/cvp-access/keyboard.toml
 Map             : /etc/cvp-access/keyboard-map.html
 Service         : cvp-access.service
 Speech mode     : hybrid
 Voix            : fr_FR-siwis-medium
+Release manifest: cvp_access_installer/release.env
+Politique de retour utilisateur : `docs/FEEDBACK_POLICY_1_6_1.md`
 ```
 
 Architecture transitoire :
 
 ```text
-cvp_access_1_5_2.py
-    -> cvp_access_1_5_1_base.py
+cvp_access_1_6_1.py
+    -> cvp_access_1_5_2.py
+        -> cvp_access_1_5_1_base.py
         -> cvp_access_v1.5.py
             -> cvp_access_v1.4.1.py
 ```
 
-Le wrapper courant ajoute les commandes globales et le Solo Song. La base conserve les correctifs Song, Piper, Voice Name, Guide Yamaha, métronome et les fonctions 1.5.1.
+Le wrapper 1.6.1 active le Recorder accessible. La couche 1.5.2 ajoute les commandes globales et le Solo Song. La base conserve les correctifs Song, Piper, Voice Name, Guide Yamaha, métronome et les fonctions 1.5.1. La release courante est définie par `cvp_access_installer/release.env`.
 
 ## 3. Layout clavier consolidé
 
