@@ -36,15 +36,17 @@ Les actions Style Section / Registration non affectées par défaut conservent
 | F15 long au repos | « Enregistrement prêt » |
 | première note après armement | aucune annonce ; l'enregistrement commence |
 | F15 court avant première note | « Enregistrement annulé » |
-| F15 court pendant enregistrement | « Stop » immédiatement, puis annonce de sauvegarde |
+| F15 court pendant enregistrement | « Stop » immédiatement, puis confirmation de sauvegarde assemblée depuis des WAV |
 | fin naturelle de lecture | « Lecture terminée » |
 
 Les bips F14/F16 sont des WAV générés par SoX et joués directement. Ils
 n'utilisent pas Piper.
 
 L'annonce standard d'une sélection datée assemble des fragments WAV
-pré-générés (jour, mois, « numéro », index). Piper n'est utilisé qu'en secours
-pour un nom de fichier non standard ou une valeur hors banque pré-générée.
+pré-générés (jour, mois, « numéro », index). La confirmation standard de sauvegarde
+assemble également « Enregistrement du », jour, mois, « numéro », index et
+« sauvegardé ». Piper n'est utilisé qu'en secours pour un nom de fichier non
+standard ou une valeur hors banque pré-générée.
 
 ## Guide vocal
 
