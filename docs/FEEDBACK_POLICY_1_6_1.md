@@ -87,3 +87,11 @@ Le transport Song Yamaha (Play/Pause/Stop) et le transport Style continuent à
 annoncer leur état, car ce comportement est déjà validé et fait partie du guide
 d'accessibilité historique. Une suppression future de ces annonces devra être
 testée en usage réel avant modification.
+
+
+## Touches réservées
+
+F14, F15 et F16 sont réservées au Recorder en 1.6.x et sont interceptées avant
+le routeur TOML. Une ancienne personnalisation TOML sur ces touches est donc
+conservée dans le fichier mais ignorée à l'exécution. La carte clavier affiche
+toujours la fonction Recorder et signale le conflit ; le Doctor émet un WARN.
