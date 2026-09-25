@@ -732,3 +732,6 @@ Ergonomie portail 25 septembre 2026 : les panneaux Samba, MIDI, Enregistrements 
 
 
 Navigation Recorder F14/F16 implémentée : F14 précédent avec glissando descendant 90 ms, F16 suivant avec glissando montant 90 ms, déclenchement dès KEY_DOWN. Maintien ~0,8 s -> annonce « jour mois, numéro N » assemblée depuis WAV pré-générés, sans Piper dans le cas normal. Les cues sont produits automatiquement par SoX à l'installation/update via `generate_recorder_cues.sh`. Keyboard map étendue jusqu'à F16. Validation matérielle F14/F16 encore à faire.
+
+
+Checkpoint 25 septembre 2026 : F14/F16 physiquement validés sur le clavier de référence. Les changements de sélection apparaissent correctement dans le journal (`2026-09-25_002.mid` puis `2026-09-25_003.mid`) et les glissandos précédent/suivant sont jugés très réactifs et clairement distincts.
