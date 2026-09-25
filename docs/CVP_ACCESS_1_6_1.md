@@ -125,7 +125,6 @@ Sur le Raspberry atelier / CVP-905 :
 - tempo 100 lu pendant le test ;
 - sauvegarde MIDI validée ;
 - fichier relu depuis ordinateur ;
-- annonce Stop immédiate validée après mise à jour utilisateur ;
 - comportement long F14/F16 sans bip validé par retour utilisateur.
 
 Restent notamment à surveiller avant une version stable :
