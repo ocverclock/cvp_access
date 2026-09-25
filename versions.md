@@ -188,3 +188,47 @@ cvp_access_installer/upgrade_1_5_1.sh
 ### Checkpoint
 
 **CVP Access 1.5.1-RC3 est le point de référence au 1 septembre 2026.**
+
+
+## v1.5.2-RC1 — maintenance autonome
+
+Consolidation du paquet de maintenance :
+
+- portail Web local ;
+- hotspot de secours CVP-ACCESS ;
+- sélection MIDI / clavier ;
+- Samba ;
+- carte clavier ;
+- commandes globales Song/Style et Solo Song.
+
+## v1.6.0-RC1 — dictaphone MIDI
+
+Introduction du Recorder :
+
+- F15 armement / enregistrement / lecture ;
+- capture canal MIDI 1 via le récepteur existant ;
+- sauvegarde SMF type 0 dans `~/CVP_Recordings/` ;
+- sélection partagée avec le portail Web ;
+- partage Samba `CVP_recordings`.
+
+## v1.6.1-RC1 — consolidation Recorder et maintenance
+
+Date de consolidation : **25 septembre 2026**.
+
+- F14 précédent / F16 suivant ;
+- cues SoX montant/descendant ;
+- maintien F14/F16 : annonce de sélection sans bip ;
+- F15 lecture immédiate sans annonce de départ ;
+- « Stop » immédiat avant l'annonce longue de sauvegarde ;
+- fragments Recorder pré-générés ;
+- liste MIDI Web compacte, rétractable et comptée ;
+- panneaux de maintenance rétractables ;
+- cache du port `aplaymidi` pour les relectures successives ;
+- Doctor étendu au Recorder ;
+- manifeste unique `cvp_access_installer/release.env` ;
+- frontend `cvp_access_1_6_1.py` ;
+- vérificateur `VERIFY_PACKAGE_161.py` ;
+- upgrader `upgrade_1_6_1.sh`.
+
+La pile protocolaire 1.5.x / 1.4.1 reste volontairement inchangée dans cette
+release afin de ne pas introduire de régression Yamaha.
