@@ -247,3 +247,18 @@ F15 court pendant enregistrement
 Le WAV `recorder/stop.wav` est pré-généré et joué directement hors file d'attente afin de donner une confirmation perceptible immédiatement. La phrase longue de sauvegarde vient ensuite.
 
 La keyboard-map 1.6 reflète désormais ce comportement avec « Stop + sauver » sur F15.
+
+
+## Relecture sans annonce de départ
+
+Retour d'usage du 25 septembre 2026 : la relecture démarre suffisamment vite pour qu'une annonce « Lecture » soit inutile et masque potentiellement les premières notes.
+
+Comportement retenu :
+
+```text
+F15 court au repos
+-> démarrage immédiat du fichier MIDI sélectionné
+-> aucune annonce vocale « Lecture »
+```
+
+L'arrêt manuel conserve pour le moment son comportement séparé.
