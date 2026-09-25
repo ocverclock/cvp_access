@@ -414,3 +414,23 @@ Statut :
 - changement de sélection : VALIDÉ ;
 - cues de navigation montant/descendant : VALIDÉS à l'usage ;
 - ressenti utilisateur : sons courts, distincts et très réactifs.
+
+
+### Ajustement ergonomique F14 / F16
+
+Retour d'usage du 25 septembre 2026 : le bip de navigation ne doit pas être joué lorsqu'on maintient F14/F16 pour demander le nom du morceau.
+
+Comportement corrigé :
+
+```text
+appui court F14/F16
+-> sélection immédiate
+-> bip au relâchement
+
+appui long F14/F16
+-> sélection immédiate
+-> aucun bip
+-> annonce du morceau après ~0,8 s
+```
+
+Ainsi, l'appui long F14/F16 reste silencieux jusqu'à l'annonce du morceau.
