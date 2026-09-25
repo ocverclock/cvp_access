@@ -206,6 +206,9 @@ def install_speech_hooks(core, speech_config):
         )
 
     def announce_recorder_stop_now():
+        if manager._cvp_voice_guide_muted:
+            return False
+
         # Feedback critique : lecture directe, hors file d'attente, pour que
         # l'utilisateur sache immédiatement que l'enregistrement est arrêté.
         return original_speak_now(
@@ -252,6 +255,9 @@ def install_speech_hooks(core, speech_config):
         return True
 
     def announce_recorder_selection_now(day, month, number):
+        if manager._cvp_voice_guide_muted:
+            return False
+
         day = int(day)
         month = int(month)
         number = int(number)
@@ -291,6 +297,9 @@ def install_speech_hooks(core, speech_config):
         )
 
     def announce_device_restart():
+        if manager._cvp_voice_guide_muted:
+            return False
+
         # ESC redémarre le processus. L'annonce doit donc être synchrone :
         # attendre la fin de aplay avant SystemExit, sinon cleanup() la coupe.
         ok = original_speak_now(
