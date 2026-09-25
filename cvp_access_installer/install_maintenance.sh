@@ -50,45 +50,51 @@ for command in nmcli python3; do
 done
 
 DEV="$(detect_wifi_device)"
-[[ -n "$DEV" ]] || {
-    echo "No usable Wi-Fi interface detected." >&2
-    exit 1
-}
-echo "[CVP Access] Wi-Fi maintenance interface: $DEV"
+if [[ -n "$DEV" ]]; then
+    HAS_WIFI=1
+    echo "[CVP Access] Wi-Fi maintenance interface: $DEV"
+else
+    HAS_WIFI=0
+    echo "[CVP Access] WARNING: no usable Wi-Fi interface detected." >&2
+    echo "[CVP Access] Web maintenance will still be installed; hotspot setup is skipped for this run." >&2
+fi
 
 install -d -m 0755 "$CONFIG_DIR" "$RUNTIME_DIR"
 install -d -o "$CVP_USER" -g "$CVP_USER" -m 0775 "$RECORDINGS_DIR"
 
-# Preserve the password of an already installed hotspot. Fresh installations
-# receive a random password unless CVP_HOTSPOT_PASSWORD is explicitly supplied.
-EXISTING_PSK=""
-if nmcli -t -f NAME connection show | grep -Fxq "$HOTSPOT"; then
-    EXISTING_PSK="$(nmcli --show-secrets -g 802-11-wireless-security.psk connection show "$HOTSPOT" 2>/dev/null || true)"
+if (( HAS_WIFI )); then
+    # Preserve the password of an already installed hotspot. Fresh installations
+    # receive a random password unless CVP_HOTSPOT_PASSWORD is explicitly supplied.
+    EXISTING_PSK=""
+    if nmcli -t -f NAME connection show | grep -Fxq "$HOTSPOT"; then
+        EXISTING_PSK="$(nmcli --show-secrets -g 802-11-wireless-security.psk connection show "$HOTSPOT" 2>/dev/null || true)"
+    fi
+
+    if [[ -n "${CVP_HOTSPOT_PASSWORD:-}" ]]; then
+        HOTSPOT_PASSWORD="$CVP_HOTSPOT_PASSWORD"
+    elif [[ -n "$EXISTING_PSK" ]]; then
+        HOTSPOT_PASSWORD="$EXISTING_PSK"
+    elif [[ -r "$PASSWORD_FILE" ]]; then
+        HOTSPOT_PASSWORD="$(cat "$PASSWORD_FILE")"
+    else
+        HOTSPOT_PASSWORD="$(python3 - <<'PY'
+    import secrets
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+    print("".join(secrets.choice(alphabet) for _ in range(14)))
+    PY
+    )"
+    fi
+
+    if ! nmcli -t -f NAME connection show | grep -Fxq "$HOTSPOT"; then
+        nmcli connection add         type wifi         ifname "$DEV"         con-name "$HOTSPOT"         ssid "$HOTSPOT"
+    fi
+
+    nmcli connection modify "$HOTSPOT"     connection.autoconnect no     connection.interface-name "$DEV"     802-11-wireless.mode ap     802-11-wireless.band bg     802-11-wireless.ssid "$HOTSPOT"     802-11-wireless-security.key-mgmt wpa-psk     802-11-wireless-security.psk "$HOTSPOT_PASSWORD"     ipv4.method shared     ipv4.addresses "$HOTSPOT_IP"     ipv6.method disabled
+
+    printf '%s\n' "$HOTSPOT_PASSWORD" > "$PASSWORD_FILE"
+    chmod 0600 "$PASSWORD_FILE"
+
 fi
-
-if [[ -n "${CVP_HOTSPOT_PASSWORD:-}" ]]; then
-    HOTSPOT_PASSWORD="$CVP_HOTSPOT_PASSWORD"
-elif [[ -n "$EXISTING_PSK" ]]; then
-    HOTSPOT_PASSWORD="$EXISTING_PSK"
-elif [[ -r "$PASSWORD_FILE" ]]; then
-    HOTSPOT_PASSWORD="$(cat "$PASSWORD_FILE")"
-else
-    HOTSPOT_PASSWORD="$(python3 - <<'PY'
-import secrets
-alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
-print("".join(secrets.choice(alphabet) for _ in range(14)))
-PY
-)"
-fi
-
-if ! nmcli -t -f NAME connection show | grep -Fxq "$HOTSPOT"; then
-    nmcli connection add         type wifi         ifname "$DEV"         con-name "$HOTSPOT"         ssid "$HOTSPOT"
-fi
-
-nmcli connection modify "$HOTSPOT"     connection.autoconnect no     connection.interface-name "$DEV"     802-11-wireless.mode ap     802-11-wireless.band bg     802-11-wireless.ssid "$HOTSPOT"     802-11-wireless-security.key-mgmt wpa-psk     802-11-wireless-security.psk "$HOTSPOT_PASSWORD"     ipv4.method shared     ipv4.addresses "$HOTSPOT_IP"     ipv6.method disabled
-
-printf '%s\n' "$HOTSPOT_PASSWORD" > "$PASSWORD_FILE"
-chmod 0600 "$PASSWORD_FILE"
 
 install -m 0755     "$INSTALLER_DIR/network/cvp-wifi-fallback"     /usr/local/sbin/cvp-wifi-fallback
 
@@ -136,10 +142,14 @@ systemctl restart cvp-web.service
 systemctl try-restart avahi-daemon.service >/dev/null 2>&1 || true
 
 echo
-echo "[CVP Access] Maintenance network installed"
-echo "SSID      : $HOTSPOT"
 HOST_NOW="$(hostnamectl --static 2>/dev/null || hostname)"
-echo "Hotspot   : http://10.42.0.1"
+echo "[CVP Access] Maintenance services installed"
 echo "LAN       : http://$HOST_NOW.local"
-echo "Password  : stored in $PASSWORD_FILE"
-echo "Note      : captive DNS settings apply the next time the hotspot is activated."
+if (( HAS_WIFI )); then
+    echo "SSID      : $HOTSPOT"
+    echo "Hotspot   : http://10.42.0.1"
+    echo "Password  : stored in $PASSWORD_FILE"
+    echo "Note      : captive DNS settings apply the next time the hotspot is activated."
+else
+    echo "Hotspot   : skipped (no usable Wi-Fi interface during this run)"
+fi
