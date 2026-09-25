@@ -85,31 +85,15 @@ Les profils sont une couche de gestion autour du runtime validé.
 
 Le nom humain d'un profil est séparé de son identifiant/fichier.
 
-## 4. Sécurité des écritures
+## 4. Accès à l'édition
 
-Même avec le portail général encore en mode développement :
+Décision terrain : **l'éditeur clavier et la gestion des profils ne demandent aucun code ni mot de passe**.
 
-```text
-CVP_WEB_REQUIRE_AUTH=0
-```
+Le portail reste limité au réseau local par le contrôle d'accès réseau existant. Les endpoints d'édition clavier/profils sont volontairement placés avant l'authentification maintenance globale afin de rester utilisables sans déverrouillage, même si cette authentification est réactivée plus tard pour les autres actions.
 
-les opérations de mapping/profils exigent toujours le mot de passe maintenance côté serveur.
+Le mot de passe maintenance reste disponible pour les opérations générales du portail qui en auraient besoin (mise à jour, reboot, etc.), mais il n'intervient plus dans le flux de mapping.
 
-La 1.7 crée :
-
-```text
-/etc/cvp-access/maintenance-password
-```
-
-même sur une machine sans Wi-Fi.
-
-Sur une installation existante, l'ancien mot de passe hotspot est repris en priorité pour éviter un changement inattendu.
-
-Compatibilité conservée avec :
-
-```text
-/etc/cvp-access/hotspot-password
-```
+L'éditeur n'affiche plus de champ mot de passe.
 
 ## 5. Application transactionnelle
 
@@ -199,7 +183,7 @@ Le vérificateur contrôle entre autres :
 - catalogue d'actions ;
 - absence des anciennes sources d'ActionSpec dans les wrappers ;
 - déploiement des nouveaux modules ;
-- sécurité des endpoints ;
+- absence de blocage par code sur les endpoints clavier/profils ;
 - conservation de `/api/keyboard/select` ;
 - Doctor ;
 - carte imprimable ;
