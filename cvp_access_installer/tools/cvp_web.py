@@ -1271,13 +1271,6 @@ class Handler(BaseHTTPRequestHandler):
                 )
             return
 
-        if not request_authorized(payload):
-            self.send_json(
-                {"error": "Mot de passe maintenance incorrect"},
-                401,
-            )
-            return
-
         keyboard_editor_writes = {
             "/api/keyboard/apply",
             "/api/keyboard/profiles/create",
@@ -1290,6 +1283,13 @@ class Handler(BaseHTTPRequestHandler):
         if path in keyboard_editor_writes:
             body, status = keyboard_handle_write(path, payload)
             self.send_json(body, status)
+            return
+
+        if not request_authorized(payload):
+            self.send_json(
+                {"error": "Mot de passe maintenance incorrect"},
+                401,
+            )
             return
 
         if path == "/api/wifi/connect":
