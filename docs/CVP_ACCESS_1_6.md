@@ -229,3 +229,21 @@ Statut :
 - F15 court pendant enregistrement -> arrêt + sauvegarde : VALIDÉ ;
 - annonce vocale datée + numéro : VALIDÉ ;
 - existence et lecture du fichier .mid restent à vérifier explicitement.
+
+
+## Retour immédiat à l'arrêt d'enregistrement
+
+Retour d'usage du 25 septembre 2026 : l'annonce dynamique complète de sauvegarde est trop longue pour servir de confirmation instantanée après F15.
+
+Comportement retenu :
+
+```text
+F15 court pendant enregistrement
+-> lecture directe du WAV « Stop. »
+-> écriture / fermeture du fichier MIDI
+-> annonce « Enregistrement du …, numéro …, sauvegardé. »
+```
+
+Le WAV `recorder/stop.wav` est pré-généré et joué directement hors file d'attente afin de donner une confirmation perceptible immédiatement. La phrase longue de sauvegarde vient ensuite.
+
+La keyboard-map 1.6 reflète désormais ce comportement avec « Stop + sauver » sur F15.
