@@ -151,7 +151,7 @@ button:hover{border-color:#8da2c0}button:focus-visible,input:focus-visible,selec
 button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}button.danger{color:var(--bad)}button:disabled{opacity:.5;cursor:not-allowed}
 .badge{display:inline-flex;padding:3px 8px;border-radius:999px;font-size:.78rem;font-weight:700}.badge.ok{background:#dcfce7;color:var(--ok)}.badge.warn{background:#fef3c7;color:var(--warn)}
 .layers{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.layers button[aria-selected="true"]{background:#111827;color:#fff;border-color:#111827}
-.layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.75fr);gap:14px}.keyboard{overflow-x:auto;padding-bottom:4px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,330px);gap:14px}.keyboard{overflow-x:auto;padding-bottom:4px}
 .krow{display:flex;gap:5px;min-width:980px;margin-bottom:5px}.key{min-height:72px;flex-basis:0;min-width:44px;padding:6px 5px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;background:#fff}
 .key .name{font-size:.78rem;font-weight:800}.key .fn{font-size:.69rem;line-height:1.12;color:#344054;overflow-wrap:anywhere}.key.selected{outline:3px solid var(--accent);outline-offset:1px}.key.modified{background:#fff7ed;border-color:#f59e0b}.key.reserved{background:#f3f4f6}.key.unassignable{background:#f8fafc;color:#98a2b3}
 .editor h2{margin:0 0 4px;font-size:1.15rem}.muted{color:var(--muted);font-size:.88rem}.current{padding:10px;margin:10px 0;background:#f8fafc;border-radius:9px}
@@ -221,10 +221,6 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}bu
    <button class="danger" onclick="deleteSelected()">Supprimer</button>
   </div>
  </div>
- <div>
-  <label for="adminPassword">Mot de passe maintenance pour enregistrer/activer</label>
-  <input id="adminPassword" type="password" autocomplete="current-password">
- </div>
  <div id="status" class="status" role="status" aria-live="polite"></div>
 
  <div class="sticky">
@@ -241,9 +237,6 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}bu
 let catalog=null, profiles=null, profile=null, layer="", selectedKey=null, pending={}, category="all";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const password=()=>{const v=$("adminPassword").value;sessionStorage.setItem("cvpAdmin",v);return v};
-$("adminPassword").value=sessionStorage.getItem("cvpAdmin")||"";
-
 async function api(url,opts={}){
  const r=await fetch(url,opts);let d={};
  try{d=await r.json()}catch(e){}
@@ -251,7 +244,7 @@ async function api(url,opts={}){
  return d;
 }
 async function post(url,data){
- return api(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...data,admin_password:password()})});
+ return api(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
 }
 function status(msg,bad=false){$("status").textContent=msg;$("status").className="status "+(bad?"bad":"ok")}
 function comboFor(key){return layer?layer+"+"+key:key}
