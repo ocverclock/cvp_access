@@ -729,3 +729,6 @@ Ergonomie portail 25 septembre 2026 : liste MIDI Web compactée en tableau scrol
 
 
 Ergonomie portail 25 septembre 2026 : les panneaux Samba, MIDI, Enregistrements MIDI, Périphériques et Connexion Wi-Fi sont rétractables afin de garder la page de maintenance compacte. Ils sont repliés par défaut et restent entièrement accessibles via les éléments HTML `details/summary`.
+
+
+Navigation Recorder F14/F16 implémentée : F14 précédent avec glissando descendant 90 ms, F16 suivant avec glissando montant 90 ms, déclenchement dès KEY_DOWN. Maintien ~0,8 s -> annonce « jour mois, numéro N » assemblée depuis WAV pré-générés, sans Piper dans le cas normal. Les cues sont produits automatiquement par SoX à l'installation/update via `generate_recorder_cues.sh`. Keyboard map étendue jusqu'à F16. Validation matérielle F14/F16 encore à faire.
