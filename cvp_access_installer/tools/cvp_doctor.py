@@ -216,6 +216,28 @@ def main():
         ),
     )
 
+    reserved_recorder = {"F14", "F15", "F16"}
+    recorder_conflicts = []
+    for combo in keys:
+        parts = [
+            part.strip().upper()
+            for part in str(combo).split("+")
+            if part.strip()
+        ]
+        if parts and parts[-1] in reserved_recorder:
+            recorder_conflicts.append(str(combo))
+
+    add(
+        "Touches Recorder réservées",
+        OK if not recorder_conflicts else WARN,
+        (
+            "F14/F15/F16 libres dans le TOML"
+            if not recorder_conflicts
+            else "affectations ignorées: "
+            + ", ".join(sorted(recorder_conflicts))
+        ),
+    )
+
     # Les annonces système doivent toujours être pré-générées.
     startup_file = voices / "system" / "startup_ready.wav"
     restart_file = voices / "system" / "restart_device.wav"
